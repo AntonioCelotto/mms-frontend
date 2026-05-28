@@ -1,0 +1,4548 @@
+{
+  "metrics": {
+    "openOrders": 660,
+    "activeOrders": 85,
+    "toStart": 17,
+    "urgent": 3,
+    "delays": 1,
+    "openPayments": 160,
+    "paymentValue": "640k",
+    "activeTasks": 170,
+    "completedMonth": 575
+  },
+  "orders": [
+    {
+      "id": 1,
+      "client": "PAGLIONI",
+      "category": "Sartoria",
+      "department": "Sartoria interna",
+      "route": "Interno",
+      "priority": "Standard",
+      "status": "EVASO",
+      "payment": "SALDATO",
+      "eta": "20 Jan 2025",
+      "files": 1,
+      "summary": "Ordine sartoria per PAGLIONI",
+      "notes": "Nessuna nota operativa registrata.",
+      "customerWindow": "20 Jan 2025",
+      "orderDate": "07 Jan 2025",
+      "estimatedDelivery": "20 Jan 2025",
+      "warehouseLinked": true,
+      "clientVisibility": "Il cliente puo' vedere stato lavorazione e avanzamento dell'ordine #1."
+    },
+    {
+      "id": 2,
+      "client": "WILDESIDE",
+      "category": "Sartoria",
+      "department": "Sartoria interna",
+      "route": "Interno",
+      "priority": "Standard",
+      "status": "EVASO",
+      "payment": "SALDATO",
+      "eta": "05 Feb 2025",
+      "files": 1,
+      "summary": "Ordine sartoria per WILDESIDE",
+      "notes": "Nessuna nota operativa registrata.",
+      "customerWindow": "05 Feb 2025",
+      "orderDate": "08 Jan 2025",
+      "estimatedDelivery": "05 Feb 2025",
+      "warehouseLinked": true,
+      "clientVisibility": "Il cliente puo' vedere stato lavorazione e avanzamento dell'ordine #2."
+    },
+    {
+      "id": 3,
+      "client": "GLAMI FASHION",
+      "category": "Commercio",
+      "department": "Commercio",
+      "route": "Interno",
+      "priority": "Standard",
+      "status": "EVASO",
+      "payment": "SALDATO",
+      "eta": "10 Jan 2025",
+      "files": 2,
+      "summary": "Ordine commercio per GLAMI FASHION",
+      "notes": "Nessuna nota operativa registrata.",
+      "customerWindow": "10 Jan 2025",
+      "orderDate": "08 Jan 2025",
+      "estimatedDelivery": "10 Jan 2025",
+      "warehouseLinked": true,
+      "clientVisibility": "Il cliente puo' vedere stato lavorazione e avanzamento dell'ordine #3."
+    },
+    {
+      "id": 4,
+      "client": "GLAMI FASHION",
+      "category": "Commercio",
+      "department": "Commercio",
+      "route": "Interno",
+      "priority": "Standard",
+      "status": "EVASO",
+      "payment": "SALDATO",
+      "eta": "10 Jan 2025",
+      "files": 2,
+      "summary": "Ordine commercio per GLAMI FASHION",
+      "notes": "Nessuna nota operativa registrata.",
+      "customerWindow": "10 Jan 2025",
+      "orderDate": "08 Jan 2025",
+      "estimatedDelivery": "10 Jan 2025",
+      "warehouseLinked": true,
+      "clientVisibility": "Il cliente puo' vedere stato lavorazione e avanzamento dell'ordine #4."
+    },
+    {
+      "id": 5,
+      "client": "VALENTINI",
+      "category": "Commercio",
+      "department": "Commercio",
+      "route": "Interno",
+      "priority": "Standard",
+      "status": "EVASO",
+      "payment": "SALDATO",
+      "eta": "10 Jan 2025",
+      "files": 1,
+      "summary": "Ordine commercio per VALENTINI",
+      "notes": "Nessuna nota operativa registrata.",
+      "customerWindow": "10 Jan 2025",
+      "orderDate": "08 Jan 2025",
+      "estimatedDelivery": "10 Jan 2025",
+      "warehouseLinked": true,
+      "clientVisibility": "Il cliente puo' vedere stato lavorazione e avanzamento dell'ordine #5."
+    },
+    {
+      "id": 6,
+      "client": "ALCHIERI",
+      "category": "Sartoria",
+      "department": "Sartoria interna",
+      "route": "Interno",
+      "priority": "Standard",
+      "status": "EVASO",
+      "payment": "SALDATO",
+      "eta": "17 Feb 2025",
+      "files": 1,
+      "summary": "Ordine sartoria per ALCHIERI",
+      "notes": "Nessuna nota operativa registrata.",
+      "customerWindow": "17 Feb 2025",
+      "orderDate": "08 Jan 2025",
+      "estimatedDelivery": "17 Feb 2025",
+      "warehouseLinked": true,
+      "clientVisibility": "Il cliente puo' vedere stato lavorazione e avanzamento dell'ordine #6."
+    },
+    {
+      "id": 7,
+      "client": "TEN MINUTES TO MOON",
+      "category": "Sartoria",
+      "department": "Sartoria interna",
+      "route": "Interno",
+      "priority": "Standard",
+      "status": "EVASO",
+      "payment": "SALDATO",
+      "eta": "06 Feb 2025",
+      "files": 1,
+      "summary": "Ordine sartoria per TEN MINUTES TO MOON",
+      "notes": "Nessuna nota operativa registrata.",
+      "customerWindow": "06 Feb 2025",
+      "orderDate": "09 Jan 2025",
+      "estimatedDelivery": "06 Feb 2025",
+      "warehouseLinked": true,
+      "clientVisibility": "Il cliente puo' vedere stato lavorazione e avanzamento dell'ordine #7."
+    },
+    {
+      "id": 8,
+      "client": "PAGLIONI",
+      "category": "Commercio",
+      "department": "Commercio",
+      "route": "Interno",
+      "priority": "Standard",
+      "status": "EVASO",
+      "payment": "SALDATO",
+      "eta": "13 Jan 2025",
+      "files": 2,
+      "summary": "Ordine commercio per PAGLIONI",
+      "notes": "Nessuna nota operativa registrata.",
+      "customerWindow": "13 Jan 2025",
+      "orderDate": "10 Jan 2025",
+      "estimatedDelivery": "13 Jan 2025",
+      "warehouseLinked": true,
+      "clientVisibility": "Il cliente puo' vedere stato lavorazione e avanzamento dell'ordine #8."
+    },
+    {
+      "id": 9,
+      "client": "PAGLIONI",
+      "category": "Commercio",
+      "department": "Commercio",
+      "route": "Interno",
+      "priority": "Standard",
+      "status": "EVASO",
+      "payment": "SALDATO",
+      "eta": "10 Jan 2025",
+      "files": 2,
+      "summary": "Ordine commercio per PAGLIONI",
+      "notes": "Nessuna nota operativa registrata.",
+      "customerWindow": "10 Jan 2025",
+      "orderDate": "10 Jan 2025",
+      "estimatedDelivery": "10 Jan 2025",
+      "warehouseLinked": true,
+      "clientVisibility": "Il cliente puo' vedere stato lavorazione e avanzamento dell'ordine #9."
+    },
+    {
+      "id": 10,
+      "client": "DM8 SRLS",
+      "category": "Commercio",
+      "department": "Commercio",
+      "route": "Interno",
+      "priority": "Standard",
+      "status": "EVASO",
+      "payment": "SALDATO",
+      "eta": "10 Jan 2025",
+      "files": 1,
+      "summary": "Ordine commercio per DM8 SRLS",
+      "notes": "Nessuna nota operativa registrata.",
+      "customerWindow": "10 Jan 2025",
+      "orderDate": "10 Jan 2025",
+      "estimatedDelivery": "10 Jan 2025",
+      "warehouseLinked": true,
+      "clientVisibility": "Il cliente puo' vedere stato lavorazione e avanzamento dell'ordine #10."
+    },
+    {
+      "id": 11,
+      "client": "ZAMPATARO GABRIELE",
+      "category": "Sartoria",
+      "department": "Sartoria interna",
+      "route": "Interno",
+      "priority": "Standard",
+      "status": "EVASO",
+      "payment": "SALDATO",
+      "eta": "31 Jan 2025",
+      "files": 1,
+      "summary": "Ordine sartoria per ZAMPATARO GABRIELE",
+      "notes": "Nessuna nota operativa registrata.",
+      "customerWindow": "31 Jan 2025",
+      "orderDate": "15 Jan 2025",
+      "estimatedDelivery": "31 Jan 2025",
+      "warehouseLinked": true,
+      "clientVisibility": "Il cliente puo' vedere stato lavorazione e avanzamento dell'ordine #11."
+    },
+    {
+      "id": 12,
+      "client": "FLM FOOD SRLS",
+      "category": "Commercio",
+      "department": "Commercio",
+      "route": "Interno",
+      "priority": "Standard",
+      "status": "EVASO",
+      "payment": "SALDATO",
+      "eta": "04 Feb 2025",
+      "files": 2,
+      "summary": "Ordine commercio per FLM FOOD SRLS",
+      "notes": "Nessuna nota operativa registrata.",
+      "customerWindow": "04 Feb 2025",
+      "orderDate": "15 Jan 2025",
+      "estimatedDelivery": "04 Feb 2025",
+      "warehouseLinked": true,
+      "clientVisibility": "Il cliente puo' vedere stato lavorazione e avanzamento dell'ordine #12."
+    },
+    {
+      "id": 13,
+      "client": "EZA ATELIER SRLS",
+      "category": "Sartoria",
+      "department": "Sartoria interna",
+      "route": "Interno",
+      "priority": "Standard",
+      "status": "EVASO",
+      "payment": "SALDATO",
+      "eta": "28 Feb 2025",
+      "files": 1,
+      "summary": "Ordine sartoria per EZA ATELIER SRLS",
+      "notes": "Nessuna nota operativa registrata.",
+      "customerWindow": "28 Feb 2025",
+      "orderDate": "15 Jan 2025",
+      "estimatedDelivery": "28 Feb 2025",
+      "warehouseLinked": true,
+      "clientVisibility": "Il cliente puo' vedere stato lavorazione e avanzamento dell'ordine #13."
+    },
+    {
+      "id": 14,
+      "client": "PANTA REI",
+      "category": "Commercio",
+      "department": "Commercio",
+      "route": "Interno",
+      "priority": "Standard",
+      "status": "EVASO",
+      "payment": "SALDATO",
+      "eta": "15 Jan 2025",
+      "files": 1,
+      "summary": "Ordine commercio per PANTA REI",
+      "notes": "Nessuna nota operativa registrata.",
+      "customerWindow": "15 Jan 2025",
+      "orderDate": "15 Jan 2025",
+      "estimatedDelivery": "15 Jan 2025",
+      "warehouseLinked": true,
+      "clientVisibility": "Il cliente puo' vedere stato lavorazione e avanzamento dell'ordine #14."
+    },
+    {
+      "id": 15,
+      "client": "COLLAMARINI FLAVIA",
+      "category": "Sartoria",
+      "department": "Sartoria interna",
+      "route": "Interno",
+      "priority": "Standard",
+      "status": "EVASO",
+      "payment": "SALDATO",
+      "eta": "11 Feb 2025",
+      "files": 1,
+      "summary": "Ordine sartoria per COLLAMARINI FLAVIA",
+      "notes": "Nessuna nota operativa registrata.",
+      "customerWindow": "11 Feb 2025",
+      "orderDate": "15 Jan 2025",
+      "estimatedDelivery": "11 Feb 2025",
+      "warehouseLinked": true,
+      "clientVisibility": "Il cliente puo' vedere stato lavorazione e avanzamento dell'ordine #15."
+    },
+    {
+      "id": 16,
+      "client": "DANIELE 22",
+      "category": "Commercio",
+      "department": "Commercio",
+      "route": "Interno",
+      "priority": "Standard",
+      "status": "EVASO",
+      "payment": "SALDATO",
+      "eta": "15 Jan 2025",
+      "files": 1,
+      "summary": "Ordine commercio per DANIELE 22",
+      "notes": "Nessuna nota operativa registrata.",
+      "customerWindow": "15 Jan 2025",
+      "orderDate": "15 Jan 2025",
+      "estimatedDelivery": "15 Jan 2025",
+      "warehouseLinked": true,
+      "clientVisibility": "Il cliente puo' vedere stato lavorazione e avanzamento dell'ordine #16."
+    },
+    {
+      "id": 17,
+      "client": "DANIELE 22",
+      "category": "Commercio",
+      "department": "Commercio",
+      "route": "Interno",
+      "priority": "Standard",
+      "status": "EVASO",
+      "payment": "SALDATO",
+      "eta": "18 Oct 2025",
+      "files": 1,
+      "summary": "Ordine commercio per DANIELE 22",
+      "notes": "Nessuna nota operativa registrata.",
+      "customerWindow": "18 Oct 2025",
+      "orderDate": "17 Jan 2025",
+      "estimatedDelivery": "18 Oct 2025",
+      "warehouseLinked": true,
+      "clientVisibility": "Il cliente puo' vedere stato lavorazione e avanzamento dell'ordine #17."
+    },
+    {
+      "id": 18,
+      "client": "DI CURZIO NICOLO",
+      "category": "Commercio",
+      "department": "Commercio",
+      "route": "Interno",
+      "priority": "Standard",
+      "status": "EVASO",
+      "payment": "SALDATO",
+      "eta": "20 Jan 2025",
+      "files": 1,
+      "summary": "Ordine commercio per DI CURZIO NICOLO",
+      "notes": "Nessuna nota operativa registrata.",
+      "customerWindow": "20 Jan 2025",
+      "orderDate": "20 Jan 2025",
+      "estimatedDelivery": "20 Jan 2025",
+      "warehouseLinked": true,
+      "clientVisibility": "Il cliente puo' vedere stato lavorazione e avanzamento dell'ordine #18."
+    },
+    {
+      "id": 19,
+      "client": "PAGLIONI",
+      "category": "Commercio",
+      "department": "Commercio",
+      "route": "Interno",
+      "priority": "Standard",
+      "status": "EVASO",
+      "payment": "SALDATO",
+      "eta": "24 Jan 2025",
+      "files": 1,
+      "summary": "Ordine commercio per PAGLIONI",
+      "notes": "Nessuna nota operativa registrata.",
+      "customerWindow": "24 Jan 2025",
+      "orderDate": "24 Jan 2025",
+      "estimatedDelivery": "24 Jan 2025",
+      "warehouseLinked": true,
+      "clientVisibility": "Il cliente puo' vedere stato lavorazione e avanzamento dell'ordine #19."
+    },
+    {
+      "id": 20,
+      "client": "PAGLIONI",
+      "category": "Commercio",
+      "department": "Commercio",
+      "route": "Interno",
+      "priority": "Standard",
+      "status": "EVASO",
+      "payment": "SALDATO",
+      "eta": "24 Jan 2025",
+      "files": 1,
+      "summary": "Ordine commercio per PAGLIONI",
+      "notes": "Nessuna nota operativa registrata.",
+      "customerWindow": "24 Jan 2025",
+      "orderDate": "24 Jan 2025",
+      "estimatedDelivery": "24 Jan 2025",
+      "warehouseLinked": true,
+      "clientVisibility": "Il cliente puo' vedere stato lavorazione e avanzamento dell'ordine #20."
+    },
+    {
+      "id": 21,
+      "client": "SOLE",
+      "category": "Sartoria",
+      "department": "Sartoria interna",
+      "route": "Interno",
+      "priority": "Standard",
+      "status": "EVASO",
+      "payment": "SALDATO",
+      "eta": "31 Jan 2025",
+      "files": 1,
+      "summary": "Ordine sartoria per SOLE",
+      "notes": "Nessuna nota operativa registrata.",
+      "customerWindow": "31 Jan 2025",
+      "orderDate": "24 Jan 2025",
+      "estimatedDelivery": "31 Jan 2025",
+      "warehouseLinked": true,
+      "clientVisibility": "Il cliente puo' vedere stato lavorazione e avanzamento dell'ordine #21."
+    },
+    {
+      "id": 22,
+      "client": "I FOLLETTI DEL CUORE",
+      "category": "Commercio",
+      "department": "Commercio",
+      "route": "Interno",
+      "priority": "Standard",
+      "status": "EVASO",
+      "payment": "SALDATO",
+      "eta": "31 Jan 2025",
+      "files": 1,
+      "summary": "Ordine commercio per I FOLLETTI DEL CUORE",
+      "notes": "Nessuna nota operativa registrata.",
+      "customerWindow": "31 Jan 2025",
+      "orderDate": "24 Jan 2025",
+      "estimatedDelivery": "31 Jan 2025",
+      "warehouseLinked": true,
+      "clientVisibility": "Il cliente puo' vedere stato lavorazione e avanzamento dell'ordine #22."
+    },
+    {
+      "id": 23,
+      "client": "DANIELE 22",
+      "category": "Sartoria",
+      "department": "Sartoria interna",
+      "route": "Interno",
+      "priority": "Standard",
+      "status": "EVASO",
+      "payment": "SALDATO",
+      "eta": "17 Mar 2025",
+      "files": 1,
+      "summary": "Ordine sartoria per DANIELE 22",
+      "notes": "Nessuna nota operativa registrata.",
+      "customerWindow": "17 Mar 2025",
+      "orderDate": "24 Jan 2025",
+      "estimatedDelivery": "17 Mar 2025",
+      "warehouseLinked": true,
+      "clientVisibility": "Il cliente puo' vedere stato lavorazione e avanzamento dell'ordine #23."
+    },
+    {
+      "id": 24,
+      "client": "DDR SPA",
+      "category": "Commercio",
+      "department": "Commercio",
+      "route": "Interno",
+      "priority": "Standard",
+      "status": "EVASO",
+      "payment": "SALDATO",
+      "eta": "14 Feb 2025",
+      "files": 1,
+      "summary": "Ordine commercio per DDR SPA",
+      "notes": "Nessuna nota operativa registrata.",
+      "customerWindow": "14 Feb 2025",
+      "orderDate": "24 Jan 2025",
+      "estimatedDelivery": "14 Feb 2025",
+      "warehouseLinked": true,
+      "clientVisibility": "Il cliente puo' vedere stato lavorazione e avanzamento dell'ordine #24."
+    },
+    {
+      "id": 25,
+      "client": "I FOLLETTI DEL CUORE",
+      "category": "Commercio",
+      "department": "Commercio",
+      "route": "Interno",
+      "priority": "Standard",
+      "status": "EVASO",
+      "payment": "SALDATO",
+      "eta": "31 Jan 2025",
+      "files": 1,
+      "summary": "Ordine commercio per I FOLLETTI DEL CUORE",
+      "notes": "Nessuna nota operativa registrata.",
+      "customerWindow": "31 Jan 2025",
+      "orderDate": "24 Jan 2025",
+      "estimatedDelivery": "31 Jan 2025",
+      "warehouseLinked": true,
+      "clientVisibility": "Il cliente puo' vedere stato lavorazione e avanzamento dell'ordine #25."
+    },
+    {
+      "id": 26,
+      "client": "ARDOVINI GIANCARLO",
+      "category": "Commercio",
+      "department": "Commercio",
+      "route": "Interno",
+      "priority": "Standard",
+      "status": "EVASO",
+      "payment": "SALDATO",
+      "eta": "25 Jan 2025",
+      "files": 1,
+      "summary": "Ordine commercio per ARDOVINI GIANCARLO",
+      "notes": "Nessuna nota operativa registrata.",
+      "customerWindow": "25 Jan 2025",
+      "orderDate": "25 Jan 2025",
+      "estimatedDelivery": "25 Jan 2025",
+      "warehouseLinked": true,
+      "clientVisibility": "Il cliente puo' vedere stato lavorazione e avanzamento dell'ordine #26."
+    },
+    {
+      "id": 27,
+      "client": "PAGLIONI",
+      "category": "Commercio",
+      "department": "Commercio",
+      "route": "Interno",
+      "priority": "Standard",
+      "status": "EVASO",
+      "payment": "SALDATO",
+      "eta": "27 Jan 2025",
+      "files": 1,
+      "summary": "Ordine commercio per PAGLIONI",
+      "notes": "Nessuna nota operativa registrata.",
+      "customerWindow": "27 Jan 2025",
+      "orderDate": "27 Jan 2025",
+      "estimatedDelivery": "27 Jan 2025",
+      "warehouseLinked": true,
+      "clientVisibility": "Il cliente puo' vedere stato lavorazione e avanzamento dell'ordine #27."
+    },
+    {
+      "id": 28,
+      "client": "BOLGHERA VOLLEY",
+      "category": "Commercio",
+      "department": "Commercio",
+      "route": "Interno",
+      "priority": "Standard",
+      "status": "EVASO",
+      "payment": "SALDATO",
+      "eta": "27 Jan 2025",
+      "files": 1,
+      "summary": "Ordine commercio per BOLGHERA VOLLEY",
+      "notes": "Nessuna nota operativa registrata.",
+      "customerWindow": "27 Jan 2025",
+      "orderDate": "27 Jan 2025",
+      "estimatedDelivery": "27 Jan 2025",
+      "warehouseLinked": true,
+      "clientVisibility": "Il cliente puo' vedere stato lavorazione e avanzamento dell'ordine #28."
+    },
+    {
+      "id": 29,
+      "client": "LA DOLCE ROMA",
+      "category": "Commercio",
+      "department": "Commercio",
+      "route": "Interno",
+      "priority": "Standard",
+      "status": "EVASO",
+      "payment": "SALDATO",
+      "eta": "31 Jan 2025",
+      "files": 0,
+      "summary": "Ordine commercio per LA DOLCE ROMA",
+      "notes": "Nessuna nota operativa registrata.",
+      "customerWindow": "31 Jan 2025",
+      "orderDate": "27 Jan 2025",
+      "estimatedDelivery": "31 Jan 2025",
+      "warehouseLinked": true,
+      "clientVisibility": "Il cliente puo' vedere stato lavorazione e avanzamento dell'ordine #29."
+    },
+    {
+      "id": 30,
+      "client": "TEN MINUTES TO MOON",
+      "category": "Sartoria",
+      "department": "Sartoria interna",
+      "route": "Interno",
+      "priority": "Standard",
+      "status": "EVASO",
+      "payment": "SALDATO",
+      "eta": "07 Feb 2025",
+      "files": 1,
+      "summary": "Ordine sartoria per TEN MINUTES TO MOON",
+      "notes": "Nessuna nota operativa registrata.",
+      "customerWindow": "07 Feb 2025",
+      "orderDate": "28 Jan 2025",
+      "estimatedDelivery": "07 Feb 2025",
+      "warehouseLinked": true,
+      "clientVisibility": "Il cliente puo' vedere stato lavorazione e avanzamento dell'ordine #30."
+    },
+    {
+      "id": 31,
+      "client": "SANFILIPPO LORENZO",
+      "category": "Sartoria",
+      "department": "Sartoria interna",
+      "route": "Interno",
+      "priority": "Standard",
+      "status": "EVASO",
+      "payment": "SALDATO",
+      "eta": "03 Feb 2025",
+      "files": 1,
+      "summary": "Ordine sartoria per SANFILIPPO LORENZO",
+      "notes": "Nessuna nota operativa registrata.",
+      "customerWindow": "03 Feb 2025",
+      "orderDate": "30 Jan 2025",
+      "estimatedDelivery": "03 Feb 2025",
+      "warehouseLinked": true,
+      "clientVisibility": "Il cliente puo' vedere stato lavorazione e avanzamento dell'ordine #31."
+    },
+    {
+      "id": 32,
+      "client": "ALCHIERI",
+      "category": "Sartoria",
+      "department": "Sartoria interna",
+      "route": "Interno",
+      "priority": "Standard",
+      "status": "EVASO",
+      "payment": "SALDATO",
+      "eta": "17 Feb 2025",
+      "files": 1,
+      "summary": "Ordine sartoria per ALCHIERI",
+      "notes": "Nessuna nota operativa registrata.",
+      "customerWindow": "17 Feb 2025",
+      "orderDate": "31 Jan 2025",
+      "estimatedDelivery": "17 Feb 2025",
+      "warehouseLinked": true,
+      "clientVisibility": "Il cliente puo' vedere stato lavorazione e avanzamento dell'ordine #32."
+    },
+    {
+      "id": 33,
+      "client": "MONIA FURNARI",
+      "category": "Sartoria",
+      "department": "Sartoria interna",
+      "route": "Interno",
+      "priority": "Standard",
+      "status": "EVASO",
+      "payment": "SALDATO",
+      "eta": "28 Feb 2025",
+      "files": 1,
+      "summary": "Ordine sartoria per MONIA FURNARI",
+      "notes": "Nessuna nota operativa registrata.",
+      "customerWindow": "28 Feb 2025",
+      "orderDate": "31 Jan 2025",
+      "estimatedDelivery": "28 Feb 2025",
+      "warehouseLinked": true,
+      "clientVisibility": "Il cliente puo' vedere stato lavorazione e avanzamento dell'ordine #33."
+    },
+    {
+      "id": 34,
+      "client": "WILDESIDE",
+      "category": "Commercio",
+      "department": "Commercio",
+      "route": "Interno",
+      "priority": "Standard",
+      "status": "EVASO",
+      "payment": "SALDATO",
+      "eta": "05 Feb 2025",
+      "files": 1,
+      "summary": "Ordine commercio per WILDESIDE",
+      "notes": "Nessuna nota operativa registrata.",
+      "customerWindow": "05 Feb 2025",
+      "orderDate": "31 Jan 2025",
+      "estimatedDelivery": "05 Feb 2025",
+      "warehouseLinked": true,
+      "clientVisibility": "Il cliente puo' vedere stato lavorazione e avanzamento dell'ordine #34."
+    },
+    {
+      "id": 35,
+      "client": "FLAVIO ANGELUCCI",
+      "category": "Commercio",
+      "department": "Commercio",
+      "route": "Esterno",
+      "priority": "Standard",
+      "status": "EVASO",
+      "payment": "SALDATO",
+      "eta": "21 Mar 2025",
+      "files": 1,
+      "summary": "Ordine commercio per FLAVIO ANGELUCCI",
+      "notes": "Nessuna nota operativa registrata.",
+      "customerWindow": "21 Mar 2025",
+      "orderDate": "31 Jan 2025",
+      "estimatedDelivery": "21 Mar 2025",
+      "warehouseLinked": true,
+      "clientVisibility": "Il cliente puo' vedere stato lavorazione e avanzamento dell'ordine #35."
+    },
+    {
+      "id": 36,
+      "client": "DANIELE 22",
+      "category": "Sartoria",
+      "department": "Sartoria interna",
+      "route": "Interno",
+      "priority": "Standard",
+      "status": "EVASO",
+      "payment": "SALDATO",
+      "eta": "19 Mar 2025",
+      "files": 1,
+      "summary": "Ordine sartoria per DANIELE 22",
+      "notes": "Nessuna nota operativa registrata.",
+      "customerWindow": "19 Mar 2025",
+      "orderDate": "31 Jan 2025",
+      "estimatedDelivery": "19 Mar 2025",
+      "warehouseLinked": true,
+      "clientVisibility": "Il cliente puo' vedere stato lavorazione e avanzamento dell'ordine #36."
+    },
+    {
+      "id": 37,
+      "client": "CECCONI PIERPAOLO",
+      "category": "Commercio",
+      "department": "Commercio",
+      "route": "Interno",
+      "priority": "Standard",
+      "status": "EVASO",
+      "payment": "SALDATO",
+      "eta": "31 Jan 2025",
+      "files": 2,
+      "summary": "Ordine commercio per CECCONI PIERPAOLO",
+      "notes": "Nessuna nota operativa registrata.",
+      "customerWindow": "31 Jan 2025",
+      "orderDate": "31 Jan 2025",
+      "estimatedDelivery": "31 Jan 2025",
+      "warehouseLinked": true,
+      "clientVisibility": "Il cliente puo' vedere stato lavorazione e avanzamento dell'ordine #37."
+    },
+    {
+      "id": 38,
+      "client": "IVANO FELTRIN",
+      "category": "Commercio",
+      "department": "Commercio",
+      "route": "Esterno",
+      "priority": "Standard",
+      "status": "EVASO",
+      "payment": "SALDATO",
+      "eta": "31 Jan 2025",
+      "files": 1,
+      "summary": "Ordine commercio per IVANO FELTRIN",
+      "notes": "Nessuna nota operativa registrata.",
+      "customerWindow": "31 Jan 2025",
+      "orderDate": "31 Jan 2025",
+      "estimatedDelivery": "31 Jan 2025",
+      "warehouseLinked": true,
+      "clientVisibility": "Il cliente puo' vedere stato lavorazione e avanzamento dell'ordine #38."
+    },
+    {
+      "id": 39,
+      "client": "EMANUELA MADONNA",
+      "category": "Commercio",
+      "department": "Commercio",
+      "route": "Interno",
+      "priority": "Standard",
+      "status": "EVASO",
+      "payment": "SALDATO",
+      "eta": "03 Feb 2025",
+      "files": 1,
+      "summary": "Ordine commercio per EMANUELA MADONNA",
+      "notes": "Nessuna nota operativa registrata.",
+      "customerWindow": "03 Feb 2025",
+      "orderDate": "31 Jan 2025",
+      "estimatedDelivery": "03 Feb 2025",
+      "warehouseLinked": true,
+      "clientVisibility": "Il cliente puo' vedere stato lavorazione e avanzamento dell'ordine #39."
+    },
+    {
+      "id": 40,
+      "client": "I FOLLETTI DEL CUORE",
+      "category": "Commercio",
+      "department": "Commercio",
+      "route": "Interno",
+      "priority": "Standard",
+      "status": "EVASO",
+      "payment": "SALDATO",
+      "eta": "03 Feb 2025",
+      "files": 1,
+      "summary": "Ordine commercio per I FOLLETTI DEL CUORE",
+      "notes": "Nessuna nota operativa registrata.",
+      "customerWindow": "03 Feb 2025",
+      "orderDate": "31 Jan 2025",
+      "estimatedDelivery": "03 Feb 2025",
+      "warehouseLinked": true,
+      "clientVisibility": "Il cliente puo' vedere stato lavorazione e avanzamento dell'ordine #40."
+    },
+    {
+      "id": 41,
+      "client": "PAGLIONI",
+      "category": "Commercio",
+      "department": "Commercio",
+      "route": "Esterno",
+      "priority": "Standard",
+      "status": "EVASO",
+      "payment": "SALDATO",
+      "eta": "03 Feb 2025",
+      "files": 2,
+      "summary": "Ordine commercio per PAGLIONI",
+      "notes": "Nessuna nota operativa registrata.",
+      "customerWindow": "03 Feb 2025",
+      "orderDate": "31 Jan 2025",
+      "estimatedDelivery": "03 Feb 2025",
+      "warehouseLinked": true,
+      "clientVisibility": "Il cliente puo' vedere stato lavorazione e avanzamento dell'ordine #41."
+    },
+    {
+      "id": 42,
+      "client": "SANFILIPPO LORENZO",
+      "category": "Sartoria",
+      "department": "Sartoria interna",
+      "route": "Interno",
+      "priority": "Standard",
+      "status": "EVASO",
+      "payment": "SALDATO",
+      "eta": "03 Mar 2025",
+      "files": 1,
+      "summary": "Ordine sartoria per SANFILIPPO LORENZO",
+      "notes": "Nessuna nota operativa registrata.",
+      "customerWindow": "03 Mar 2025",
+      "orderDate": "30 Jan 2025",
+      "estimatedDelivery": "03 Mar 2025",
+      "warehouseLinked": true,
+      "clientVisibility": "Il cliente puo' vedere stato lavorazione e avanzamento dell'ordine #42."
+    },
+    {
+      "id": 43,
+      "client": "MORE PAIN",
+      "category": "Sartoria",
+      "department": "Sartoria interna",
+      "route": "Interno",
+      "priority": "Standard",
+      "status": "ANNULLATO",
+      "payment": "NON PAGATO",
+      "eta": "03 Mar 2025",
+      "files": 1,
+      "summary": "Ordine sartoria per MORE PAIN",
+      "notes": "Nessuna nota operativa registrata.",
+      "customerWindow": "03 Mar 2025",
+      "orderDate": "31 Jan 2025",
+      "estimatedDelivery": "03 Mar 2025",
+      "warehouseLinked": true,
+      "clientVisibility": "Il cliente puo' vedere stato lavorazione e avanzamento dell'ordine #43."
+    },
+    {
+      "id": 44,
+      "client": "TEN MINUTES TO MOON",
+      "category": "Commercio",
+      "department": "Commercio",
+      "route": "Esterno",
+      "priority": "Standard",
+      "status": "EVASO",
+      "payment": "SALDATO",
+      "eta": "07 Feb 2025",
+      "files": 1,
+      "summary": "Ordine commercio per TEN MINUTES TO MOON",
+      "notes": "Nessuna nota operativa registrata.",
+      "customerWindow": "07 Feb 2025",
+      "orderDate": "04 Feb 2025",
+      "estimatedDelivery": "07 Feb 2025",
+      "warehouseLinked": true,
+      "clientVisibility": "Il cliente puo' vedere stato lavorazione e avanzamento dell'ordine #44."
+    },
+    {
+      "id": 45,
+      "client": "STELLA TURES",
+      "category": "Sartoria",
+      "department": "Sartoria esterna",
+      "route": "Esterno",
+      "priority": "Standard",
+      "status": "EVASO",
+      "payment": "SALDATO",
+      "eta": "31 Mar 2025",
+      "files": 1,
+      "summary": "Ordine sartoria per STELLA TURES",
+      "notes": "Nessuna nota operativa registrata.",
+      "customerWindow": "31 Mar 2025",
+      "orderDate": "05 Feb 2025",
+      "estimatedDelivery": "31 Mar 2025",
+      "warehouseLinked": false,
+      "clientVisibility": "Il cliente puo' vedere stato lavorazione e avanzamento dell'ordine #45."
+    },
+    {
+      "id": 46,
+      "client": "ALCHIERI",
+      "category": "Sartoria",
+      "department": "Sartoria interna",
+      "route": "Interno",
+      "priority": "Standard",
+      "status": "EVASO",
+      "payment": "SALDATO",
+      "eta": "31 Mar 2025",
+      "files": 1,
+      "summary": "Ordine sartoria per ALCHIERI",
+      "notes": "Nessuna nota operativa registrata.",
+      "customerWindow": "31 Mar 2025",
+      "orderDate": "05 Feb 2025",
+      "estimatedDelivery": "31 Mar 2025",
+      "warehouseLinked": true,
+      "clientVisibility": "Il cliente puo' vedere stato lavorazione e avanzamento dell'ordine #46."
+    },
+    {
+      "id": 47,
+      "client": "ZAMPATARO GABRIELE",
+      "category": "Commercio",
+      "department": "Commercio",
+      "route": "Esterno",
+      "priority": "Standard",
+      "status": "EVASO",
+      "payment": "SALDATO",
+      "eta": "07 Feb 2025",
+      "files": 1,
+      "summary": "Ordine commercio per ZAMPATARO GABRIELE",
+      "notes": "Nessuna nota operativa registrata.",
+      "customerWindow": "07 Feb 2025",
+      "orderDate": "06 Feb 2025",
+      "estimatedDelivery": "07 Feb 2025",
+      "warehouseLinked": true,
+      "clientVisibility": "Il cliente puo' vedere stato lavorazione e avanzamento dell'ordine #47."
+    },
+    {
+      "id": 48,
+      "client": "DANAE MARRA",
+      "category": "Sartoria",
+      "department": "Sartoria interna",
+      "route": "Interno",
+      "priority": "Standard",
+      "status": "EVASO",
+      "payment": "SALDATO",
+      "eta": "28 Feb 2025",
+      "files": 1,
+      "summary": "Ordine sartoria per DANAE MARRA",
+      "notes": "Nessuna nota operativa registrata.",
+      "customerWindow": "28 Feb 2025",
+      "orderDate": "07 Feb 2025",
+      "estimatedDelivery": "28 Feb 2025",
+      "warehouseLinked": true,
+      "clientVisibility": "Il cliente puo' vedere stato lavorazione e avanzamento dell'ordine #48."
+    },
+    {
+      "id": 49,
+      "client": "VALENTINI",
+      "category": "Commercio",
+      "department": "Commercio",
+      "route": "Esterno",
+      "priority": "Standard",
+      "status": "ANNULLATO",
+      "payment": "NON PAGATO",
+      "eta": "10 Feb 2025",
+      "files": 0,
+      "summary": "Ordine commercio per VALENTINI",
+      "notes": "Nessuna nota operativa registrata.",
+      "customerWindow": "10 Feb 2025",
+      "orderDate": "10 Feb 2025",
+      "estimatedDelivery": "10 Feb 2025",
+      "warehouseLinked": true,
+      "clientVisibility": "Il cliente puo' vedere stato lavorazione e avanzamento dell'ordine #49."
+    },
+    {
+      "id": 50,
+      "client": "FLAVA COLLAMARINI",
+      "category": "Sartoria",
+      "department": "Sartoria interna",
+      "route": "Interno",
+      "priority": "Standard",
+      "status": "EVASO",
+      "payment": "SALDATO",
+      "eta": "28 Feb 2025",
+      "files": 0,
+      "summary": "Ordine sartoria per FLAVA COLLAMARINI",
+      "notes": "Nessuna nota operativa registrata.",
+      "customerWindow": "28 Feb 2025",
+      "orderDate": "10 Feb 2025",
+      "estimatedDelivery": "28 Feb 2025",
+      "warehouseLinked": true,
+      "clientVisibility": "Il cliente puo' vedere stato lavorazione e avanzamento dell'ordine #50."
+    },
+    {
+      "id": 51,
+      "client": "CECCONI PIERPAOLO",
+      "category": "Commercio",
+      "department": "Commercio",
+      "route": "Esterno",
+      "priority": "Standard",
+      "status": "EVASO",
+      "payment": "SALDATO",
+      "eta": "14 Feb 2025",
+      "files": 1,
+      "summary": "Ordine commercio per CECCONI PIERPAOLO",
+      "notes": "Nessuna nota operativa registrata.",
+      "customerWindow": "14 Feb 2025",
+      "orderDate": "10 Feb 2025",
+      "estimatedDelivery": "14 Feb 2025",
+      "warehouseLinked": true,
+      "clientVisibility": "Il cliente puo' vedere stato lavorazione e avanzamento dell'ordine #51."
+    },
+    {
+      "id": 52,
+      "client": "ALCHIERI",
+      "category": "Commercio",
+      "department": "Commercio",
+      "route": "Esterno",
+      "priority": "Standard",
+      "status": "EVASO",
+      "payment": "SALDATO",
+      "eta": "28 Feb 2025",
+      "files": 2,
+      "summary": "Ordine commercio per ALCHIERI",
+      "notes": "Nessuna nota operativa registrata.",
+      "customerWindow": "28 Feb 2025",
+      "orderDate": "11 Feb 2025",
+      "estimatedDelivery": "28 Feb 2025",
+      "warehouseLinked": true,
+      "clientVisibility": "Il cliente puo' vedere stato lavorazione e avanzamento dell'ordine #52."
+    },
+    {
+      "id": 53,
+      "client": "MARTINO TURRINI",
+      "category": "Commercio",
+      "department": "Commercio",
+      "route": "Interno",
+      "priority": "Standard",
+      "status": "EVASO",
+      "payment": "SALDATO",
+      "eta": "17 Feb 2025",
+      "files": 1,
+      "summary": "Ordine commercio per MARTINO TURRINI",
+      "notes": "Nessuna nota operativa registrata.",
+      "customerWindow": "17 Feb 2025",
+      "orderDate": "11 Feb 2025",
+      "estimatedDelivery": "17 Feb 2025",
+      "warehouseLinked": true,
+      "clientVisibility": "Il cliente puo' vedere stato lavorazione e avanzamento dell'ordine #53."
+    },
+    {
+      "id": 54,
+      "client": "DM8 SRLS",
+      "category": "Commercio",
+      "department": "Commercio",
+      "route": "Esterno",
+      "priority": "Standard",
+      "status": "EVASO",
+      "payment": "SALDATO",
+      "eta": "17 Feb 2025",
+      "files": 1,
+      "summary": "Ordine commercio per DM8 SRLS",
+      "notes": "Nessuna nota operativa registrata.",
+      "customerWindow": "17 Feb 2025",
+      "orderDate": "11 Feb 2025",
+      "estimatedDelivery": "17 Feb 2025",
+      "warehouseLinked": true,
+      "clientVisibility": "Il cliente puo' vedere stato lavorazione e avanzamento dell'ordine #54."
+    },
+    {
+      "id": 55,
+      "client": "FRANCESCO LOLLI",
+      "category": "Commercio",
+      "department": "Commercio",
+      "route": "Esterno",
+      "priority": "Standard",
+      "status": "EVASO",
+      "payment": "SALDATO",
+      "eta": "20 Feb 2025",
+      "files": 1,
+      "summary": "Ordine commercio per FRANCESCO LOLLI",
+      "notes": "Nessuna nota operativa registrata.",
+      "customerWindow": "20 Feb 2025",
+      "orderDate": "11 Feb 2025",
+      "estimatedDelivery": "20 Feb 2025",
+      "warehouseLinked": true,
+      "clientVisibility": "Il cliente puo' vedere stato lavorazione e avanzamento dell'ordine #55."
+    },
+    {
+      "id": 56,
+      "client": "DANAE MARRA",
+      "category": "Sartoria",
+      "department": "Sartoria interna",
+      "route": "Interno",
+      "priority": "Standard",
+      "status": "EVASO",
+      "payment": "SALDATO",
+      "eta": "20 Feb 2025",
+      "files": 1,
+      "summary": "Ordine sartoria per DANAE MARRA",
+      "notes": "Nessuna nota operativa registrata.",
+      "customerWindow": "20 Feb 2025",
+      "orderDate": "11 Feb 2025",
+      "estimatedDelivery": "20 Feb 2025",
+      "warehouseLinked": true,
+      "clientVisibility": "Il cliente puo' vedere stato lavorazione e avanzamento dell'ordine #56."
+    },
+    {
+      "id": 57,
+      "client": "FLM FOOD SRLS",
+      "category": "Commercio",
+      "department": "Commercio",
+      "route": "Interno",
+      "priority": "Standard",
+      "status": "EVASO",
+      "payment": "SALDATO",
+      "eta": "18 Feb 2025",
+      "files": 1,
+      "summary": "Ordine commercio per FLM FOOD SRLS",
+      "notes": "Nessuna nota operativa registrata.",
+      "customerWindow": "18 Feb 2025",
+      "orderDate": "11 Feb 2025",
+      "estimatedDelivery": "18 Feb 2025",
+      "warehouseLinked": true,
+      "clientVisibility": "Il cliente puo' vedere stato lavorazione e avanzamento dell'ordine #57."
+    },
+    {
+      "id": 58,
+      "client": "SANFILIPPO LORENZO",
+      "category": "Commercio",
+      "department": "Commercio",
+      "route": "Esterno",
+      "priority": "Standard",
+      "status": "EVASO",
+      "payment": "SALDATO",
+      "eta": "17 Mar 2025",
+      "files": 1,
+      "summary": "Ordine commercio per SANFILIPPO LORENZO",
+      "notes": "Nessuna nota operativa registrata.",
+      "customerWindow": "17 Mar 2025",
+      "orderDate": "11 Feb 2025",
+      "estimatedDelivery": "17 Mar 2025",
+      "warehouseLinked": true,
+      "clientVisibility": "Il cliente puo' vedere stato lavorazione e avanzamento dell'ordine #58."
+    },
+    {
+      "id": 59,
+      "client": "PAGLIONI",
+      "category": "Commercio",
+      "department": "Commercio",
+      "route": "Interno",
+      "priority": "Standard",
+      "status": "EVASO",
+      "payment": "SALDATO",
+      "eta": "20 Feb 2025",
+      "files": 1,
+      "summary": "Ordine commercio per PAGLIONI",
+      "notes": "Nessuna nota operativa registrata.",
+      "customerWindow": "20 Feb 2025",
+      "orderDate": "13 Feb 2025",
+      "estimatedDelivery": "20 Feb 2025",
+      "warehouseLinked": true,
+      "clientVisibility": "Il cliente puo' vedere stato lavorazione e avanzamento dell'ordine #59."
+    },
+    {
+      "id": 60,
+      "client": "DANAE MARRA",
+      "category": "Commercio",
+      "department": "Commercio",
+      "route": "Esterno",
+      "priority": "Standard",
+      "status": "EVASO",
+      "payment": "SALDATO",
+      "eta": "21 Feb 2025",
+      "files": 1,
+      "summary": "Ordine commercio per DANAE MARRA",
+      "notes": "Nessuna nota operativa registrata.",
+      "customerWindow": "21 Feb 2025",
+      "orderDate": "13 Feb 2025",
+      "estimatedDelivery": "21 Feb 2025",
+      "warehouseLinked": true,
+      "clientVisibility": "Il cliente puo' vedere stato lavorazione e avanzamento dell'ordine #60."
+    },
+    {
+      "id": 61,
+      "client": "ZAMPATARO GABRIELE",
+      "category": "Commercio",
+      "department": "Commercio",
+      "route": "Esterno",
+      "priority": "Standard",
+      "status": "EVASO",
+      "payment": "SALDATO",
+      "eta": "20 Feb 2025",
+      "files": 1,
+      "summary": "Ordine commercio per ZAMPATARO GABRIELE",
+      "notes": "Nessuna nota operativa registrata.",
+      "customerWindow": "20 Feb 2025",
+      "orderDate": "13 Feb 2025",
+      "estimatedDelivery": "20 Feb 2025",
+      "warehouseLinked": true,
+      "clientVisibility": "Il cliente puo' vedere stato lavorazione e avanzamento dell'ordine #61."
+    },
+    {
+      "id": 62,
+      "client": "ALCHIERI",
+      "category": "Commercio",
+      "department": "Commercio",
+      "route": "Esterno",
+      "priority": "Standard",
+      "status": "EVASO",
+      "payment": "SALDATO",
+      "eta": "20 Feb 2025",
+      "files": 2,
+      "summary": "Ordine commercio per ALCHIERI",
+      "notes": "Nessuna nota operativa registrata.",
+      "customerWindow": "20 Feb 2025",
+      "orderDate": "13 Feb 2025",
+      "estimatedDelivery": "20 Feb 2025",
+      "warehouseLinked": true,
+      "clientVisibility": "Il cliente puo' vedere stato lavorazione e avanzamento dell'ordine #62."
+    },
+    {
+      "id": 63,
+      "client": "TEN MINUTES TO MOON",
+      "category": "Commercio",
+      "department": "Commercio",
+      "route": "Esterno",
+      "priority": "Standard",
+      "status": "EVASO",
+      "payment": "SALDATO",
+      "eta": "21 Feb 2025",
+      "files": 1,
+      "summary": "Ordine commercio per TEN MINUTES TO MOON",
+      "notes": "Nessuna nota operativa registrata.",
+      "customerWindow": "21 Feb 2025",
+      "orderDate": "13 Feb 2025",
+      "estimatedDelivery": "21 Feb 2025",
+      "warehouseLinked": true,
+      "clientVisibility": "Il cliente puo' vedere stato lavorazione e avanzamento dell'ordine #63."
+    },
+    {
+      "id": 64,
+      "client": "GIACOMO TOLETTA FEDE",
+      "category": "Commercio",
+      "department": "Commercio",
+      "route": "Interno",
+      "priority": "Standard",
+      "status": "EVASO",
+      "payment": "SALDATO",
+      "eta": "20 Feb 2025",
+      "files": 1,
+      "summary": "Ordine commercio per GIACOMO TOLETTA FEDE",
+      "notes": "Nessuna nota operativa registrata.",
+      "customerWindow": "20 Feb 2025",
+      "orderDate": "13 Feb 2025",
+      "estimatedDelivery": "20 Feb 2025",
+      "warehouseLinked": true,
+      "clientVisibility": "Il cliente puo' vedere stato lavorazione e avanzamento dell'ordine #64."
+    },
+    {
+      "id": 65,
+      "client": "DANIELE 22",
+      "category": "Sartoria",
+      "department": "Sartoria interna",
+      "route": "Interno",
+      "priority": "Standard",
+      "status": "EVASO",
+      "payment": "SALDATO",
+      "eta": "19 Mar 2025",
+      "files": 1,
+      "summary": "Ordine sartoria per DANIELE 22",
+      "notes": "Nessuna nota operativa registrata.",
+      "customerWindow": "19 Mar 2025",
+      "orderDate": "13 Feb 2025",
+      "estimatedDelivery": "19 Mar 2025",
+      "warehouseLinked": true,
+      "clientVisibility": "Il cliente puo' vedere stato lavorazione e avanzamento dell'ordine #65."
+    },
+    {
+      "id": 66,
+      "client": "FLAVIO ANGELUCCI",
+      "category": "Commercio",
+      "department": "Commercio",
+      "route": "Esterno",
+      "priority": "Standard",
+      "status": "EVASO",
+      "payment": "SALDATO",
+      "eta": "21 Mar 2025",
+      "files": 1,
+      "summary": "Ordine commercio per FLAVIO ANGELUCCI",
+      "notes": "Nessuna nota operativa registrata.",
+      "customerWindow": "21 Mar 2025",
+      "orderDate": "13 Mar 2025",
+      "estimatedDelivery": "21 Mar 2025",
+      "warehouseLinked": true,
+      "clientVisibility": "Il cliente puo' vedere stato lavorazione e avanzamento dell'ordine #66."
+    },
+    {
+      "id": 67,
+      "client": "MINUTOLO ROSA",
+      "category": "Sartoria",
+      "department": "Sartoria interna",
+      "route": "Interno",
+      "priority": "Standard",
+      "status": "EVASO",
+      "payment": "SALDATO",
+      "eta": "23 May 2025",
+      "files": 1,
+      "summary": "Ordine sartoria per MINUTOLO ROSA",
+      "notes": "Nessuna nota operativa registrata.",
+      "customerWindow": "23 May 2025",
+      "orderDate": "14 Mar 2025",
+      "estimatedDelivery": "23 May 2025",
+      "warehouseLinked": true,
+      "clientVisibility": "Il cliente puo' vedere stato lavorazione e avanzamento dell'ordine #67."
+    },
+    {
+      "id": 68,
+      "client": "SILVIA ANDELINI",
+      "category": "Sartoria",
+      "department": "Sartoria interna",
+      "route": "Interno",
+      "priority": "Standard",
+      "status": "ANNULLATO",
+      "payment": "NON PAGATO",
+      "eta": "14 May 2025",
+      "files": 0,
+      "summary": "Ordine sartoria per SILVIA ANDELINI",
+      "notes": "Nessuna nota operativa registrata.",
+      "customerWindow": "14 May 2025",
+      "orderDate": "14 May 2025",
+      "estimatedDelivery": "14 May 2025",
+      "warehouseLinked": true,
+      "clientVisibility": "Il cliente puo' vedere stato lavorazione e avanzamento dell'ordine #68."
+    },
+    {
+      "id": 69,
+      "client": "MONIA FURNARI",
+      "category": "Sartoria",
+      "department": "Sartoria interna",
+      "route": "Interno",
+      "priority": "Standard",
+      "status": "EVASO",
+      "payment": "SALDATO",
+      "eta": "03 Jun 2025",
+      "files": 1,
+      "summary": "Ordine sartoria per MONIA FURNARI",
+      "notes": "Nessuna nota operativa registrata.",
+      "customerWindow": "03 Jun 2025",
+      "orderDate": "14 May 2025",
+      "estimatedDelivery": "03 Jun 2025",
+      "warehouseLinked": true,
+      "clientVisibility": "Il cliente puo' vedere stato lavorazione e avanzamento dell'ordine #69."
+    },
+    {
+      "id": 70,
+      "client": "MONAMI",
+      "category": "Commercio",
+      "department": "Commercio",
+      "route": "Esterno",
+      "priority": "Standard",
+      "status": "EVASO",
+      "payment": "SALDATO",
+      "eta": "20 Feb 2025",
+      "files": 1,
+      "summary": "Ordine commercio per MONAMI",
+      "notes": "Nessuna nota operativa registrata.",
+      "customerWindow": "20 Feb 2025",
+      "orderDate": "14 Feb 2025",
+      "estimatedDelivery": "20 Feb 2025",
+      "warehouseLinked": true,
+      "clientVisibility": "Il cliente puo' vedere stato lavorazione e avanzamento dell'ordine #70."
+    },
+    {
+      "id": 71,
+      "client": "SOLE",
+      "category": "Sartoria",
+      "department": "Sartoria interna",
+      "route": "Interno",
+      "priority": "Standard",
+      "status": "EVASO",
+      "payment": "SALDATO",
+      "eta": "28 Feb 2025",
+      "files": 1,
+      "summary": "Ordine sartoria per SOLE",
+      "notes": "Nessuna nota operativa registrata.",
+      "customerWindow": "28 Feb 2025",
+      "orderDate": "14 Feb 2025",
+      "estimatedDelivery": "28 Feb 2025",
+      "warehouseLinked": true,
+      "clientVisibility": "Il cliente puo' vedere stato lavorazione e avanzamento dell'ordine #71."
+    },
+    {
+      "id": 72,
+      "client": "SANFILIPPO LORENZO",
+      "category": "Commercio",
+      "department": "Commercio",
+      "route": "Esterno",
+      "priority": "Standard",
+      "status": "EVASO",
+      "payment": "SALDATO",
+      "eta": "21 Feb 2025",
+      "files": 1,
+      "summary": "Ordine commercio per SANFILIPPO LORENZO",
+      "notes": "Nessuna nota operativa registrata.",
+      "customerWindow": "21 Feb 2025",
+      "orderDate": "14 Feb 2025",
+      "estimatedDelivery": "21 Feb 2025",
+      "warehouseLinked": true,
+      "clientVisibility": "Il cliente puo' vedere stato lavorazione e avanzamento dell'ordine #72."
+    },
+    {
+      "id": 73,
+      "client": "LA DOLCE ROMA",
+      "category": "Commercio",
+      "department": "Commercio",
+      "route": "Interno",
+      "priority": "Standard",
+      "status": "EVASO",
+      "payment": "SALDATO",
+      "eta": "28 Feb 2025",
+      "files": 1,
+      "summary": "Ordine commercio per LA DOLCE ROMA",
+      "notes": "Nessuna nota operativa registrata.",
+      "customerWindow": "28 Feb 2025",
+      "orderDate": "21 Feb 2025",
+      "estimatedDelivery": "28 Feb 2025",
+      "warehouseLinked": true,
+      "clientVisibility": "Il cliente puo' vedere stato lavorazione e avanzamento dell'ordine #73."
+    },
+    {
+      "id": 74,
+      "client": "I FOLLETTI DEL CUORE",
+      "category": "Commercio",
+      "department": "Commercio",
+      "route": "Interno",
+      "priority": "Standard",
+      "status": "EVASO",
+      "payment": "SALDATO",
+      "eta": "26 Feb 2025",
+      "files": 1,
+      "summary": "Ordine commercio per I FOLLETTI DEL CUORE",
+      "notes": "Nessuna nota operativa registrata.",
+      "customerWindow": "26 Feb 2025",
+      "orderDate": "21 Feb 2025",
+      "estimatedDelivery": "26 Feb 2025",
+      "warehouseLinked": true,
+      "clientVisibility": "Il cliente puo' vedere stato lavorazione e avanzamento dell'ordine #74."
+    },
+    {
+      "id": 75,
+      "client": "MINUTOLO ROSA",
+      "category": "Commercio",
+      "department": "Commercio",
+      "route": "Esterno",
+      "priority": "Standard",
+      "status": "EVASO",
+      "payment": "SALDATO",
+      "eta": "24 Feb 2025",
+      "files": 1,
+      "summary": "Ordine commercio per MINUTOLO ROSA",
+      "notes": "Nessuna nota operativa registrata.",
+      "customerWindow": "24 Feb 2025",
+      "orderDate": "17 Feb 2025",
+      "estimatedDelivery": "24 Feb 2025",
+      "warehouseLinked": true,
+      "clientVisibility": "Il cliente puo' vedere stato lavorazione e avanzamento dell'ordine #75."
+    },
+    {
+      "id": 76,
+      "client": "TEN MINUTES TO MOON",
+      "category": "Sartoria",
+      "department": "Sartoria interna",
+      "route": "Interno",
+      "priority": "Standard",
+      "status": "EVASO",
+      "payment": "SALDATO",
+      "eta": "21 Feb 2025",
+      "files": 1,
+      "summary": "Ordine sartoria per TEN MINUTES TO MOON",
+      "notes": "Nessuna nota operativa registrata.",
+      "customerWindow": "21 Feb 2025",
+      "orderDate": "17 Feb 2025",
+      "estimatedDelivery": "21 Feb 2025",
+      "warehouseLinked": true,
+      "clientVisibility": "Il cliente puo' vedere stato lavorazione e avanzamento dell'ordine #76."
+    },
+    {
+      "id": 77,
+      "client": "MALUMIERE",
+      "category": "Commercio",
+      "department": "Commercio",
+      "route": "Esterno",
+      "priority": "Standard",
+      "status": "EVASO",
+      "payment": "SALDATO",
+      "eta": "27 Feb 2025",
+      "files": 1,
+      "summary": "Ordine commercio per MALUMIERE",
+      "notes": "Nessuna nota operativa registrata.",
+      "customerWindow": "27 Feb 2025",
+      "orderDate": "17 Feb 2025",
+      "estimatedDelivery": "27 Feb 2025",
+      "warehouseLinked": true,
+      "clientVisibility": "Il cliente puo' vedere stato lavorazione e avanzamento dell'ordine #77."
+    },
+    {
+      "id": 78,
+      "client": "SANFILIPPO LORENZO",
+      "category": "Commercio",
+      "department": "Commercio",
+      "route": "Esterno",
+      "priority": "Standard",
+      "status": "EVASO",
+      "payment": "SALDATO",
+      "eta": "17 Mar 2025",
+      "files": 1,
+      "summary": "Ordine commercio per SANFILIPPO LORENZO",
+      "notes": "Nessuna nota operativa registrata.",
+      "customerWindow": "17 Mar 2025",
+      "orderDate": "17 Feb 2025",
+      "estimatedDelivery": "17 Mar 2025",
+      "warehouseLinked": true,
+      "clientVisibility": "Il cliente puo' vedere stato lavorazione e avanzamento dell'ordine #78."
+    },
+    {
+      "id": 79,
+      "client": "MEOLI NICO",
+      "category": "Commercio",
+      "department": "Commercio",
+      "route": "Interno",
+      "priority": "Standard",
+      "status": "EVASO",
+      "payment": "SALDATO",
+      "eta": "18 Feb 2025",
+      "files": 1,
+      "summary": "Ordine commercio per MEOLI NICO",
+      "notes": "Nessuna nota operativa registrata.",
+      "customerWindow": "18 Feb 2025",
+      "orderDate": "17 Feb 2025",
+      "estimatedDelivery": "18 Feb 2025",
+      "warehouseLinked": true,
+      "clientVisibility": "Il cliente puo' vedere stato lavorazione e avanzamento dell'ordine #79."
+    },
+    {
+      "id": 80,
+      "client": "CHRONOS",
+      "category": "Sartoria",
+      "department": "Sartoria interna",
+      "route": "Interno",
+      "priority": "Standard",
+      "status": "EVASO",
+      "payment": "ACCONTO",
+      "eta": "18 Feb 2025",
+      "files": 1,
+      "summary": "Ordine sartoria per CHRONOS",
+      "notes": "Nessuna nota operativa registrata.",
+      "customerWindow": "18 Feb 2025",
+      "orderDate": "18 Feb 2025",
+      "estimatedDelivery": "18 Feb 2025",
+      "warehouseLinked": true,
+      "clientVisibility": "Il cliente puo' vedere stato lavorazione e avanzamento dell'ordine #80."
+    }
+  ],
+  "departments": [
+    {
+      "id": "sartoria-interna",
+      "name": "Sartoria interna",
+      "activeOrders": 27,
+      "activeTasks": 54,
+      "load": 72,
+      "note": "0 ordini a rischio, 2 pagamenti aperti"
+    },
+    {
+      "id": "commercio",
+      "name": "Commercio",
+      "activeOrders": 52,
+      "activeTasks": 104,
+      "load": 92,
+      "note": "0 ordini a rischio, 1 pagamenti aperti"
+    },
+    {
+      "id": "sartoria-esterna",
+      "name": "Sartoria esterna",
+      "activeOrders": 1,
+      "activeTasks": 6,
+      "load": 46,
+      "note": "0 ordini a rischio, 0 pagamenti aperti"
+    }
+  ],
+  "alerts": [
+    {
+      "orderId": 1,
+      "title": "Ordine #1 - task da verificare",
+      "detail": "Controllare avanzamento e materiale per PAGLIONI."
+    },
+    {
+      "orderId": 2,
+      "title": "Ordine #2 - task da verificare",
+      "detail": "Controllare avanzamento e materiale per WILDESIDE."
+    },
+    {
+      "orderId": 3,
+      "title": "Ordine #3 - task da verificare",
+      "detail": "Controllare avanzamento e materiale per GLAMI FASHION."
+    },
+    {
+      "orderId": 4,
+      "title": "Ordine #4 - task da verificare",
+      "detail": "Controllare avanzamento e materiale per GLAMI FASHION."
+    },
+    {
+      "orderId": 5,
+      "title": "Ordine #5 - task da verificare",
+      "detail": "Controllare avanzamento e materiale per VALENTINI."
+    },
+    {
+      "orderId": 6,
+      "title": "Ordine #6 - task da verificare",
+      "detail": "Controllare avanzamento e materiale per ALCHIERI."
+    }
+  ],
+  "payments": [
+    {
+      "orderId": 1,
+      "client": "PAGLIONI",
+      "mode": "SALDATO",
+      "detail": "Pronto evasione",
+      "due": "20 Jan 2025",
+      "state": "Ok chiusura"
+    },
+    {
+      "orderId": 2,
+      "client": "WILDESIDE",
+      "mode": "SALDATO",
+      "detail": "Pronto evasione",
+      "due": "05 Feb 2025",
+      "state": "Ok chiusura"
+    },
+    {
+      "orderId": 3,
+      "client": "GLAMI FASHION",
+      "mode": "SALDATO",
+      "detail": "Pronto evasione",
+      "due": "10 Jan 2025",
+      "state": "Ok chiusura"
+    },
+    {
+      "orderId": 4,
+      "client": "GLAMI FASHION",
+      "mode": "SALDATO",
+      "detail": "Pronto evasione",
+      "due": "10 Jan 2025",
+      "state": "Ok chiusura"
+    },
+    {
+      "orderId": 5,
+      "client": "VALENTINI",
+      "mode": "SALDATO",
+      "detail": "Pronto evasione",
+      "due": "10 Jan 2025",
+      "state": "Ok chiusura"
+    },
+    {
+      "orderId": 6,
+      "client": "ALCHIERI",
+      "mode": "SALDATO",
+      "detail": "Pronto evasione",
+      "due": "17 Feb 2025",
+      "state": "Ok chiusura"
+    },
+    {
+      "orderId": 7,
+      "client": "TEN MINUTES TO MOON",
+      "mode": "SALDATO",
+      "detail": "Pronto evasione",
+      "due": "06 Feb 2025",
+      "state": "Ok chiusura"
+    },
+    {
+      "orderId": 8,
+      "client": "PAGLIONI",
+      "mode": "SALDATO",
+      "detail": "Pronto evasione",
+      "due": "13 Jan 2025",
+      "state": "Ok chiusura"
+    },
+    {
+      "orderId": 9,
+      "client": "PAGLIONI",
+      "mode": "SALDATO",
+      "detail": "Pronto evasione",
+      "due": "10 Jan 2025",
+      "state": "Ok chiusura"
+    },
+    {
+      "orderId": 10,
+      "client": "DM8 SRLS",
+      "mode": "SALDATO",
+      "detail": "Pronto evasione",
+      "due": "10 Jan 2025",
+      "state": "Ok chiusura"
+    },
+    {
+      "orderId": 11,
+      "client": "ZAMPATARO GABRIELE",
+      "mode": "SALDATO",
+      "detail": "Pronto evasione",
+      "due": "31 Jan 2025",
+      "state": "Ok chiusura"
+    },
+    {
+      "orderId": 12,
+      "client": "FLM FOOD SRLS",
+      "mode": "SALDATO",
+      "detail": "Pronto evasione",
+      "due": "04 Feb 2025",
+      "state": "Ok chiusura"
+    },
+    {
+      "orderId": 13,
+      "client": "EZA ATELIER SRLS",
+      "mode": "SALDATO",
+      "detail": "Pronto evasione",
+      "due": "28 Feb 2025",
+      "state": "Ok chiusura"
+    },
+    {
+      "orderId": 14,
+      "client": "PANTA REI",
+      "mode": "SALDATO",
+      "detail": "Pronto evasione",
+      "due": "15 Jan 2025",
+      "state": "Ok chiusura"
+    },
+    {
+      "orderId": 15,
+      "client": "COLLAMARINI FLAVIA",
+      "mode": "SALDATO",
+      "detail": "Pronto evasione",
+      "due": "11 Feb 2025",
+      "state": "Ok chiusura"
+    },
+    {
+      "orderId": 16,
+      "client": "DANIELE 22",
+      "mode": "SALDATO",
+      "detail": "Pronto evasione",
+      "due": "15 Jan 2025",
+      "state": "Ok chiusura"
+    },
+    {
+      "orderId": 17,
+      "client": "DANIELE 22",
+      "mode": "SALDATO",
+      "detail": "Pronto evasione",
+      "due": "18 Oct 2025",
+      "state": "Ok chiusura"
+    },
+    {
+      "orderId": 18,
+      "client": "DI CURZIO NICOLO",
+      "mode": "SALDATO",
+      "detail": "Pronto evasione",
+      "due": "20 Jan 2025",
+      "state": "Ok chiusura"
+    },
+    {
+      "orderId": 19,
+      "client": "PAGLIONI",
+      "mode": "SALDATO",
+      "detail": "Pronto evasione",
+      "due": "24 Jan 2025",
+      "state": "Ok chiusura"
+    },
+    {
+      "orderId": 20,
+      "client": "PAGLIONI",
+      "mode": "SALDATO",
+      "detail": "Pronto evasione",
+      "due": "24 Jan 2025",
+      "state": "Ok chiusura"
+    }
+  ],
+  "orderTasks": {
+    "1": [
+      {
+        "name": "Cartamodello ordine #1",
+        "phase": "Cartamodello",
+        "team": "Sartoria interna - Eleonora",
+        "hours": "3,0 h",
+        "time": "21 gen 08:00",
+        "state": "Completato",
+        "calendarDay": "Lunedi'"
+      },
+      {
+        "name": "Taglio ordine #1",
+        "phase": "Taglio",
+        "team": "Sartoria interna - Roberta",
+        "hours": "2,0 h",
+        "time": "22 gen 08:00",
+        "state": "In corso",
+        "calendarDay": "Martedi'"
+      },
+      {
+        "name": "Confezione ordine #1",
+        "phase": "Confezione",
+        "team": "Sartoria interna - Olga",
+        "hours": "8,0 h",
+        "time": "23 gen 08:00",
+        "state": "Da avviare",
+        "calendarDay": "Mercoledi'"
+      }
+    ],
+    "2": [
+      {
+        "name": "Cartamodello ordine #2",
+        "phase": "Cartamodello",
+        "team": "Sartoria interna - Eleonora",
+        "hours": "3,0 h",
+        "time": "21 gen 08:00",
+        "state": "Completato",
+        "calendarDay": "Lunedi'"
+      },
+      {
+        "name": "Taglio ordine #2",
+        "phase": "Taglio",
+        "team": "Sartoria interna - Roberta",
+        "hours": "2,0 h",
+        "time": "22 gen 08:00",
+        "state": "In corso",
+        "calendarDay": "Martedi'"
+      },
+      {
+        "name": "Confezione ordine #2",
+        "phase": "Confezione",
+        "team": "Sartoria interna - Olga",
+        "hours": "8,0 h",
+        "time": "23 gen 08:00",
+        "state": "Da avviare",
+        "calendarDay": "Mercoledi'"
+      }
+    ],
+    "3": [
+      {
+        "name": "Materiale ordine #3",
+        "phase": "Materiale",
+        "team": "Commercio - Team Magazzino",
+        "hours": "1,0 h",
+        "time": "21 gen 08:00",
+        "state": "Completato",
+        "calendarDay": "Lunedi'"
+      },
+      {
+        "name": "Controllo finale ordine #3",
+        "phase": "Controllo finale",
+        "team": "Commercio - Direzione",
+        "hours": "1,0 h",
+        "time": "22 gen 08:00",
+        "state": "In corso",
+        "calendarDay": "Martedi'"
+      }
+    ],
+    "4": [
+      {
+        "name": "Materiale ordine #4",
+        "phase": "Materiale",
+        "team": "Commercio - Team Magazzino",
+        "hours": "1,0 h",
+        "time": "21 gen 08:00",
+        "state": "Completato",
+        "calendarDay": "Lunedi'"
+      },
+      {
+        "name": "Controllo finale ordine #4",
+        "phase": "Controllo finale",
+        "team": "Commercio - Direzione",
+        "hours": "1,0 h",
+        "time": "22 gen 08:00",
+        "state": "In corso",
+        "calendarDay": "Martedi'"
+      }
+    ],
+    "5": [
+      {
+        "name": "Materiale ordine #5",
+        "phase": "Materiale",
+        "team": "Commercio - Team Magazzino",
+        "hours": "1,0 h",
+        "time": "21 gen 08:00",
+        "state": "Completato",
+        "calendarDay": "Lunedi'"
+      },
+      {
+        "name": "Controllo finale ordine #5",
+        "phase": "Controllo finale",
+        "team": "Commercio - Direzione",
+        "hours": "1,0 h",
+        "time": "22 gen 08:00",
+        "state": "In corso",
+        "calendarDay": "Martedi'"
+      }
+    ],
+    "6": [
+      {
+        "name": "Cartamodello ordine #6",
+        "phase": "Cartamodello",
+        "team": "Sartoria interna - Eleonora",
+        "hours": "3,0 h",
+        "time": "21 gen 08:00",
+        "state": "Completato",
+        "calendarDay": "Lunedi'"
+      },
+      {
+        "name": "Taglio ordine #6",
+        "phase": "Taglio",
+        "team": "Sartoria interna - Roberta",
+        "hours": "2,0 h",
+        "time": "22 gen 08:00",
+        "state": "In corso",
+        "calendarDay": "Martedi'"
+      },
+      {
+        "name": "Confezione ordine #6",
+        "phase": "Confezione",
+        "team": "Sartoria interna - Olga",
+        "hours": "8,0 h",
+        "time": "23 gen 08:00",
+        "state": "Da avviare",
+        "calendarDay": "Mercoledi'"
+      }
+    ],
+    "7": [
+      {
+        "name": "Cartamodello ordine #7",
+        "phase": "Cartamodello",
+        "team": "Sartoria interna - Eleonora",
+        "hours": "3,0 h",
+        "time": "21 gen 08:00",
+        "state": "Completato",
+        "calendarDay": "Lunedi'"
+      },
+      {
+        "name": "Taglio ordine #7",
+        "phase": "Taglio",
+        "team": "Sartoria interna - Roberta",
+        "hours": "2,0 h",
+        "time": "22 gen 08:00",
+        "state": "In corso",
+        "calendarDay": "Martedi'"
+      },
+      {
+        "name": "Confezione ordine #7",
+        "phase": "Confezione",
+        "team": "Sartoria interna - Olga",
+        "hours": "8,0 h",
+        "time": "23 gen 08:00",
+        "state": "Da avviare",
+        "calendarDay": "Mercoledi'"
+      }
+    ],
+    "8": [
+      {
+        "name": "Materiale ordine #8",
+        "phase": "Materiale",
+        "team": "Commercio - Team Magazzino",
+        "hours": "1,0 h",
+        "time": "21 gen 08:00",
+        "state": "Completato",
+        "calendarDay": "Lunedi'"
+      },
+      {
+        "name": "Controllo finale ordine #8",
+        "phase": "Controllo finale",
+        "team": "Commercio - Direzione",
+        "hours": "1,0 h",
+        "time": "22 gen 08:00",
+        "state": "In corso",
+        "calendarDay": "Martedi'"
+      }
+    ],
+    "9": [
+      {
+        "name": "Materiale ordine #9",
+        "phase": "Materiale",
+        "team": "Commercio - Team Magazzino",
+        "hours": "1,0 h",
+        "time": "21 gen 08:00",
+        "state": "Completato",
+        "calendarDay": "Lunedi'"
+      },
+      {
+        "name": "Controllo finale ordine #9",
+        "phase": "Controllo finale",
+        "team": "Commercio - Direzione",
+        "hours": "1,0 h",
+        "time": "22 gen 08:00",
+        "state": "In corso",
+        "calendarDay": "Martedi'"
+      }
+    ],
+    "10": [
+      {
+        "name": "Materiale ordine #10",
+        "phase": "Materiale",
+        "team": "Commercio - Team Magazzino",
+        "hours": "1,0 h",
+        "time": "21 gen 08:00",
+        "state": "Completato",
+        "calendarDay": "Lunedi'"
+      },
+      {
+        "name": "Controllo finale ordine #10",
+        "phase": "Controllo finale",
+        "team": "Commercio - Direzione",
+        "hours": "1,0 h",
+        "time": "22 gen 08:00",
+        "state": "In corso",
+        "calendarDay": "Martedi'"
+      }
+    ],
+    "11": [
+      {
+        "name": "Cartamodello ordine #11",
+        "phase": "Cartamodello",
+        "team": "Sartoria interna - Eleonora",
+        "hours": "3,0 h",
+        "time": "21 gen 08:00",
+        "state": "Completato",
+        "calendarDay": "Lunedi'"
+      },
+      {
+        "name": "Taglio ordine #11",
+        "phase": "Taglio",
+        "team": "Sartoria interna - Roberta",
+        "hours": "2,0 h",
+        "time": "22 gen 08:00",
+        "state": "In corso",
+        "calendarDay": "Martedi'"
+      },
+      {
+        "name": "Confezione ordine #11",
+        "phase": "Confezione",
+        "team": "Sartoria interna - Olga",
+        "hours": "8,0 h",
+        "time": "23 gen 08:00",
+        "state": "Da avviare",
+        "calendarDay": "Mercoledi'"
+      }
+    ],
+    "12": [
+      {
+        "name": "Materiale ordine #12",
+        "phase": "Materiale",
+        "team": "Commercio - Team Magazzino",
+        "hours": "1,0 h",
+        "time": "21 gen 08:00",
+        "state": "Completato",
+        "calendarDay": "Lunedi'"
+      },
+      {
+        "name": "Controllo finale ordine #12",
+        "phase": "Controllo finale",
+        "team": "Commercio - Direzione",
+        "hours": "1,0 h",
+        "time": "22 gen 08:00",
+        "state": "In corso",
+        "calendarDay": "Martedi'"
+      }
+    ],
+    "13": [
+      {
+        "name": "Cartamodello ordine #13",
+        "phase": "Cartamodello",
+        "team": "Sartoria interna - Eleonora",
+        "hours": "3,0 h",
+        "time": "21 gen 08:00",
+        "state": "Completato",
+        "calendarDay": "Lunedi'"
+      },
+      {
+        "name": "Taglio ordine #13",
+        "phase": "Taglio",
+        "team": "Sartoria interna - Roberta",
+        "hours": "2,0 h",
+        "time": "22 gen 08:00",
+        "state": "In corso",
+        "calendarDay": "Martedi'"
+      },
+      {
+        "name": "Confezione ordine #13",
+        "phase": "Confezione",
+        "team": "Sartoria interna - Olga",
+        "hours": "8,0 h",
+        "time": "23 gen 08:00",
+        "state": "Da avviare",
+        "calendarDay": "Mercoledi'"
+      }
+    ],
+    "14": [
+      {
+        "name": "Materiale ordine #14",
+        "phase": "Materiale",
+        "team": "Commercio - Team Magazzino",
+        "hours": "1,0 h",
+        "time": "21 gen 08:00",
+        "state": "Completato",
+        "calendarDay": "Lunedi'"
+      },
+      {
+        "name": "Controllo finale ordine #14",
+        "phase": "Controllo finale",
+        "team": "Commercio - Direzione",
+        "hours": "1,0 h",
+        "time": "22 gen 08:00",
+        "state": "In corso",
+        "calendarDay": "Martedi'"
+      }
+    ],
+    "15": [
+      {
+        "name": "Cartamodello ordine #15",
+        "phase": "Cartamodello",
+        "team": "Sartoria interna - Eleonora",
+        "hours": "3,0 h",
+        "time": "21 gen 08:00",
+        "state": "Completato",
+        "calendarDay": "Lunedi'"
+      },
+      {
+        "name": "Taglio ordine #15",
+        "phase": "Taglio",
+        "team": "Sartoria interna - Roberta",
+        "hours": "2,0 h",
+        "time": "22 gen 08:00",
+        "state": "In corso",
+        "calendarDay": "Martedi'"
+      },
+      {
+        "name": "Confezione ordine #15",
+        "phase": "Confezione",
+        "team": "Sartoria interna - Olga",
+        "hours": "8,0 h",
+        "time": "23 gen 08:00",
+        "state": "Da avviare",
+        "calendarDay": "Mercoledi'"
+      }
+    ],
+    "16": [
+      {
+        "name": "Materiale ordine #16",
+        "phase": "Materiale",
+        "team": "Commercio - Team Magazzino",
+        "hours": "1,0 h",
+        "time": "21 gen 08:00",
+        "state": "Completato",
+        "calendarDay": "Lunedi'"
+      },
+      {
+        "name": "Controllo finale ordine #16",
+        "phase": "Controllo finale",
+        "team": "Commercio - Direzione",
+        "hours": "1,0 h",
+        "time": "22 gen 08:00",
+        "state": "In corso",
+        "calendarDay": "Martedi'"
+      }
+    ],
+    "17": [
+      {
+        "name": "Materiale ordine #17",
+        "phase": "Materiale",
+        "team": "Commercio - Team Magazzino",
+        "hours": "1,0 h",
+        "time": "21 gen 08:00",
+        "state": "Completato",
+        "calendarDay": "Lunedi'"
+      },
+      {
+        "name": "Controllo finale ordine #17",
+        "phase": "Controllo finale",
+        "team": "Commercio - Direzione",
+        "hours": "1,0 h",
+        "time": "22 gen 08:00",
+        "state": "In corso",
+        "calendarDay": "Martedi'"
+      }
+    ],
+    "18": [
+      {
+        "name": "Materiale ordine #18",
+        "phase": "Materiale",
+        "team": "Commercio - Team Magazzino",
+        "hours": "1,0 h",
+        "time": "21 gen 08:00",
+        "state": "Completato",
+        "calendarDay": "Lunedi'"
+      },
+      {
+        "name": "Controllo finale ordine #18",
+        "phase": "Controllo finale",
+        "team": "Commercio - Direzione",
+        "hours": "1,0 h",
+        "time": "22 gen 08:00",
+        "state": "In corso",
+        "calendarDay": "Martedi'"
+      }
+    ],
+    "19": [
+      {
+        "name": "Materiale ordine #19",
+        "phase": "Materiale",
+        "team": "Commercio - Team Magazzino",
+        "hours": "1,0 h",
+        "time": "21 gen 08:00",
+        "state": "Completato",
+        "calendarDay": "Lunedi'"
+      },
+      {
+        "name": "Controllo finale ordine #19",
+        "phase": "Controllo finale",
+        "team": "Commercio - Direzione",
+        "hours": "1,0 h",
+        "time": "22 gen 08:00",
+        "state": "In corso",
+        "calendarDay": "Martedi'"
+      }
+    ],
+    "20": [
+      {
+        "name": "Materiale ordine #20",
+        "phase": "Materiale",
+        "team": "Commercio - Team Magazzino",
+        "hours": "1,0 h",
+        "time": "21 gen 08:00",
+        "state": "Completato",
+        "calendarDay": "Lunedi'"
+      },
+      {
+        "name": "Controllo finale ordine #20",
+        "phase": "Controllo finale",
+        "team": "Commercio - Direzione",
+        "hours": "1,0 h",
+        "time": "22 gen 08:00",
+        "state": "In corso",
+        "calendarDay": "Martedi'"
+      }
+    ],
+    "21": [
+      {
+        "name": "Cartamodello ordine #21",
+        "phase": "Cartamodello",
+        "team": "Sartoria interna - Eleonora",
+        "hours": "3,0 h",
+        "time": "21 gen 08:00",
+        "state": "Completato",
+        "calendarDay": "Lunedi'"
+      },
+      {
+        "name": "Taglio ordine #21",
+        "phase": "Taglio",
+        "team": "Sartoria interna - Roberta",
+        "hours": "2,0 h",
+        "time": "22 gen 08:00",
+        "state": "In corso",
+        "calendarDay": "Martedi'"
+      },
+      {
+        "name": "Confezione ordine #21",
+        "phase": "Confezione",
+        "team": "Sartoria interna - Olga",
+        "hours": "8,0 h",
+        "time": "23 gen 08:00",
+        "state": "Da avviare",
+        "calendarDay": "Mercoledi'"
+      }
+    ],
+    "22": [
+      {
+        "name": "Materiale ordine #22",
+        "phase": "Materiale",
+        "team": "Commercio - Team Magazzino",
+        "hours": "1,0 h",
+        "time": "21 gen 08:00",
+        "state": "Completato",
+        "calendarDay": "Lunedi'"
+      },
+      {
+        "name": "Controllo finale ordine #22",
+        "phase": "Controllo finale",
+        "team": "Commercio - Direzione",
+        "hours": "1,0 h",
+        "time": "22 gen 08:00",
+        "state": "In corso",
+        "calendarDay": "Martedi'"
+      }
+    ],
+    "23": [
+      {
+        "name": "Cartamodello ordine #23",
+        "phase": "Cartamodello",
+        "team": "Sartoria interna - Eleonora",
+        "hours": "3,0 h",
+        "time": "21 gen 08:00",
+        "state": "Completato",
+        "calendarDay": "Lunedi'"
+      },
+      {
+        "name": "Taglio ordine #23",
+        "phase": "Taglio",
+        "team": "Sartoria interna - Roberta",
+        "hours": "2,0 h",
+        "time": "22 gen 08:00",
+        "state": "In corso",
+        "calendarDay": "Martedi'"
+      },
+      {
+        "name": "Confezione ordine #23",
+        "phase": "Confezione",
+        "team": "Sartoria interna - Olga",
+        "hours": "8,0 h",
+        "time": "23 gen 08:00",
+        "state": "Da avviare",
+        "calendarDay": "Mercoledi'"
+      }
+    ],
+    "24": [
+      {
+        "name": "Materiale ordine #24",
+        "phase": "Materiale",
+        "team": "Commercio - Team Magazzino",
+        "hours": "1,0 h",
+        "time": "21 gen 08:00",
+        "state": "Completato",
+        "calendarDay": "Lunedi'"
+      },
+      {
+        "name": "Controllo finale ordine #24",
+        "phase": "Controllo finale",
+        "team": "Commercio - Direzione",
+        "hours": "1,0 h",
+        "time": "22 gen 08:00",
+        "state": "In corso",
+        "calendarDay": "Martedi'"
+      }
+    ],
+    "25": [
+      {
+        "name": "Materiale ordine #25",
+        "phase": "Materiale",
+        "team": "Commercio - Team Magazzino",
+        "hours": "1,0 h",
+        "time": "21 gen 08:00",
+        "state": "Completato",
+        "calendarDay": "Lunedi'"
+      },
+      {
+        "name": "Controllo finale ordine #25",
+        "phase": "Controllo finale",
+        "team": "Commercio - Direzione",
+        "hours": "1,0 h",
+        "time": "22 gen 08:00",
+        "state": "In corso",
+        "calendarDay": "Martedi'"
+      }
+    ],
+    "26": [
+      {
+        "name": "Materiale ordine #26",
+        "phase": "Materiale",
+        "team": "Commercio - Team Magazzino",
+        "hours": "1,0 h",
+        "time": "21 gen 08:00",
+        "state": "Completato",
+        "calendarDay": "Lunedi'"
+      },
+      {
+        "name": "Controllo finale ordine #26",
+        "phase": "Controllo finale",
+        "team": "Commercio - Direzione",
+        "hours": "1,0 h",
+        "time": "22 gen 08:00",
+        "state": "In corso",
+        "calendarDay": "Martedi'"
+      }
+    ],
+    "27": [
+      {
+        "name": "Materiale ordine #27",
+        "phase": "Materiale",
+        "team": "Commercio - Team Magazzino",
+        "hours": "1,0 h",
+        "time": "21 gen 08:00",
+        "state": "Completato",
+        "calendarDay": "Lunedi'"
+      },
+      {
+        "name": "Controllo finale ordine #27",
+        "phase": "Controllo finale",
+        "team": "Commercio - Direzione",
+        "hours": "1,0 h",
+        "time": "22 gen 08:00",
+        "state": "In corso",
+        "calendarDay": "Martedi'"
+      }
+    ],
+    "28": [
+      {
+        "name": "Materiale ordine #28",
+        "phase": "Materiale",
+        "team": "Commercio - Team Magazzino",
+        "hours": "1,0 h",
+        "time": "21 gen 08:00",
+        "state": "Completato",
+        "calendarDay": "Lunedi'"
+      },
+      {
+        "name": "Controllo finale ordine #28",
+        "phase": "Controllo finale",
+        "team": "Commercio - Direzione",
+        "hours": "1,0 h",
+        "time": "22 gen 08:00",
+        "state": "In corso",
+        "calendarDay": "Martedi'"
+      }
+    ],
+    "29": [
+      {
+        "name": "Materiale ordine #29",
+        "phase": "Materiale",
+        "team": "Commercio - Team Magazzino",
+        "hours": "1,0 h",
+        "time": "21 gen 08:00",
+        "state": "Completato",
+        "calendarDay": "Lunedi'"
+      },
+      {
+        "name": "Controllo finale ordine #29",
+        "phase": "Controllo finale",
+        "team": "Commercio - Direzione",
+        "hours": "1,0 h",
+        "time": "22 gen 08:00",
+        "state": "In corso",
+        "calendarDay": "Martedi'"
+      }
+    ],
+    "30": [
+      {
+        "name": "Cartamodello ordine #30",
+        "phase": "Cartamodello",
+        "team": "Sartoria interna - Eleonora",
+        "hours": "3,0 h",
+        "time": "21 gen 08:00",
+        "state": "Completato",
+        "calendarDay": "Lunedi'"
+      },
+      {
+        "name": "Taglio ordine #30",
+        "phase": "Taglio",
+        "team": "Sartoria interna - Roberta",
+        "hours": "2,0 h",
+        "time": "22 gen 08:00",
+        "state": "In corso",
+        "calendarDay": "Martedi'"
+      },
+      {
+        "name": "Confezione ordine #30",
+        "phase": "Confezione",
+        "team": "Sartoria interna - Olga",
+        "hours": "8,0 h",
+        "time": "23 gen 08:00",
+        "state": "Da avviare",
+        "calendarDay": "Mercoledi'"
+      }
+    ],
+    "31": [
+      {
+        "name": "Cartamodello ordine #31",
+        "phase": "Cartamodello",
+        "team": "Sartoria interna - Eleonora",
+        "hours": "3,0 h",
+        "time": "21 gen 08:00",
+        "state": "Completato",
+        "calendarDay": "Lunedi'"
+      },
+      {
+        "name": "Taglio ordine #31",
+        "phase": "Taglio",
+        "team": "Sartoria interna - Roberta",
+        "hours": "2,0 h",
+        "time": "22 gen 08:00",
+        "state": "In corso",
+        "calendarDay": "Martedi'"
+      },
+      {
+        "name": "Confezione ordine #31",
+        "phase": "Confezione",
+        "team": "Sartoria interna - Olga",
+        "hours": "8,0 h",
+        "time": "23 gen 08:00",
+        "state": "Da avviare",
+        "calendarDay": "Mercoledi'"
+      }
+    ],
+    "32": [
+      {
+        "name": "Cartamodello ordine #32",
+        "phase": "Cartamodello",
+        "team": "Sartoria interna - Eleonora",
+        "hours": "3,0 h",
+        "time": "21 gen 08:00",
+        "state": "Completato",
+        "calendarDay": "Lunedi'"
+      },
+      {
+        "name": "Taglio ordine #32",
+        "phase": "Taglio",
+        "team": "Sartoria interna - Roberta",
+        "hours": "2,0 h",
+        "time": "22 gen 08:00",
+        "state": "In corso",
+        "calendarDay": "Martedi'"
+      },
+      {
+        "name": "Confezione ordine #32",
+        "phase": "Confezione",
+        "team": "Sartoria interna - Olga",
+        "hours": "8,0 h",
+        "time": "23 gen 08:00",
+        "state": "Da avviare",
+        "calendarDay": "Mercoledi'"
+      }
+    ],
+    "33": [
+      {
+        "name": "Cartamodello ordine #33",
+        "phase": "Cartamodello",
+        "team": "Sartoria interna - Eleonora",
+        "hours": "3,0 h",
+        "time": "21 gen 08:00",
+        "state": "Completato",
+        "calendarDay": "Lunedi'"
+      },
+      {
+        "name": "Taglio ordine #33",
+        "phase": "Taglio",
+        "team": "Sartoria interna - Roberta",
+        "hours": "2,0 h",
+        "time": "22 gen 08:00",
+        "state": "In corso",
+        "calendarDay": "Martedi'"
+      },
+      {
+        "name": "Confezione ordine #33",
+        "phase": "Confezione",
+        "team": "Sartoria interna - Olga",
+        "hours": "8,0 h",
+        "time": "23 gen 08:00",
+        "state": "Da avviare",
+        "calendarDay": "Mercoledi'"
+      }
+    ],
+    "34": [
+      {
+        "name": "Materiale ordine #34",
+        "phase": "Materiale",
+        "team": "Commercio - Team Magazzino",
+        "hours": "1,0 h",
+        "time": "21 gen 08:00",
+        "state": "Completato",
+        "calendarDay": "Lunedi'"
+      },
+      {
+        "name": "Controllo finale ordine #34",
+        "phase": "Controllo finale",
+        "team": "Commercio - Direzione",
+        "hours": "1,0 h",
+        "time": "22 gen 08:00",
+        "state": "In corso",
+        "calendarDay": "Martedi'"
+      }
+    ],
+    "35": [
+      {
+        "name": "Materiale ordine #35",
+        "phase": "Materiale",
+        "team": "Commercio - Team Magazzino",
+        "hours": "1,0 h",
+        "time": "21 gen 08:00",
+        "state": "Completato",
+        "calendarDay": "Lunedi'"
+      },
+      {
+        "name": "Controllo finale ordine #35",
+        "phase": "Controllo finale",
+        "team": "Commercio - Direzione",
+        "hours": "1,0 h",
+        "time": "22 gen 08:00",
+        "state": "In corso",
+        "calendarDay": "Martedi'"
+      }
+    ],
+    "36": [
+      {
+        "name": "Cartamodello ordine #36",
+        "phase": "Cartamodello",
+        "team": "Sartoria interna - Eleonora",
+        "hours": "3,0 h",
+        "time": "21 gen 08:00",
+        "state": "Completato",
+        "calendarDay": "Lunedi'"
+      },
+      {
+        "name": "Taglio ordine #36",
+        "phase": "Taglio",
+        "team": "Sartoria interna - Roberta",
+        "hours": "2,0 h",
+        "time": "22 gen 08:00",
+        "state": "In corso",
+        "calendarDay": "Martedi'"
+      },
+      {
+        "name": "Confezione ordine #36",
+        "phase": "Confezione",
+        "team": "Sartoria interna - Olga",
+        "hours": "8,0 h",
+        "time": "23 gen 08:00",
+        "state": "Da avviare",
+        "calendarDay": "Mercoledi'"
+      }
+    ],
+    "37": [
+      {
+        "name": "Materiale ordine #37",
+        "phase": "Materiale",
+        "team": "Commercio - Team Magazzino",
+        "hours": "1,0 h",
+        "time": "21 gen 08:00",
+        "state": "Completato",
+        "calendarDay": "Lunedi'"
+      },
+      {
+        "name": "Controllo finale ordine #37",
+        "phase": "Controllo finale",
+        "team": "Commercio - Direzione",
+        "hours": "1,0 h",
+        "time": "22 gen 08:00",
+        "state": "In corso",
+        "calendarDay": "Martedi'"
+      }
+    ],
+    "38": [
+      {
+        "name": "Materiale ordine #38",
+        "phase": "Materiale",
+        "team": "Commercio - Team Magazzino",
+        "hours": "1,0 h",
+        "time": "21 gen 08:00",
+        "state": "Completato",
+        "calendarDay": "Lunedi'"
+      },
+      {
+        "name": "Controllo finale ordine #38",
+        "phase": "Controllo finale",
+        "team": "Commercio - Direzione",
+        "hours": "1,0 h",
+        "time": "22 gen 08:00",
+        "state": "In corso",
+        "calendarDay": "Martedi'"
+      }
+    ],
+    "39": [
+      {
+        "name": "Materiale ordine #39",
+        "phase": "Materiale",
+        "team": "Commercio - Team Magazzino",
+        "hours": "1,0 h",
+        "time": "21 gen 08:00",
+        "state": "Completato",
+        "calendarDay": "Lunedi'"
+      },
+      {
+        "name": "Controllo finale ordine #39",
+        "phase": "Controllo finale",
+        "team": "Commercio - Direzione",
+        "hours": "1,0 h",
+        "time": "22 gen 08:00",
+        "state": "In corso",
+        "calendarDay": "Martedi'"
+      }
+    ],
+    "40": [
+      {
+        "name": "Materiale ordine #40",
+        "phase": "Materiale",
+        "team": "Commercio - Team Magazzino",
+        "hours": "1,0 h",
+        "time": "21 gen 08:00",
+        "state": "Completato",
+        "calendarDay": "Lunedi'"
+      },
+      {
+        "name": "Controllo finale ordine #40",
+        "phase": "Controllo finale",
+        "team": "Commercio - Direzione",
+        "hours": "1,0 h",
+        "time": "22 gen 08:00",
+        "state": "In corso",
+        "calendarDay": "Martedi'"
+      }
+    ]
+  },
+  "orderTimeline": {
+    "1": [
+      {
+        "date": "20 gen",
+        "title": "Ordine creato",
+        "detail": "Ordine #1 confermato e inviato in lavorazione."
+      },
+      {
+        "date": "21 gen",
+        "title": "Cartamodello pianificato",
+        "detail": "Sartoria interna - Eleonora \u00b7 Completato"
+      },
+      {
+        "date": "22 gen",
+        "title": "Taglio pianificato",
+        "detail": "Sartoria interna - Roberta \u00b7 In corso"
+      },
+      {
+        "date": "23 gen",
+        "title": "Confezione pianificato",
+        "detail": "Sartoria interna - Olga \u00b7 Da avviare"
+      }
+    ],
+    "2": [
+      {
+        "date": "20 gen",
+        "title": "Ordine creato",
+        "detail": "Ordine #2 confermato e inviato in lavorazione."
+      },
+      {
+        "date": "21 gen",
+        "title": "Cartamodello pianificato",
+        "detail": "Sartoria interna - Eleonora \u00b7 Completato"
+      },
+      {
+        "date": "22 gen",
+        "title": "Taglio pianificato",
+        "detail": "Sartoria interna - Roberta \u00b7 In corso"
+      },
+      {
+        "date": "23 gen",
+        "title": "Confezione pianificato",
+        "detail": "Sartoria interna - Olga \u00b7 Da avviare"
+      }
+    ],
+    "3": [
+      {
+        "date": "20 gen",
+        "title": "Ordine creato",
+        "detail": "Ordine #3 confermato e inviato in lavorazione."
+      },
+      {
+        "date": "21 gen",
+        "title": "Materiale pianificato",
+        "detail": "Commercio - Team Magazzino \u00b7 Completato"
+      },
+      {
+        "date": "22 gen",
+        "title": "Controllo finale pianificato",
+        "detail": "Commercio - Direzione \u00b7 In corso"
+      }
+    ],
+    "4": [
+      {
+        "date": "20 gen",
+        "title": "Ordine creato",
+        "detail": "Ordine #4 confermato e inviato in lavorazione."
+      },
+      {
+        "date": "21 gen",
+        "title": "Materiale pianificato",
+        "detail": "Commercio - Team Magazzino \u00b7 Completato"
+      },
+      {
+        "date": "22 gen",
+        "title": "Controllo finale pianificato",
+        "detail": "Commercio - Direzione \u00b7 In corso"
+      }
+    ],
+    "5": [
+      {
+        "date": "20 gen",
+        "title": "Ordine creato",
+        "detail": "Ordine #5 confermato e inviato in lavorazione."
+      },
+      {
+        "date": "21 gen",
+        "title": "Materiale pianificato",
+        "detail": "Commercio - Team Magazzino \u00b7 Completato"
+      },
+      {
+        "date": "22 gen",
+        "title": "Controllo finale pianificato",
+        "detail": "Commercio - Direzione \u00b7 In corso"
+      }
+    ],
+    "6": [
+      {
+        "date": "20 gen",
+        "title": "Ordine creato",
+        "detail": "Ordine #6 confermato e inviato in lavorazione."
+      },
+      {
+        "date": "21 gen",
+        "title": "Cartamodello pianificato",
+        "detail": "Sartoria interna - Eleonora \u00b7 Completato"
+      },
+      {
+        "date": "22 gen",
+        "title": "Taglio pianificato",
+        "detail": "Sartoria interna - Roberta \u00b7 In corso"
+      },
+      {
+        "date": "23 gen",
+        "title": "Confezione pianificato",
+        "detail": "Sartoria interna - Olga \u00b7 Da avviare"
+      }
+    ],
+    "7": [
+      {
+        "date": "20 gen",
+        "title": "Ordine creato",
+        "detail": "Ordine #7 confermato e inviato in lavorazione."
+      },
+      {
+        "date": "21 gen",
+        "title": "Cartamodello pianificato",
+        "detail": "Sartoria interna - Eleonora \u00b7 Completato"
+      },
+      {
+        "date": "22 gen",
+        "title": "Taglio pianificato",
+        "detail": "Sartoria interna - Roberta \u00b7 In corso"
+      },
+      {
+        "date": "23 gen",
+        "title": "Confezione pianificato",
+        "detail": "Sartoria interna - Olga \u00b7 Da avviare"
+      }
+    ],
+    "8": [
+      {
+        "date": "20 gen",
+        "title": "Ordine creato",
+        "detail": "Ordine #8 confermato e inviato in lavorazione."
+      },
+      {
+        "date": "21 gen",
+        "title": "Materiale pianificato",
+        "detail": "Commercio - Team Magazzino \u00b7 Completato"
+      },
+      {
+        "date": "22 gen",
+        "title": "Controllo finale pianificato",
+        "detail": "Commercio - Direzione \u00b7 In corso"
+      }
+    ],
+    "9": [
+      {
+        "date": "20 gen",
+        "title": "Ordine creato",
+        "detail": "Ordine #9 confermato e inviato in lavorazione."
+      },
+      {
+        "date": "21 gen",
+        "title": "Materiale pianificato",
+        "detail": "Commercio - Team Magazzino \u00b7 Completato"
+      },
+      {
+        "date": "22 gen",
+        "title": "Controllo finale pianificato",
+        "detail": "Commercio - Direzione \u00b7 In corso"
+      }
+    ],
+    "10": [
+      {
+        "date": "20 gen",
+        "title": "Ordine creato",
+        "detail": "Ordine #10 confermato e inviato in lavorazione."
+      },
+      {
+        "date": "21 gen",
+        "title": "Materiale pianificato",
+        "detail": "Commercio - Team Magazzino \u00b7 Completato"
+      },
+      {
+        "date": "22 gen",
+        "title": "Controllo finale pianificato",
+        "detail": "Commercio - Direzione \u00b7 In corso"
+      }
+    ],
+    "11": [
+      {
+        "date": "20 gen",
+        "title": "Ordine creato",
+        "detail": "Ordine #11 confermato e inviato in lavorazione."
+      },
+      {
+        "date": "21 gen",
+        "title": "Cartamodello pianificato",
+        "detail": "Sartoria interna - Eleonora \u00b7 Completato"
+      },
+      {
+        "date": "22 gen",
+        "title": "Taglio pianificato",
+        "detail": "Sartoria interna - Roberta \u00b7 In corso"
+      },
+      {
+        "date": "23 gen",
+        "title": "Confezione pianificato",
+        "detail": "Sartoria interna - Olga \u00b7 Da avviare"
+      }
+    ],
+    "12": [
+      {
+        "date": "20 gen",
+        "title": "Ordine creato",
+        "detail": "Ordine #12 confermato e inviato in lavorazione."
+      },
+      {
+        "date": "21 gen",
+        "title": "Materiale pianificato",
+        "detail": "Commercio - Team Magazzino \u00b7 Completato"
+      },
+      {
+        "date": "22 gen",
+        "title": "Controllo finale pianificato",
+        "detail": "Commercio - Direzione \u00b7 In corso"
+      }
+    ],
+    "13": [
+      {
+        "date": "20 gen",
+        "title": "Ordine creato",
+        "detail": "Ordine #13 confermato e inviato in lavorazione."
+      },
+      {
+        "date": "21 gen",
+        "title": "Cartamodello pianificato",
+        "detail": "Sartoria interna - Eleonora \u00b7 Completato"
+      },
+      {
+        "date": "22 gen",
+        "title": "Taglio pianificato",
+        "detail": "Sartoria interna - Roberta \u00b7 In corso"
+      },
+      {
+        "date": "23 gen",
+        "title": "Confezione pianificato",
+        "detail": "Sartoria interna - Olga \u00b7 Da avviare"
+      }
+    ],
+    "14": [
+      {
+        "date": "20 gen",
+        "title": "Ordine creato",
+        "detail": "Ordine #14 confermato e inviato in lavorazione."
+      },
+      {
+        "date": "21 gen",
+        "title": "Materiale pianificato",
+        "detail": "Commercio - Team Magazzino \u00b7 Completato"
+      },
+      {
+        "date": "22 gen",
+        "title": "Controllo finale pianificato",
+        "detail": "Commercio - Direzione \u00b7 In corso"
+      }
+    ],
+    "15": [
+      {
+        "date": "20 gen",
+        "title": "Ordine creato",
+        "detail": "Ordine #15 confermato e inviato in lavorazione."
+      },
+      {
+        "date": "21 gen",
+        "title": "Cartamodello pianificato",
+        "detail": "Sartoria interna - Eleonora \u00b7 Completato"
+      },
+      {
+        "date": "22 gen",
+        "title": "Taglio pianificato",
+        "detail": "Sartoria interna - Roberta \u00b7 In corso"
+      },
+      {
+        "date": "23 gen",
+        "title": "Confezione pianificato",
+        "detail": "Sartoria interna - Olga \u00b7 Da avviare"
+      }
+    ],
+    "16": [
+      {
+        "date": "20 gen",
+        "title": "Ordine creato",
+        "detail": "Ordine #16 confermato e inviato in lavorazione."
+      },
+      {
+        "date": "21 gen",
+        "title": "Materiale pianificato",
+        "detail": "Commercio - Team Magazzino \u00b7 Completato"
+      },
+      {
+        "date": "22 gen",
+        "title": "Controllo finale pianificato",
+        "detail": "Commercio - Direzione \u00b7 In corso"
+      }
+    ],
+    "17": [
+      {
+        "date": "20 gen",
+        "title": "Ordine creato",
+        "detail": "Ordine #17 confermato e inviato in lavorazione."
+      },
+      {
+        "date": "21 gen",
+        "title": "Materiale pianificato",
+        "detail": "Commercio - Team Magazzino \u00b7 Completato"
+      },
+      {
+        "date": "22 gen",
+        "title": "Controllo finale pianificato",
+        "detail": "Commercio - Direzione \u00b7 In corso"
+      }
+    ],
+    "18": [
+      {
+        "date": "20 gen",
+        "title": "Ordine creato",
+        "detail": "Ordine #18 confermato e inviato in lavorazione."
+      },
+      {
+        "date": "21 gen",
+        "title": "Materiale pianificato",
+        "detail": "Commercio - Team Magazzino \u00b7 Completato"
+      },
+      {
+        "date": "22 gen",
+        "title": "Controllo finale pianificato",
+        "detail": "Commercio - Direzione \u00b7 In corso"
+      }
+    ],
+    "19": [
+      {
+        "date": "20 gen",
+        "title": "Ordine creato",
+        "detail": "Ordine #19 confermato e inviato in lavorazione."
+      },
+      {
+        "date": "21 gen",
+        "title": "Materiale pianificato",
+        "detail": "Commercio - Team Magazzino \u00b7 Completato"
+      },
+      {
+        "date": "22 gen",
+        "title": "Controllo finale pianificato",
+        "detail": "Commercio - Direzione \u00b7 In corso"
+      }
+    ],
+    "20": [
+      {
+        "date": "20 gen",
+        "title": "Ordine creato",
+        "detail": "Ordine #20 confermato e inviato in lavorazione."
+      },
+      {
+        "date": "21 gen",
+        "title": "Materiale pianificato",
+        "detail": "Commercio - Team Magazzino \u00b7 Completato"
+      },
+      {
+        "date": "22 gen",
+        "title": "Controllo finale pianificato",
+        "detail": "Commercio - Direzione \u00b7 In corso"
+      }
+    ],
+    "21": [
+      {
+        "date": "20 gen",
+        "title": "Ordine creato",
+        "detail": "Ordine #21 confermato e inviato in lavorazione."
+      },
+      {
+        "date": "21 gen",
+        "title": "Cartamodello pianificato",
+        "detail": "Sartoria interna - Eleonora \u00b7 Completato"
+      },
+      {
+        "date": "22 gen",
+        "title": "Taglio pianificato",
+        "detail": "Sartoria interna - Roberta \u00b7 In corso"
+      },
+      {
+        "date": "23 gen",
+        "title": "Confezione pianificato",
+        "detail": "Sartoria interna - Olga \u00b7 Da avviare"
+      }
+    ],
+    "22": [
+      {
+        "date": "20 gen",
+        "title": "Ordine creato",
+        "detail": "Ordine #22 confermato e inviato in lavorazione."
+      },
+      {
+        "date": "21 gen",
+        "title": "Materiale pianificato",
+        "detail": "Commercio - Team Magazzino \u00b7 Completato"
+      },
+      {
+        "date": "22 gen",
+        "title": "Controllo finale pianificato",
+        "detail": "Commercio - Direzione \u00b7 In corso"
+      }
+    ],
+    "23": [
+      {
+        "date": "20 gen",
+        "title": "Ordine creato",
+        "detail": "Ordine #23 confermato e inviato in lavorazione."
+      },
+      {
+        "date": "21 gen",
+        "title": "Cartamodello pianificato",
+        "detail": "Sartoria interna - Eleonora \u00b7 Completato"
+      },
+      {
+        "date": "22 gen",
+        "title": "Taglio pianificato",
+        "detail": "Sartoria interna - Roberta \u00b7 In corso"
+      },
+      {
+        "date": "23 gen",
+        "title": "Confezione pianificato",
+        "detail": "Sartoria interna - Olga \u00b7 Da avviare"
+      }
+    ],
+    "24": [
+      {
+        "date": "20 gen",
+        "title": "Ordine creato",
+        "detail": "Ordine #24 confermato e inviato in lavorazione."
+      },
+      {
+        "date": "21 gen",
+        "title": "Materiale pianificato",
+        "detail": "Commercio - Team Magazzino \u00b7 Completato"
+      },
+      {
+        "date": "22 gen",
+        "title": "Controllo finale pianificato",
+        "detail": "Commercio - Direzione \u00b7 In corso"
+      }
+    ],
+    "25": [
+      {
+        "date": "20 gen",
+        "title": "Ordine creato",
+        "detail": "Ordine #25 confermato e inviato in lavorazione."
+      },
+      {
+        "date": "21 gen",
+        "title": "Materiale pianificato",
+        "detail": "Commercio - Team Magazzino \u00b7 Completato"
+      },
+      {
+        "date": "22 gen",
+        "title": "Controllo finale pianificato",
+        "detail": "Commercio - Direzione \u00b7 In corso"
+      }
+    ],
+    "26": [
+      {
+        "date": "20 gen",
+        "title": "Ordine creato",
+        "detail": "Ordine #26 confermato e inviato in lavorazione."
+      },
+      {
+        "date": "21 gen",
+        "title": "Materiale pianificato",
+        "detail": "Commercio - Team Magazzino \u00b7 Completato"
+      },
+      {
+        "date": "22 gen",
+        "title": "Controllo finale pianificato",
+        "detail": "Commercio - Direzione \u00b7 In corso"
+      }
+    ],
+    "27": [
+      {
+        "date": "20 gen",
+        "title": "Ordine creato",
+        "detail": "Ordine #27 confermato e inviato in lavorazione."
+      },
+      {
+        "date": "21 gen",
+        "title": "Materiale pianificato",
+        "detail": "Commercio - Team Magazzino \u00b7 Completato"
+      },
+      {
+        "date": "22 gen",
+        "title": "Controllo finale pianificato",
+        "detail": "Commercio - Direzione \u00b7 In corso"
+      }
+    ],
+    "28": [
+      {
+        "date": "20 gen",
+        "title": "Ordine creato",
+        "detail": "Ordine #28 confermato e inviato in lavorazione."
+      },
+      {
+        "date": "21 gen",
+        "title": "Materiale pianificato",
+        "detail": "Commercio - Team Magazzino \u00b7 Completato"
+      },
+      {
+        "date": "22 gen",
+        "title": "Controllo finale pianificato",
+        "detail": "Commercio - Direzione \u00b7 In corso"
+      }
+    ],
+    "29": [
+      {
+        "date": "20 gen",
+        "title": "Ordine creato",
+        "detail": "Ordine #29 confermato e inviato in lavorazione."
+      },
+      {
+        "date": "21 gen",
+        "title": "Materiale pianificato",
+        "detail": "Commercio - Team Magazzino \u00b7 Completato"
+      },
+      {
+        "date": "22 gen",
+        "title": "Controllo finale pianificato",
+        "detail": "Commercio - Direzione \u00b7 In corso"
+      }
+    ],
+    "30": [
+      {
+        "date": "20 gen",
+        "title": "Ordine creato",
+        "detail": "Ordine #30 confermato e inviato in lavorazione."
+      },
+      {
+        "date": "21 gen",
+        "title": "Cartamodello pianificato",
+        "detail": "Sartoria interna - Eleonora \u00b7 Completato"
+      },
+      {
+        "date": "22 gen",
+        "title": "Taglio pianificato",
+        "detail": "Sartoria interna - Roberta \u00b7 In corso"
+      },
+      {
+        "date": "23 gen",
+        "title": "Confezione pianificato",
+        "detail": "Sartoria interna - Olga \u00b7 Da avviare"
+      }
+    ],
+    "31": [
+      {
+        "date": "20 gen",
+        "title": "Ordine creato",
+        "detail": "Ordine #31 confermato e inviato in lavorazione."
+      },
+      {
+        "date": "21 gen",
+        "title": "Cartamodello pianificato",
+        "detail": "Sartoria interna - Eleonora \u00b7 Completato"
+      },
+      {
+        "date": "22 gen",
+        "title": "Taglio pianificato",
+        "detail": "Sartoria interna - Roberta \u00b7 In corso"
+      },
+      {
+        "date": "23 gen",
+        "title": "Confezione pianificato",
+        "detail": "Sartoria interna - Olga \u00b7 Da avviare"
+      }
+    ],
+    "32": [
+      {
+        "date": "20 gen",
+        "title": "Ordine creato",
+        "detail": "Ordine #32 confermato e inviato in lavorazione."
+      },
+      {
+        "date": "21 gen",
+        "title": "Cartamodello pianificato",
+        "detail": "Sartoria interna - Eleonora \u00b7 Completato"
+      },
+      {
+        "date": "22 gen",
+        "title": "Taglio pianificato",
+        "detail": "Sartoria interna - Roberta \u00b7 In corso"
+      },
+      {
+        "date": "23 gen",
+        "title": "Confezione pianificato",
+        "detail": "Sartoria interna - Olga \u00b7 Da avviare"
+      }
+    ],
+    "33": [
+      {
+        "date": "20 gen",
+        "title": "Ordine creato",
+        "detail": "Ordine #33 confermato e inviato in lavorazione."
+      },
+      {
+        "date": "21 gen",
+        "title": "Cartamodello pianificato",
+        "detail": "Sartoria interna - Eleonora \u00b7 Completato"
+      },
+      {
+        "date": "22 gen",
+        "title": "Taglio pianificato",
+        "detail": "Sartoria interna - Roberta \u00b7 In corso"
+      },
+      {
+        "date": "23 gen",
+        "title": "Confezione pianificato",
+        "detail": "Sartoria interna - Olga \u00b7 Da avviare"
+      }
+    ],
+    "34": [
+      {
+        "date": "20 gen",
+        "title": "Ordine creato",
+        "detail": "Ordine #34 confermato e inviato in lavorazione."
+      },
+      {
+        "date": "21 gen",
+        "title": "Materiale pianificato",
+        "detail": "Commercio - Team Magazzino \u00b7 Completato"
+      },
+      {
+        "date": "22 gen",
+        "title": "Controllo finale pianificato",
+        "detail": "Commercio - Direzione \u00b7 In corso"
+      }
+    ],
+    "35": [
+      {
+        "date": "20 gen",
+        "title": "Ordine creato",
+        "detail": "Ordine #35 confermato e inviato in lavorazione."
+      },
+      {
+        "date": "21 gen",
+        "title": "Materiale pianificato",
+        "detail": "Commercio - Team Magazzino \u00b7 Completato"
+      },
+      {
+        "date": "22 gen",
+        "title": "Controllo finale pianificato",
+        "detail": "Commercio - Direzione \u00b7 In corso"
+      }
+    ],
+    "36": [
+      {
+        "date": "20 gen",
+        "title": "Ordine creato",
+        "detail": "Ordine #36 confermato e inviato in lavorazione."
+      },
+      {
+        "date": "21 gen",
+        "title": "Cartamodello pianificato",
+        "detail": "Sartoria interna - Eleonora \u00b7 Completato"
+      },
+      {
+        "date": "22 gen",
+        "title": "Taglio pianificato",
+        "detail": "Sartoria interna - Roberta \u00b7 In corso"
+      },
+      {
+        "date": "23 gen",
+        "title": "Confezione pianificato",
+        "detail": "Sartoria interna - Olga \u00b7 Da avviare"
+      }
+    ],
+    "37": [
+      {
+        "date": "20 gen",
+        "title": "Ordine creato",
+        "detail": "Ordine #37 confermato e inviato in lavorazione."
+      },
+      {
+        "date": "21 gen",
+        "title": "Materiale pianificato",
+        "detail": "Commercio - Team Magazzino \u00b7 Completato"
+      },
+      {
+        "date": "22 gen",
+        "title": "Controllo finale pianificato",
+        "detail": "Commercio - Direzione \u00b7 In corso"
+      }
+    ],
+    "38": [
+      {
+        "date": "20 gen",
+        "title": "Ordine creato",
+        "detail": "Ordine #38 confermato e inviato in lavorazione."
+      },
+      {
+        "date": "21 gen",
+        "title": "Materiale pianificato",
+        "detail": "Commercio - Team Magazzino \u00b7 Completato"
+      },
+      {
+        "date": "22 gen",
+        "title": "Controllo finale pianificato",
+        "detail": "Commercio - Direzione \u00b7 In corso"
+      }
+    ],
+    "39": [
+      {
+        "date": "20 gen",
+        "title": "Ordine creato",
+        "detail": "Ordine #39 confermato e inviato in lavorazione."
+      },
+      {
+        "date": "21 gen",
+        "title": "Materiale pianificato",
+        "detail": "Commercio - Team Magazzino \u00b7 Completato"
+      },
+      {
+        "date": "22 gen",
+        "title": "Controllo finale pianificato",
+        "detail": "Commercio - Direzione \u00b7 In corso"
+      }
+    ],
+    "40": [
+      {
+        "date": "20 gen",
+        "title": "Ordine creato",
+        "detail": "Ordine #40 confermato e inviato in lavorazione."
+      },
+      {
+        "date": "21 gen",
+        "title": "Materiale pianificato",
+        "detail": "Commercio - Team Magazzino \u00b7 Completato"
+      },
+      {
+        "date": "22 gen",
+        "title": "Controllo finale pianificato",
+        "detail": "Commercio - Direzione \u00b7 In corso"
+      }
+    ]
+  },
+  "orderMaterials": {
+    "1": [
+      {
+        "material": "Tessuto 100% cotone",
+        "source": "MMS",
+        "warehouse": "Disponibile in magazzino",
+        "delivery": "Consegnato",
+        "preorder": "Nessun riordino"
+      },
+      {
+        "material": "Etichetta composizione",
+        "source": "Cliente",
+        "warehouse": "Inserimento manuale",
+        "delivery": "Non consegnato",
+        "preorder": "Attendere invio cliente"
+      }
+    ],
+    "2": [
+      {
+        "material": "Tessuto 100% cotone",
+        "source": "MMS",
+        "warehouse": "Disponibile in magazzino",
+        "delivery": "Consegnato",
+        "preorder": "Nessun riordino"
+      },
+      {
+        "material": "Etichetta composizione",
+        "source": "Cliente",
+        "warehouse": "Inserimento manuale",
+        "delivery": "Non consegnato",
+        "preorder": "Attendere invio cliente"
+      }
+    ],
+    "3": [
+      {
+        "material": "Tessuto 100% cotone",
+        "source": "MMS",
+        "warehouse": "Disponibile in magazzino",
+        "delivery": "Consegnato",
+        "preorder": "Nessun riordino"
+      },
+      {
+        "material": "Etichetta composizione",
+        "source": "Cliente",
+        "warehouse": "Inserimento manuale",
+        "delivery": "Non consegnato",
+        "preorder": "Attendere invio cliente"
+      }
+    ],
+    "4": [
+      {
+        "material": "Tessuto 100% cotone",
+        "source": "MMS",
+        "warehouse": "Disponibile in magazzino",
+        "delivery": "Consegnato",
+        "preorder": "Nessun riordino"
+      },
+      {
+        "material": "Etichetta composizione",
+        "source": "Cliente",
+        "warehouse": "Inserimento manuale",
+        "delivery": "Non consegnato",
+        "preorder": "Attendere invio cliente"
+      }
+    ],
+    "5": [
+      {
+        "material": "Tessuto 100% cotone",
+        "source": "MMS",
+        "warehouse": "Disponibile in magazzino",
+        "delivery": "Consegnato",
+        "preorder": "Nessun riordino"
+      },
+      {
+        "material": "Etichetta composizione",
+        "source": "Cliente",
+        "warehouse": "Inserimento manuale",
+        "delivery": "Non consegnato",
+        "preorder": "Attendere invio cliente"
+      }
+    ],
+    "6": [
+      {
+        "material": "Tessuto 100% cotone",
+        "source": "MMS",
+        "warehouse": "Disponibile in magazzino",
+        "delivery": "Consegnato",
+        "preorder": "Nessun riordino"
+      },
+      {
+        "material": "Etichetta composizione",
+        "source": "Cliente",
+        "warehouse": "Inserimento manuale",
+        "delivery": "Non consegnato",
+        "preorder": "Attendere invio cliente"
+      }
+    ],
+    "7": [
+      {
+        "material": "Tessuto 100% cotone",
+        "source": "MMS",
+        "warehouse": "Disponibile in magazzino",
+        "delivery": "Consegnato",
+        "preorder": "Nessun riordino"
+      },
+      {
+        "material": "Etichetta composizione",
+        "source": "Cliente",
+        "warehouse": "Inserimento manuale",
+        "delivery": "Non consegnato",
+        "preorder": "Attendere invio cliente"
+      }
+    ],
+    "8": [
+      {
+        "material": "Tessuto 100% cotone",
+        "source": "MMS",
+        "warehouse": "Disponibile in magazzino",
+        "delivery": "Consegnato",
+        "preorder": "Nessun riordino"
+      },
+      {
+        "material": "Etichetta composizione",
+        "source": "Cliente",
+        "warehouse": "Inserimento manuale",
+        "delivery": "Non consegnato",
+        "preorder": "Attendere invio cliente"
+      }
+    ],
+    "9": [
+      {
+        "material": "Tessuto 100% cotone",
+        "source": "MMS",
+        "warehouse": "Disponibile in magazzino",
+        "delivery": "Consegnato",
+        "preorder": "Nessun riordino"
+      },
+      {
+        "material": "Etichetta composizione",
+        "source": "Cliente",
+        "warehouse": "Inserimento manuale",
+        "delivery": "Non consegnato",
+        "preorder": "Attendere invio cliente"
+      }
+    ],
+    "10": [
+      {
+        "material": "Tessuto 100% cotone",
+        "source": "MMS",
+        "warehouse": "Disponibile in magazzino",
+        "delivery": "Consegnato",
+        "preorder": "Nessun riordino"
+      },
+      {
+        "material": "Etichetta composizione",
+        "source": "Cliente",
+        "warehouse": "Inserimento manuale",
+        "delivery": "Non consegnato",
+        "preorder": "Attendere invio cliente"
+      }
+    ],
+    "11": [
+      {
+        "material": "Tessuto 100% cotone",
+        "source": "MMS",
+        "warehouse": "Disponibile in magazzino",
+        "delivery": "Consegnato",
+        "preorder": "Nessun riordino"
+      },
+      {
+        "material": "Etichetta composizione",
+        "source": "Cliente",
+        "warehouse": "Inserimento manuale",
+        "delivery": "Non consegnato",
+        "preorder": "Attendere invio cliente"
+      }
+    ],
+    "12": [
+      {
+        "material": "Tessuto 100% cotone",
+        "source": "MMS",
+        "warehouse": "Disponibile in magazzino",
+        "delivery": "Consegnato",
+        "preorder": "Nessun riordino"
+      },
+      {
+        "material": "Etichetta composizione",
+        "source": "Cliente",
+        "warehouse": "Inserimento manuale",
+        "delivery": "Non consegnato",
+        "preorder": "Attendere invio cliente"
+      }
+    ]
+  },
+  "clients": [
+    {
+      "name": "ALCHIERI",
+      "trust": "Affidabilita' alta",
+      "email": "alchieri@cliente.mms",
+      "paymentRule": "Acconto + saldo pre-consegna",
+      "workType": "Commercio con reparto principale Commercio",
+      "note": "Nessuna nota operativa registrata.",
+      "orders": [
+        6,
+        32,
+        46,
+        52,
+        62
+      ],
+      "tags": [
+        "Commercio",
+        "Standard",
+        "SALDATO"
+      ]
+    },
+    {
+      "name": "ARDOVINI GIANCARLO",
+      "trust": "Affidabilita' da confermare",
+      "email": "ardovinigiancarl@cliente.mms",
+      "paymentRule": "Acconto + saldo pre-consegna",
+      "workType": "Commercio con reparto principale Commercio",
+      "note": "Nessuna nota operativa registrata.",
+      "orders": [
+        26
+      ],
+      "tags": [
+        "Commercio",
+        "Standard",
+        "SALDATO"
+      ]
+    },
+    {
+      "name": "BOLGHERA VOLLEY",
+      "trust": "Affidabilita' da confermare",
+      "email": "bolgheravolley@cliente.mms",
+      "paymentRule": "Acconto + saldo pre-consegna",
+      "workType": "Commercio con reparto principale Commercio",
+      "note": "Nessuna nota operativa registrata.",
+      "orders": [
+        28
+      ],
+      "tags": [
+        "Commercio",
+        "Standard",
+        "SALDATO"
+      ]
+    },
+    {
+      "name": "CECCONI PIERPAOLO",
+      "trust": "Affidabilita' da confermare",
+      "email": "cecconipierpaolo@cliente.mms",
+      "paymentRule": "Acconto + saldo pre-consegna",
+      "workType": "Commercio con reparto principale Commercio",
+      "note": "Nessuna nota operativa registrata.",
+      "orders": [
+        37,
+        51
+      ],
+      "tags": [
+        "Commercio",
+        "Standard",
+        "SALDATO"
+      ]
+    },
+    {
+      "name": "CHRONOS",
+      "trust": "Affidabilita' da confermare",
+      "email": "chronos@cliente.mms",
+      "paymentRule": "Acconto + saldo pre-consegna",
+      "workType": "Sartoria con reparto principale Sartoria interna",
+      "note": "Nessuna nota operativa registrata.",
+      "orders": [
+        80
+      ],
+      "tags": [
+        "Sartoria interna",
+        "Standard",
+        "ACCONTO"
+      ]
+    },
+    {
+      "name": "COLLAMARINI FLAVIA",
+      "trust": "Affidabilita' da confermare",
+      "email": "collamariniflavi@cliente.mms",
+      "paymentRule": "Acconto + saldo pre-consegna",
+      "workType": "Sartoria con reparto principale Sartoria interna",
+      "note": "Nessuna nota operativa registrata.",
+      "orders": [
+        15
+      ],
+      "tags": [
+        "Sartoria interna",
+        "Standard",
+        "SALDATO"
+      ]
+    },
+    {
+      "name": "DANAE MARRA",
+      "trust": "Affidabilita' alta",
+      "email": "danaemarra@cliente.mms",
+      "paymentRule": "Acconto + saldo pre-consegna",
+      "workType": "Commercio con reparto principale Commercio",
+      "note": "Nessuna nota operativa registrata.",
+      "orders": [
+        48,
+        56,
+        60
+      ],
+      "tags": [
+        "Commercio",
+        "Standard",
+        "SALDATO"
+      ]
+    },
+    {
+      "name": "DANIELE 22",
+      "trust": "Affidabilita' alta",
+      "email": "daniele22@cliente.mms",
+      "paymentRule": "Acconto + saldo pre-consegna",
+      "workType": "Sartoria con reparto principale Sartoria interna",
+      "note": "Nessuna nota operativa registrata.",
+      "orders": [
+        16,
+        17,
+        23,
+        36,
+        65
+      ],
+      "tags": [
+        "Sartoria interna",
+        "Standard",
+        "SALDATO"
+      ]
+    },
+    {
+      "name": "DDR SPA",
+      "trust": "Affidabilita' da confermare",
+      "email": "ddrspa@cliente.mms",
+      "paymentRule": "Acconto + saldo pre-consegna",
+      "workType": "Commercio con reparto principale Commercio",
+      "note": "Nessuna nota operativa registrata.",
+      "orders": [
+        24
+      ],
+      "tags": [
+        "Commercio",
+        "Standard",
+        "SALDATO"
+      ]
+    },
+    {
+      "name": "DI CURZIO NICOLO",
+      "trust": "Affidabilita' da confermare",
+      "email": "dicurzionicolo@cliente.mms",
+      "paymentRule": "Acconto + saldo pre-consegna",
+      "workType": "Commercio con reparto principale Commercio",
+      "note": "Nessuna nota operativa registrata.",
+      "orders": [
+        18
+      ],
+      "tags": [
+        "Commercio",
+        "Standard",
+        "SALDATO"
+      ]
+    },
+    {
+      "name": "DM8 SRLS",
+      "trust": "Affidabilita' da confermare",
+      "email": "dm8srls@cliente.mms",
+      "paymentRule": "Acconto + saldo pre-consegna",
+      "workType": "Commercio con reparto principale Commercio",
+      "note": "Nessuna nota operativa registrata.",
+      "orders": [
+        10,
+        54
+      ],
+      "tags": [
+        "Commercio",
+        "Standard",
+        "SALDATO"
+      ]
+    },
+    {
+      "name": "EMANUELA MADONNA",
+      "trust": "Affidabilita' da confermare",
+      "email": "emanuelamadonna@cliente.mms",
+      "paymentRule": "Acconto + saldo pre-consegna",
+      "workType": "Commercio con reparto principale Commercio",
+      "note": "Nessuna nota operativa registrata.",
+      "orders": [
+        39
+      ],
+      "tags": [
+        "Commercio",
+        "Standard",
+        "SALDATO"
+      ]
+    },
+    {
+      "name": "EZA ATELIER SRLS",
+      "trust": "Affidabilita' da confermare",
+      "email": "ezaateliersrls@cliente.mms",
+      "paymentRule": "Acconto + saldo pre-consegna",
+      "workType": "Sartoria con reparto principale Sartoria interna",
+      "note": "Nessuna nota operativa registrata.",
+      "orders": [
+        13
+      ],
+      "tags": [
+        "Sartoria interna",
+        "Standard",
+        "SALDATO"
+      ]
+    },
+    {
+      "name": "FLAVA COLLAMARINI",
+      "trust": "Affidabilita' da confermare",
+      "email": "flavacollamarini@cliente.mms",
+      "paymentRule": "Acconto + saldo pre-consegna",
+      "workType": "Sartoria con reparto principale Sartoria interna",
+      "note": "Nessuna nota operativa registrata.",
+      "orders": [
+        50
+      ],
+      "tags": [
+        "Sartoria interna",
+        "Standard",
+        "SALDATO"
+      ]
+    },
+    {
+      "name": "FLAVIO ANGELUCCI",
+      "trust": "Affidabilita' da confermare",
+      "email": "flavioangelucci@cliente.mms",
+      "paymentRule": "Acconto + saldo pre-consegna",
+      "workType": "Commercio con reparto principale Commercio",
+      "note": "Nessuna nota operativa registrata.",
+      "orders": [
+        35,
+        66
+      ],
+      "tags": [
+        "Commercio",
+        "Standard",
+        "SALDATO"
+      ]
+    },
+    {
+      "name": "FLM FOOD SRLS",
+      "trust": "Affidabilita' da confermare",
+      "email": "flmfoodsrls@cliente.mms",
+      "paymentRule": "Acconto + saldo pre-consegna",
+      "workType": "Commercio con reparto principale Commercio",
+      "note": "Nessuna nota operativa registrata.",
+      "orders": [
+        12,
+        57
+      ],
+      "tags": [
+        "Commercio",
+        "Standard",
+        "SALDATO"
+      ]
+    },
+    {
+      "name": "FRANCESCO LOLLI",
+      "trust": "Affidabilita' da confermare",
+      "email": "francescololli@cliente.mms",
+      "paymentRule": "Acconto + saldo pre-consegna",
+      "workType": "Commercio con reparto principale Commercio",
+      "note": "Nessuna nota operativa registrata.",
+      "orders": [
+        55
+      ],
+      "tags": [
+        "Commercio",
+        "Standard",
+        "SALDATO"
+      ]
+    },
+    {
+      "name": "GIACOMO TOLETTA FEDE",
+      "trust": "Affidabilita' da confermare",
+      "email": "giacomotolettafe@cliente.mms",
+      "paymentRule": "Acconto + saldo pre-consegna",
+      "workType": "Commercio con reparto principale Commercio",
+      "note": "Nessuna nota operativa registrata.",
+      "orders": [
+        64
+      ],
+      "tags": [
+        "Commercio",
+        "Standard",
+        "SALDATO"
+      ]
+    },
+    {
+      "name": "GLAMI FASHION",
+      "trust": "Affidabilita' da confermare",
+      "email": "glamifashion@cliente.mms",
+      "paymentRule": "Acconto + saldo pre-consegna",
+      "workType": "Commercio con reparto principale Commercio",
+      "note": "Nessuna nota operativa registrata.",
+      "orders": [
+        3,
+        4
+      ],
+      "tags": [
+        "Commercio",
+        "Standard",
+        "SALDATO"
+      ]
+    },
+    {
+      "name": "I FOLLETTI DEL CUORE",
+      "trust": "Affidabilita' alta",
+      "email": "ifollettidelcuor@cliente.mms",
+      "paymentRule": "Acconto + saldo pre-consegna",
+      "workType": "Commercio con reparto principale Commercio",
+      "note": "Nessuna nota operativa registrata.",
+      "orders": [
+        22,
+        25,
+        40,
+        74
+      ],
+      "tags": [
+        "Commercio",
+        "Standard",
+        "SALDATO"
+      ]
+    },
+    {
+      "name": "IVANO FELTRIN",
+      "trust": "Affidabilita' da confermare",
+      "email": "ivanofeltrin@cliente.mms",
+      "paymentRule": "Acconto + saldo pre-consegna",
+      "workType": "Commercio con reparto principale Commercio",
+      "note": "Nessuna nota operativa registrata.",
+      "orders": [
+        38
+      ],
+      "tags": [
+        "Commercio",
+        "Standard",
+        "SALDATO"
+      ]
+    },
+    {
+      "name": "LA DOLCE ROMA",
+      "trust": "Affidabilita' da confermare",
+      "email": "ladolceroma@cliente.mms",
+      "paymentRule": "Acconto + saldo pre-consegna",
+      "workType": "Commercio con reparto principale Commercio",
+      "note": "Nessuna nota operativa registrata.",
+      "orders": [
+        29,
+        73
+      ],
+      "tags": [
+        "Commercio",
+        "Standard",
+        "SALDATO"
+      ]
+    },
+    {
+      "name": "MALUMIERE",
+      "trust": "Affidabilita' da confermare",
+      "email": "malumiere@cliente.mms",
+      "paymentRule": "Acconto + saldo pre-consegna",
+      "workType": "Commercio con reparto principale Commercio",
+      "note": "Nessuna nota operativa registrata.",
+      "orders": [
+        77
+      ],
+      "tags": [
+        "Commercio",
+        "Standard",
+        "SALDATO"
+      ]
+    },
+    {
+      "name": "MARTINO TURRINI",
+      "trust": "Affidabilita' da confermare",
+      "email": "martinoturrini@cliente.mms",
+      "paymentRule": "Acconto + saldo pre-consegna",
+      "workType": "Commercio con reparto principale Commercio",
+      "note": "Nessuna nota operativa registrata.",
+      "orders": [
+        53
+      ],
+      "tags": [
+        "Commercio",
+        "Standard",
+        "SALDATO"
+      ]
+    },
+    {
+      "name": "MEOLI NICO",
+      "trust": "Affidabilita' da confermare",
+      "email": "meolinico@cliente.mms",
+      "paymentRule": "Acconto + saldo pre-consegna",
+      "workType": "Commercio con reparto principale Commercio",
+      "note": "Nessuna nota operativa registrata.",
+      "orders": [
+        79
+      ],
+      "tags": [
+        "Commercio",
+        "Standard",
+        "SALDATO"
+      ]
+    },
+    {
+      "name": "MINUTOLO ROSA",
+      "trust": "Affidabilita' da confermare",
+      "email": "minutolorosa@cliente.mms",
+      "paymentRule": "Acconto + saldo pre-consegna",
+      "workType": "Commercio con reparto principale Commercio",
+      "note": "Nessuna nota operativa registrata.",
+      "orders": [
+        67,
+        75
+      ],
+      "tags": [
+        "Commercio",
+        "Standard",
+        "SALDATO"
+      ]
+    },
+    {
+      "name": "MONAMI",
+      "trust": "Affidabilita' da confermare",
+      "email": "monami@cliente.mms",
+      "paymentRule": "Acconto + saldo pre-consegna",
+      "workType": "Commercio con reparto principale Commercio",
+      "note": "Nessuna nota operativa registrata.",
+      "orders": [
+        70
+      ],
+      "tags": [
+        "Commercio",
+        "Standard",
+        "SALDATO"
+      ]
+    },
+    {
+      "name": "MONIA FURNARI",
+      "trust": "Affidabilita' da confermare",
+      "email": "moniafurnari@cliente.mms",
+      "paymentRule": "Acconto + saldo pre-consegna",
+      "workType": "Sartoria con reparto principale Sartoria interna",
+      "note": "Nessuna nota operativa registrata.",
+      "orders": [
+        33,
+        69
+      ],
+      "tags": [
+        "Sartoria interna",
+        "Standard",
+        "SALDATO"
+      ]
+    },
+    {
+      "name": "MORE PAIN",
+      "trust": "Affidabilita' da confermare",
+      "email": "morepain@cliente.mms",
+      "paymentRule": "Acconto + saldo pre-consegna",
+      "workType": "Sartoria con reparto principale Sartoria interna",
+      "note": "Nessuna nota operativa registrata.",
+      "orders": [
+        43
+      ],
+      "tags": [
+        "Sartoria interna",
+        "Standard",
+        "NON PAGATO"
+      ]
+    },
+    {
+      "name": "PAGLIONI",
+      "trust": "Affidabilita' alta",
+      "email": "paglioni@cliente.mms",
+      "paymentRule": "Acconto + saldo pre-consegna",
+      "workType": "Commercio con reparto principale Commercio",
+      "note": "Nessuna nota operativa registrata.",
+      "orders": [
+        9,
+        19,
+        20,
+        27,
+        41,
+        59
+      ],
+      "tags": [
+        "Commercio",
+        "Standard",
+        "SALDATO"
+      ]
+    },
+    {
+      "name": "PANTA REI",
+      "trust": "Affidabilita' da confermare",
+      "email": "pantarei@cliente.mms",
+      "paymentRule": "Acconto + saldo pre-consegna",
+      "workType": "Commercio con reparto principale Commercio",
+      "note": "Nessuna nota operativa registrata.",
+      "orders": [
+        14
+      ],
+      "tags": [
+        "Commercio",
+        "Standard",
+        "SALDATO"
+      ]
+    },
+    {
+      "name": "SANFILIPPO LORENZO",
+      "trust": "Affidabilita' alta",
+      "email": "sanfilippolorenz@cliente.mms",
+      "paymentRule": "Acconto + saldo pre-consegna",
+      "workType": "Commercio con reparto principale Commercio",
+      "note": "Nessuna nota operativa registrata.",
+      "orders": [
+        31,
+        42,
+        58,
+        72,
+        78
+      ],
+      "tags": [
+        "Commercio",
+        "Standard",
+        "SALDATO"
+      ]
+    },
+    {
+      "name": "SILVIA ANDELINI",
+      "trust": "Affidabilita' da confermare",
+      "email": "silviaandelini@cliente.mms",
+      "paymentRule": "Acconto + saldo pre-consegna",
+      "workType": "Sartoria con reparto principale Sartoria interna",
+      "note": "Nessuna nota operativa registrata.",
+      "orders": [
+        68
+      ],
+      "tags": [
+        "Sartoria interna",
+        "Standard",
+        "NON PAGATO"
+      ]
+    },
+    {
+      "name": "SOLE",
+      "trust": "Affidabilita' da confermare",
+      "email": "sole@cliente.mms",
+      "paymentRule": "Acconto + saldo pre-consegna",
+      "workType": "Sartoria con reparto principale Sartoria interna",
+      "note": "Nessuna nota operativa registrata.",
+      "orders": [
+        21,
+        71
+      ],
+      "tags": [
+        "Sartoria interna",
+        "Standard",
+        "SALDATO"
+      ]
+    },
+    {
+      "name": "STELLA TURES",
+      "trust": "Affidabilita' da confermare",
+      "email": "stellatures@cliente.mms",
+      "paymentRule": "Acconto + saldo pre-consegna",
+      "workType": "Sartoria con reparto principale Sartoria esterna",
+      "note": "Nessuna nota operativa registrata.",
+      "orders": [
+        45
+      ],
+      "tags": [
+        "Sartoria esterna",
+        "Standard",
+        "SALDATO"
+      ]
+    },
+    {
+      "name": "TEN MINUTES TO MOON",
+      "trust": "Affidabilita' alta",
+      "email": "tenminutestomoon@cliente.mms",
+      "paymentRule": "Acconto + saldo pre-consegna",
+      "workType": "Sartoria con reparto principale Sartoria interna",
+      "note": "Nessuna nota operativa registrata.",
+      "orders": [
+        7,
+        30,
+        44,
+        63,
+        76
+      ],
+      "tags": [
+        "Sartoria interna",
+        "Standard",
+        "SALDATO"
+      ]
+    },
+    {
+      "name": "VALENTINI",
+      "trust": "Affidabilita' da confermare",
+      "email": "valentini@cliente.mms",
+      "paymentRule": "Acconto + saldo pre-consegna",
+      "workType": "Commercio con reparto principale Commercio",
+      "note": "Nessuna nota operativa registrata.",
+      "orders": [
+        5,
+        49
+      ],
+      "tags": [
+        "Commercio",
+        "Standard",
+        "NON PAGATO"
+      ]
+    },
+    {
+      "name": "WILDESIDE",
+      "trust": "Affidabilita' da confermare",
+      "email": "wildeside@cliente.mms",
+      "paymentRule": "Acconto + saldo pre-consegna",
+      "workType": "Commercio con reparto principale Commercio",
+      "note": "Nessuna nota operativa registrata.",
+      "orders": [
+        2,
+        34
+      ],
+      "tags": [
+        "Commercio",
+        "Standard",
+        "SALDATO"
+      ]
+    },
+    {
+      "name": "ZAMPATARO GABRIELE",
+      "trust": "Affidabilita' alta",
+      "email": "zampatarogabriel@cliente.mms",
+      "paymentRule": "Acconto + saldo pre-consegna",
+      "workType": "Commercio con reparto principale Commercio",
+      "note": "Nessuna nota operativa registrata.",
+      "orders": [
+        11,
+        47,
+        61
+      ],
+      "tags": [
+        "Commercio",
+        "Standard",
+        "SALDATO"
+      ]
+    }
+  ],
+  "calendar": [
+    {
+      "day": "Lunedi'",
+      "date": "22 gennaio",
+      "slots": [
+        {
+          "orderId": 1,
+          "phase": "Cartamodello",
+          "title": "Cartamodello",
+          "owner": "Eleonora",
+          "time": "08:00"
+        },
+        {
+          "orderId": 2,
+          "phase": "Cartamodello",
+          "title": "Cartamodello",
+          "owner": "Eleonora",
+          "time": "08:00"
+        },
+        {
+          "orderId": 3,
+          "phase": "Materiale",
+          "title": "Materiale",
+          "owner": "Team Magazzino",
+          "time": "08:00"
+        },
+        {
+          "orderId": 4,
+          "phase": "Materiale",
+          "title": "Materiale",
+          "owner": "Team Magazzino",
+          "time": "08:00"
+        }
+      ]
+    },
+    {
+      "day": "Martedi'",
+      "date": "23 gennaio",
+      "slots": [
+        {
+          "orderId": 1,
+          "phase": "Taglio",
+          "title": "Taglio",
+          "owner": "Roberta",
+          "time": "08:00"
+        },
+        {
+          "orderId": 2,
+          "phase": "Taglio",
+          "title": "Taglio",
+          "owner": "Roberta",
+          "time": "08:00"
+        },
+        {
+          "orderId": 3,
+          "phase": "Controllo finale",
+          "title": "Controllo finale",
+          "owner": "Direzione",
+          "time": "08:00"
+        },
+        {
+          "orderId": 4,
+          "phase": "Controllo finale",
+          "title": "Controllo finale",
+          "owner": "Direzione",
+          "time": "08:00"
+        }
+      ]
+    },
+    {
+      "day": "Mercoledi'",
+      "date": "24 gennaio",
+      "slots": []
+    },
+    {
+      "day": "Giovedi'",
+      "date": "25 gennaio",
+      "slots": []
+    },
+    {
+      "day": "Venerdi'",
+      "date": "26 gennaio",
+      "slots": []
+    }
+  ],
+  "inventory": [
+    {
+      "sku": "MMS-TEX-001",
+      "product": "Tessuto 100% cotone",
+      "category": "Tessuti",
+      "available": "48 mt",
+      "reserved": "12 mt",
+      "status": "Disponibile",
+      "reorder": "Soglia ok"
+    },
+    {
+      "sku": "MMS-TEX-014",
+      "product": "Costina per colli",
+      "category": "Accessori",
+      "available": "9 mt",
+      "reserved": "3 mt",
+      "status": "Disponibile",
+      "reorder": "Preordine suggerito"
+    },
+    {
+      "sku": "MMS-ETI-008",
+      "product": "Etichetta composizione",
+      "category": "Etichette",
+      "available": "0",
+      "reserved": "0",
+      "status": "Da cliente",
+      "reorder": "Attesa consegna cliente"
+    },
+    {
+      "sku": "MMS-JER-021",
+      "product": "Jersey capsule",
+      "category": "Tessuti",
+      "available": "0",
+      "reserved": "10 mt",
+      "status": "In arrivo",
+      "reorder": "Ordine aperto a fornitore"
+    }
+  ],
+  "accounts": [
+    {
+      "role": "Visualizzatore",
+      "name": "Marta Tures",
+      "phone": "333 1002001",
+      "email": "marta@stellatures.it",
+      "skills": "Vista lavorazione cliente, approvazioni"
+    },
+    {
+      "role": "Visualizzatore",
+      "name": "Nicola Bianchi",
+      "phone": "333 1002002",
+      "email": "nicola@mms.it",
+      "skills": "Controllo ordini, consultazione planning"
+    },
+    {
+      "role": "Visualizzatore",
+      "name": "Rosmery Diaz",
+      "phone": "333 1002003",
+      "email": "rosmery@mms.it",
+      "skills": "Confezione, avanzamento lavori"
+    },
+    {
+      "role": "Visualizzatore",
+      "name": "Olga Petrenko",
+      "phone": "333 1002004",
+      "email": "olga@mms.it",
+      "skills": "Confezione, controllo task"
+    },
+    {
+      "role": "Visualizzatore",
+      "name": "Samuele Gori",
+      "phone": "333 1002005",
+      "email": "samuele@mms.it",
+      "skills": "Cartamodello, taglio"
+    },
+    {
+      "role": "Visualizzatore",
+      "name": "Cliente Portal",
+      "phone": "n/d",
+      "email": "cliente@portal.mms",
+      "skills": "Vista lavorazione cliente"
+    },
+    {
+      "role": "Amministratore",
+      "name": "Antonio Celotto",
+      "phone": "333 1002100",
+      "email": "antonio@mms.it",
+      "skills": "Supervisione ordini, dashboard, modifiche"
+    },
+    {
+      "role": "Amministratore",
+      "name": "Matteo Rossi",
+      "phone": "333 1002101",
+      "email": "matteo@mms.it",
+      "skills": "Produzione, calendario, laboratori"
+    },
+    {
+      "role": "Amministratore",
+      "name": "Mara Abbracchio",
+      "phone": "333 1002102",
+      "email": "mara@mms.it",
+      "skills": "AI, preventivi, configurazioni"
+    },
+    {
+      "role": "Amministratore",
+      "name": "Admin MMS",
+      "phone": "333 1002103",
+      "email": "admin@mms.it",
+      "skills": "Permessi, magazzino, pagamenti"
+    }
+  ],
+  "seamstresses": [
+    {
+      "name": "Eleonora",
+      "role": "Cartamodelli e taglio",
+      "completed": 14,
+      "hours": 42.0,
+      "efficiency": "86%"
+    },
+    {
+      "name": "Roberta",
+      "role": "Taglio part-time",
+      "completed": 14,
+      "hours": 28.0,
+      "efficiency": "87%"
+    },
+    {
+      "name": "Olga",
+      "role": "Confezione",
+      "completed": 14,
+      "hours": 112.0,
+      "efficiency": "88%"
+    },
+    {
+      "name": "Team Magazzino",
+      "role": "Lavorazione",
+      "completed": 26,
+      "hours": 26.0,
+      "efficiency": "89%"
+    },
+    {
+      "name": "Direzione",
+      "role": "Controllo finale",
+      "completed": 26,
+      "hours": 26.0,
+      "efficiency": "90%"
+    }
+  ],
+  "aiFeed": [
+    {
+      "type": "user",
+      "title": "Input ordine / brief",
+      "body": "Canotta stone wash con sporco giromanica, etichetta composizione, due pezzi, consegna rapida e approvazione foto prima di spedizione."
+    },
+    {
+      "type": "ai",
+      "title": "Classificazione proposta",
+      "body": "Sartoria interna per cartamodello, taglio e confezione. Commercio per verifica etichetta e controllo finale allegati."
+    },
+    {
+      "type": "ai",
+      "title": "Task suggeriti",
+      "body": "1. Cartamodello 3h. 2. Taglio 2h. 3. Confezione 8h. 4. Check etichetta 0,5h."
+    },
+    {
+      "type": "ai",
+      "title": "Alert contestuale",
+      "body": "Meglio comunicare una finestra cliente piu' larga per coprire eventuali ritardi sul controllo finale."
+    }
+  ]
+}
