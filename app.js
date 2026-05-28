@@ -8,17 +8,25 @@ const appState = {
     payment: "all",
     priority: "all",
   },
+  calendarFilters: {
+    employee: "all",
+    phase: "all",
+  },
   draftOrder: {
     client: "Stella Tures",
     category: "Sartoria",
     priority: "Express",
     deposit: "Ricevuto",
     department: "Interno + controllo commercio",
+    orderDate: "20 gennaio 2026",
+    estimatedDelivery: "29 gennaio 2026",
+    warehouseLink: "Magazzino MMS attivo",
     note: "Confermare etichette e inviare foto prima della spedizione.",
   },
+  inventorySearch: "",
 };
 
-const appData = {
+const fallbackAppData = {
   metrics: {
     openOrders: 85,
     activeOrders: 43,
@@ -45,6 +53,10 @@ const appData = {
       summary: "Canotta stone wash con controllo etichetta finale",
       notes: "Inviare foto prima della spedizione",
       customerWindow: "3-5 feb 2026",
+      orderDate: "20 gennaio 2026",
+      estimatedDelivery: "29 gennaio 2026",
+      warehouseLinked: true,
+      clientVisibility: "Il cliente puo' vedere avanzamento confezione e stato materiali.",
     },
     {
       id: 455,
@@ -60,6 +72,10 @@ const appData = {
       summary: "Fornitura e controllo materiali per capsule prodotto",
       notes: "Tessuto jersey non ancora ricevuto",
       customerWindow: "31 gen-2 feb 2026",
+      orderDate: "22 gennaio 2026",
+      estimatedDelivery: "31 gennaio 2026",
+      warehouseLinked: true,
+      clientVisibility: "Il cliente vede solo conferma disponibilita' e consegna prevista.",
     },
     {
       id: 510,
@@ -75,6 +91,10 @@ const appData = {
       summary: "Lavorazione su laboratorio esterno con revisione interna",
       notes: "In attesa conferma disponibilita' Elisabetta",
       customerWindow: "2-6 feb 2026",
+      orderDate: "23 gennaio 2026",
+      estimatedDelivery: "2 febbraio 2026",
+      warehouseLinked: false,
+      clientVisibility: "Il cliente vede stato lavorazione esterna e revisione finale.",
     },
     {
       id: 599,
@@ -90,6 +110,10 @@ const appData = {
       summary: "Consegna materiali e foto prodotto",
       notes: "Spedizione gia' prenotata",
       customerWindow: "25 gen 2026",
+      orderDate: "19 gennaio 2026",
+      estimatedDelivery: "25 gennaio 2026",
+      warehouseLinked: true,
+      clientVisibility: "Il cliente vede materiale pronto e spedizione prenotata.",
     },
     {
       id: 601,
@@ -105,6 +129,10 @@ const appData = {
       summary: "Taglio e confezione capsule interna",
       notes: "Task regolare senza blocchi",
       customerWindow: "4-8 feb 2026",
+      orderDate: "24 gennaio 2026",
+      estimatedDelivery: "4 febbraio 2026",
+      warehouseLinked: true,
+      clientVisibility: "Il cliente puo' seguire taglio, confezione e controllo finale.",
     },
     {
       id: 621,
@@ -120,7 +148,17 @@ const appData = {
       summary: "Ordine in attesa di conferma materiale e acconto",
       notes: "Serve sblocco amministrativo",
       customerWindow: "7-10 feb 2026",
+      orderDate: "24 gennaio 2026",
+      estimatedDelivery: "7 febbraio 2026",
+      warehouseLinked: true,
+      clientVisibility: "Il cliente vede ordine inserito ma non ancora avviato.",
     },
+  ],
+  seamstresses: [
+    { name: "Eleonora", role: "Cartamodelli e taglio", completed: 7, hours: 31, efficiency: "92%" },
+    { name: "Olga", role: "Confezione", completed: 6, hours: 34, efficiency: "89%" },
+    { name: "Roberta", role: "Taglio part-time", completed: 4, hours: 15, efficiency: "95%" },
+    { name: "Amel", role: "Confezione", completed: 5, hours: 28, efficiency: "87%" },
   ],
   departments: [
     {
@@ -206,18 +244,29 @@ const appData = {
   ],
   orderTasks: {
     284: [
-      { name: "Cartamodello canotta", team: "Sartoria interna - Eleonora", hours: "3,0 h", time: "21 gen 08:00", state: "Completato" },
-      { name: "Taglio tessuto", team: "Sartoria interna - Roberta", hours: "2,0 h", time: "22 gen 08:00", state: "Completato" },
-      { name: "Confezione finale", team: "Sartoria interna - Olga", hours: "8,0 h", time: "23 gen 08:00", state: "In corso" },
-      { name: "Controllo etichetta", team: "Commercio - Coordinamento interno", hours: "0,5 h", time: "24 gen 11:00", state: "Da confermare" },
+      { name: "Cartamodello canotta", phase: "Cartamodello", team: "Sartoria interna - Eleonora", hours: "3,0 h", time: "21 gen 08:00", state: "Completato", calendarDay: "Lunedi'" },
+      { name: "Taglio tessuto", phase: "Taglio", team: "Sartoria interna - Roberta", hours: "2,0 h", time: "22 gen 08:00", state: "Completato", calendarDay: "Martedi'" },
+      { name: "Confezione finale", phase: "Confezione", team: "Sartoria interna - Olga", hours: "8,0 h", time: "23 gen 08:00", state: "In corso", calendarDay: "Mercoledi'" },
+      { name: "Controllo etichetta", phase: "Materiale", team: "Commercio - Coordinamento interno", hours: "0,5 h", time: "24 gen 11:00", state: "Da confermare", calendarDay: "Giovedi'" },
     ],
     455: [
-      { name: "Ricezione jersey", team: "Commercio - Fornitore", hours: "n/d", time: "In attesa", state: "Da confermare" },
-      { name: "Controllo materiali", team: "Commercio - Team interno", hours: "1,0 h", time: "Dopo ricezione", state: "Da avviare" },
+      { name: "Ricezione jersey", phase: "Materiale", team: "Commercio - Fornitore", hours: "n/d", time: "In attesa", state: "Da confermare", calendarDay: "Martedi'" },
+      { name: "Controllo materiali", phase: "Materiale", team: "Commercio - Team interno", hours: "1,0 h", time: "Dopo ricezione", state: "Da avviare", calendarDay: "Venerdi'" },
     ],
     510: [
-      { name: "Prenotazione laboratorio", team: "Sartoria esterna - Elisabetta", hours: "n/d", time: "Da confermare", state: "Stand by" },
-      { name: "Revisione finale interna", team: "Sartoria interna - Amel", hours: "3,0 h", time: "Dopo rientro", state: "Da avviare" },
+      { name: "Prenotazione laboratorio", phase: "Confezione", team: "Sartoria esterna - Elisabetta", hours: "n/d", time: "Da confermare", state: "Stand by", calendarDay: "Giovedi'" },
+      { name: "Revisione finale interna", phase: "Confezione", team: "Sartoria interna - Amel", hours: "3,0 h", time: "Dopo rientro", state: "Da avviare", calendarDay: "Giovedi'" },
+    ],
+  },
+  orderMaterials: {
+    284: [
+      { material: "Tessuto 100% cotone", source: "MMS", warehouse: "Disponibile in magazzino", delivery: "Consegnato", preorder: "Rinnovo rotolo 14 metri" },
+      { material: "Tessuto costina per colli", source: "MMS", warehouse: "Disponibile in magazzino", delivery: "Consegnato", preorder: "Nessun riordino" },
+      { material: "Etichetta composizione", source: "Cliente", warehouse: "Inserimento manuale", delivery: "Non consegnato", preorder: "Attendere invio cliente" },
+    ],
+    455: [
+      { material: "Jersey capsule", source: "MMS", warehouse: "In arrivo da fornitore", delivery: "Non consegnato", preorder: "Ordine materiale aperto" },
+      { material: "Pack accessori cliente", source: "Cliente", warehouse: "Inserimento manuale", delivery: "Consegnato", preorder: "Ricevuto in showroom" },
     ],
   },
   orderTimeline: {
@@ -261,39 +310,57 @@ const appData = {
       day: "Lunedi'",
       date: "22 gennaio",
       slots: [
-        { orderId: 284, title: "Cartamodello", owner: "Eleonora", time: "08:00-11:00" },
-        { orderId: 601, title: "Revisione taglio", owner: "Roberta", time: "14:00-16:00" },
+        { orderId: 284, phase: "Cartamodello", title: "Cartamodello", owner: "Eleonora", time: "08:00-11:00" },
+        { orderId: 601, phase: "Taglio", title: "Revisione taglio", owner: "Roberta", time: "14:00-16:00" },
       ],
     },
     {
       day: "Martedi'",
       date: "23 gennaio",
       slots: [
-        { orderId: 284, title: "Taglio", owner: "Roberta", time: "08:00-10:00" },
-        { orderId: 455, title: "Campionatura", owner: "Samuele", time: "11:00-13:30" },
+        { orderId: 284, phase: "Taglio", title: "Taglio", owner: "Roberta", time: "08:00-10:00" },
+        { orderId: 455, phase: "Cartamodello", title: "Campionatura", owner: "Samuele", time: "11:00-13:30" },
       ],
     },
     {
       day: "Mercoledi'",
       date: "24 gennaio",
-      slots: [{ orderId: 284, title: "Confezione", owner: "Olga", time: "08:00-17:00" }],
+      slots: [{ orderId: 284, phase: "Confezione", title: "Confezione", owner: "Olga", time: "08:00-17:00" }],
     },
     {
       day: "Giovedi'",
       date: "25 gennaio",
       slots: [
-        { orderId: 510, title: "Revisione interna", owner: "Amel", time: "09:00-12:00" },
-        { orderId: 621, title: "Etichette", owner: "Eleonora", time: "15:00-16:30" },
+        { orderId: 510, phase: "Confezione", title: "Revisione interna", owner: "Amel", time: "09:00-12:00" },
+        { orderId: 621, phase: "Cartamodello", title: "Etichette", owner: "Eleonora", time: "15:00-16:30" },
       ],
     },
     {
       day: "Venerdi'",
       date: "26 gennaio",
       slots: [
-        { orderId: 455, title: "Chiusura task", owner: "Olga", time: "08:30-11:30" },
-        { orderId: 284, title: "Controllo finale", owner: "Direzione", time: "12:00-12:30" },
+        { orderId: 455, phase: "Confezione", title: "Chiusura task", owner: "Olga", time: "08:30-11:30" },
+        { orderId: 284, phase: "Confezione", title: "Controllo finale", owner: "Direzione", time: "12:00-12:30" },
       ],
     },
+  ],
+  inventory: [
+    { sku: "MMS-TEX-001", product: "Tessuto 100% cotone", category: "Tessuti", available: "48 mt", reserved: "12 mt", status: "Disponibile", reorder: "Soglia ok" },
+    { sku: "MMS-TEX-014", product: "Costina per colli", category: "Accessori", available: "9 mt", reserved: "3 mt", status: "Disponibile", reorder: "Preordine suggerito" },
+    { sku: "MMS-ETI-008", product: "Etichetta composizione", category: "Etichette", available: "0", reserved: "0", status: "Da cliente", reorder: "Attesa consegna cliente" },
+    { sku: "MMS-JER-021", product: "Jersey capsule", category: "Tessuti", available: "0", reserved: "10 mt", status: "In arrivo", reorder: "Ordine aperto a fornitore" },
+  ],
+  accounts: [
+    { role: "Visualizzatore", name: "Marta Tures", phone: "333 1002001", email: "marta@stellatures.it", skills: "Vista lavorazione cliente, approvazioni" },
+    { role: "Visualizzatore", name: "Nicola Bianchi", phone: "333 1002002", email: "nicola@mms.it", skills: "Controllo ordini, consultazione planning" },
+    { role: "Visualizzatore", name: "Rosmery Diaz", phone: "333 1002003", email: "rosmery@mms.it", skills: "Confezione, avanzamento lavori" },
+    { role: "Visualizzatore", name: "Olga Petrenko", phone: "333 1002004", email: "olga@mms.it", skills: "Confezione, controllo task" },
+    { role: "Visualizzatore", name: "Samuele Gori", phone: "333 1002005", email: "samuele@mms.it", skills: "Cartamodello, taglio" },
+    { role: "Visualizzatore", name: "Cliente Portal", phone: "n/d", email: "cliente@portal.mms", skills: "Vista lavorazione cliente" },
+    { role: "Amministratore", name: "Antonio Celotto", phone: "333 1002100", email: "antonio@mms.it", skills: "Supervisione ordini, dashboard, modifiche" },
+    { role: "Amministratore", name: "Matteo Rossi", phone: "333 1002101", email: "matteo@mms.it", skills: "Produzione, calendario, laboratori" },
+    { role: "Amministratore", name: "Mara Abbracchio", phone: "333 1002102", email: "mara@mms.it", skills: "AI, preventivi, configurazioni" },
+    { role: "Amministratore", name: "Admin MMS", phone: "333 1002103", email: "admin@mms.it", skills: "Permessi, magazzino, pagamenti" },
   ],
   aiFeed: [
     {
@@ -322,6 +389,8 @@ const appData = {
     },
   ],
 };
+
+let appData = fallbackAppData;
 
 function getStatusClass(status) {
   const normalized = status.toLowerCase();
@@ -352,6 +421,28 @@ function navigate(view, orderId) {
 
 function getSelectedOrder() {
   return appData.orders.find((order) => order.id === appState.selectedOrderId) || appData.orders[0];
+}
+
+function getSelectedOrderMaterials() {
+  return appData.orderMaterials[appState.selectedOrderId] || [];
+}
+
+function getCalendarEmployees() {
+  return ["all", ...new Set(appData.calendar.flatMap((day) => day.slots.map((slot) => slot.owner)))];
+}
+
+function getCalendarPhases() {
+  return ["all", "Cartamodello", "Taglio", "Confezione"];
+}
+
+function filterCalendarSlots(slots) {
+  return slots.filter((slot) => {
+    const byEmployee =
+      appState.calendarFilters.employee === "all" || slot.owner === appState.calendarFilters.employee;
+    const byPhase =
+      appState.calendarFilters.phase === "all" || slot.phase === appState.calendarFilters.phase;
+    return byEmployee && byPhase;
+  });
 }
 
 function filterOrders() {
@@ -540,6 +631,35 @@ function renderDashboard() {
           </div>
         </div>
       </div>
+
+      <div class="surface">
+        <div class="surface-inner">
+          <div class="section-title">
+            <div>
+              <h3>Operato delle sarte</h3>
+              <p>Una lettura giornaliera del lavoro prodotto da cartamodello, taglio e confezione.</p>
+            </div>
+            <div class="ghost-pill">Focus produttivita'</div>
+          </div>
+          <div class="ledger-list">
+            ${appData.seamstresses
+              .map(
+                (person) => `
+              <div class="ledger-row">
+                <div>
+                  <strong>${person.name}</strong>
+                  <div class="muted">${person.role}</div>
+                </div>
+                <div>${person.completed} task chiusi<br /><span class="muted">${person.hours} ore allocate</span></div>
+                <div>Efficienza ${person.efficiency}</div>
+                <div><button class="mini-btn" data-open="calendar">Apri planning</button></div>
+              </div>
+            `
+              )
+              .join("")}
+          </div>
+        </div>
+      </div>
     </section>
   `;
 }
@@ -653,6 +773,7 @@ function renderOrderDetail() {
   const order = getSelectedOrder();
   const tasks = appData.orderTasks[order.id] || [];
   const timeline = appData.orderTimeline[order.id] || [];
+  const materials = getSelectedOrderMaterials();
   return `
     <section class="view ${appState.currentView === "order-detail" ? "active" : ""}">
       <div class="screen-header">
@@ -680,9 +801,10 @@ function renderOrderDetail() {
               <div class="line"><div class="muted">Categoria</div><div>${order.category}</div></div>
               <div class="line"><div class="muted">Reparto principale</div><div>${order.department}</div></div>
               <div class="line"><div class="muted">Origine</div><div>${order.route}</div></div>
-              <div class="line"><div class="muted">Data ordine</div><div>20 gennaio 2026</div></div>
-              <div class="line"><div class="muted">Consegna interna</div><div>${order.eta}</div></div>
+              <div class="line"><div class="muted">Data ordine</div><div>${order.orderDate}</div></div>
+              <div class="line"><div class="muted">Data consegna stimata</div><div>${order.estimatedDelivery}</div></div>
               <div class="line"><div class="muted">Finestra cliente</div><div>${order.customerWindow}</div></div>
+              <div class="line"><div class="muted">Collegamento magazzino</div><div>${order.warehouseLinked ? "Attivo su magazzino MMS" : "Solo materiali cliente / esterni"}</div></div>
             </div>
           </div>
         </div>
@@ -734,7 +856,11 @@ function renderOrderDetail() {
                       </div>
                       <div>${task.hours}</div>
                       <div>${task.time}</div>
-                      <div><span class="table-status ${getStatusClass(task.state)}">${task.state}</span></div>
+                      <div>
+                        <span class="table-status ${getStatusClass(task.state)}">${task.state}</span>
+                        <div style="height:8px;"></div>
+                        <button class="mini-btn" data-calendar-order="${order.id}" data-calendar-employee="${task.team.split(" - ").pop()}" data-calendar-phase="${task.phase}">Apri calendario</button>
+                      </div>
                     </div>
                   `
                       )
@@ -780,6 +906,43 @@ function renderOrderDetail() {
             <div class="surface-inner">
               <div class="section-title">
                 <div>
+                  <h3>Sezione materiale</h3>
+                  <p>Prodotti collegati al magazzino MMS o inseriti manualmente se del cliente.</p>
+                </div>
+              </div>
+              <table>
+                <thead>
+                  <tr>
+                    <th>Materiale</th>
+                    <th>Origine</th>
+                    <th>Magazzino</th>
+                    <th>Consegna</th>
+                    <th>Preordine</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  ${
+                    materials.length
+                      ? materials
+                          .map(
+                            (material) => `
+                        <tr>
+                          <td>${material.material}</td>
+                          <td>${material.source}</td>
+                          <td>${material.warehouse}</td>
+                          <td><span class="table-status ${getStatusClass(material.delivery)}">${material.delivery}</span></td>
+                          <td>${material.preorder}</td>
+                        </tr>
+                      `
+                          )
+                          .join("")
+                      : `<tr><td colspan="5"><div class="empty-state">Nessun materiale collegato a questo ordine.</div></td></tr>`
+                  }
+                </tbody>
+              </table>
+              <div style="height:16px;"></div>
+              <div class="section-title">
+                <div>
                   <h3>Note operative</h3>
                   <p>Blocchi, chiarimenti e informazioni cliente.</p>
                 </div>
@@ -803,6 +966,8 @@ function renderOrderDetail() {
 }
 
 function renderCalendar() {
+  const employees = getCalendarEmployees();
+  const phases = getCalendarPhases();
   return `
     <section class="view ${appState.currentView === "calendar" ? "active" : ""}">
       <div class="screen-header">
@@ -813,6 +978,35 @@ function renderCalendar() {
         <div class="screen-actions">
           <div class="ghost-pill">Vista: settimana</div>
           <button class="action-pill">Nuova assegnazione</button>
+        </div>
+      </div>
+
+      <div class="surface">
+        <div class="surface-inner">
+          <div class="filter-row" style="grid-template-columns: 1.2fr 1fr 1fr 1fr 1fr 1fr;">
+            <div class="filter-chip">Ordine collegato: #${appState.selectedOrderId}</div>
+            <select class="filter-chip" data-calendar-filter="employee">
+              ${employees
+                .map(
+                  (employee) => `<option value="${employee}" ${appState.calendarFilters.employee === employee ? "selected" : ""}>${
+                    employee === "all" ? "Tutti i dipendenti" : employee
+                  }</option>`
+                )
+                .join("")}
+            </select>
+            <select class="filter-chip" data-calendar-filter="phase">
+              ${phases
+                .map(
+                  (phase) => `<option value="${phase}" ${appState.calendarFilters.phase === phase ? "selected" : ""}>${
+                    phase === "all" ? "Tutte le lavorazioni" : phase
+                  }</option>`
+                )
+                .join("")}
+            </select>
+            <div class="filter-chip">Reparto: Sartoria</div>
+            <div class="filter-chip">Moduli: cartamodello</div>
+            <div class="filter-chip">Taglio e confezione</div>
+          </div>
         </div>
       </div>
 
@@ -828,22 +1022,30 @@ function renderCalendar() {
             <div class="calendar-board">
               ${appData.calendar
                 .map(
-                  (day) => `
+                  (day) => {
+                    const slots = filterCalendarSlots(day.slots);
+                    return `
                 <div class="calendar-col">
                   <h4>${day.day}</h4>
                   <p>${day.date}</p>
-                  ${day.slots
+                  ${
+                    slots.length
+                      ? slots
                     .map(
                       (slot) => `
                     <div class="slot" data-detail="${slot.orderId}">
                       <strong>#${slot.orderId} - ${slot.title}</strong>
                       <span>${slot.owner} · ${slot.time}</span>
+                      <span>${slot.phase}</span>
                     </div>
                   `
                     )
-                    .join("")}
+                    .join("")
+                      : `<div class="empty-state">Nessun task con i filtri attuali.</div>`
+                  }
                 </div>
-              `
+              `;
+                  }
                 )
                 .join("")}
             </div>
@@ -1035,6 +1237,29 @@ function renderClient() {
         </div>
       </div>
 
+      <div class="surface">
+        <div class="surface-inner">
+          <div class="section-title">
+            <div>
+              <h3>Vista lavorazione cliente</h3>
+              <p>Questa area mostra cosa il cliente puo' seguire sul proprio ordine.</p>
+            </div>
+          </div>
+          <div class="alert-list">
+            ${orders
+              .map(
+                (order) => `
+              <div class="alert-item">
+                <strong>Ordine #${order.id}</strong>
+                <span>${order.clientVisibility}</span>
+              </div>
+            `
+              )
+              .join("")}
+          </div>
+        </div>
+      </div>
+
       <div class="footnote">Vista cliente collegata agli stessi ordini gia' presenti nel sistema, senza doppie anagrafiche o note sparse.</div>
     </section>
   `;
@@ -1119,6 +1344,203 @@ function renderPayments() {
   `;
 }
 
+function renderInventory() {
+  const query = appState.inventorySearch.trim().toLowerCase();
+  const items = appData.inventory.filter((item) =>
+    !query ? true : `${item.sku} ${item.product} ${item.category} ${item.status}`.toLowerCase().includes(query)
+  );
+
+  return `
+    <section class="view ${appState.currentView === "inventory" ? "active" : ""}">
+      <div class="screen-header">
+        <div>
+          <h2>Magazzino e preordini</h2>
+          <p>Una vista unica per disponibilita', materiale MMS, materiali cliente e preordini collegati agli ordini.</p>
+        </div>
+        <div class="screen-actions">
+          <button class="action-pill">+ Preordine magazzino</button>
+        </div>
+      </div>
+
+      <div class="surface">
+        <div class="surface-inner">
+          <div class="filter-row" style="grid-template-columns: 1.8fr 1fr 1fr 1fr 1fr 1fr;">
+            <input class="filter-chip" id="inventory-search" value="${appState.inventorySearch}" placeholder="Ricerca materiale o SKU" />
+            <div class="filter-chip">Disponibilita': tutte</div>
+            <div class="filter-chip">Origine: MMS / cliente</div>
+            <div class="filter-chip">Categoria: tutte</div>
+            <div class="filter-chip">Ordini collegati</div>
+            <div class="filter-chip">Preordini aperti</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="layout-2">
+        <div class="surface">
+          <div class="surface-inner">
+            <div class="section-title">
+              <div>
+                <h3>Disponibilita' materiali</h3>
+                <p>Materiali MMS e materiali cliente nello stesso pannello.</p>
+              </div>
+            </div>
+            <table>
+              <thead>
+                <tr>
+                  <th>SKU</th>
+                  <th>Prodotto</th>
+                  <th>Categoria</th>
+                  <th>Disponibile</th>
+                  <th>Impegnato</th>
+                  <th>Stato</th>
+                  <th>Preordine</th>
+                </tr>
+              </thead>
+              <tbody>
+                ${
+                  items.length
+                    ? items
+                        .map(
+                          (item) => `
+                      <tr>
+                        <td>${item.sku}</td>
+                        <td>${item.product}</td>
+                        <td>${item.category}</td>
+                        <td>${item.available}</td>
+                        <td>${item.reserved}</td>
+                        <td><span class="table-status ${getStatusClass(item.status)}">${item.status}</span></td>
+                        <td>${item.reorder}</td>
+                      </tr>
+                    `
+                        )
+                        .join("")
+                    : `<tr><td colspan="7"><div class="empty-state">Nessun materiale trovato con questa ricerca.</div></td></tr>`
+                }
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <div style="display:grid; gap:16px;">
+          <div class="surface">
+            <div class="surface-inner">
+              <div class="section-title">
+                <div>
+                  <h3>Regola materiali ordine</h3>
+                  <p>Come si comporta il sistema nella sezione materiale.</p>
+                </div>
+              </div>
+              <div class="alert-list">
+                <div class="alert-item">
+                  <strong>Materiale MMS</strong>
+                  <span>Se il materiale e' interno, si collega al magazzino e aggiorna disponibilita' e impegni.</span>
+                </div>
+                <div class="alert-item">
+                  <strong>Materiale cliente</strong>
+                  <span>Se il materiale viene dal cliente, si inserisce manualmente e si traccia come consegnato o non consegnato.</span>
+                </div>
+                <div class="alert-item">
+                  <strong>Preordine</strong>
+                  <span>Con il tasto + si cerca il materiale e si apre il preordine di magazzino collegato all'ordine.</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+  `;
+}
+
+function renderAccounts() {
+  const viewers = appData.accounts.filter((account) => account.role === "Visualizzatore");
+  const admins = appData.accounts.filter((account) => account.role === "Amministratore");
+
+  return `
+    <section class="view ${appState.currentView === "accounts" ? "active" : ""}">
+      <div class="screen-header">
+        <div>
+          <h2>Account di lavoro e permessi</h2>
+          <p>Creazione account, skill operative e separazione tra utenti che vedono e utenti che modificano.</p>
+        </div>
+        <div class="screen-actions">
+          <div class="ghost-pill">${viewers.length} visualizzatori / ${admins.length} amministratori</div>
+          <button class="action-pill">Crea account</button>
+        </div>
+      </div>
+
+      <div class="metric-boxes">
+        <div class="metric-box surface"><small>Visualizzatori</small><strong>${viewers.length}</strong><span>Utenti con sola lettura o vista lavorazione cliente.</span></div>
+        <div class="metric-box surface"><small>Amministratori</small><strong>${admins.length}</strong><span>Utenti che possono fare modifiche operative.</span></div>
+        <div class="metric-box surface"><small>Skill mappate</small><strong>8</strong><span>Cartamodello, taglio, confezione, planning, magazzino, pagamenti.</span></div>
+        <div class="metric-box surface"><small>Portale cliente</small><strong>1</strong><span>Account dedicato alla vista lavorazione.</span></div>
+      </div>
+
+      <div class="layout-2">
+        <div class="surface">
+          <div class="surface-inner">
+            <div class="section-title">
+              <div>
+                <h3>Anagrafica account</h3>
+                <p>Utente, telefono, mail e skill di lavorazione.</p>
+              </div>
+            </div>
+            <table>
+              <thead>
+                <tr>
+                  <th>Ruolo</th>
+                  <th>Nome cognome</th>
+                  <th>Telefono</th>
+                  <th>Mail</th>
+                  <th>Skill</th>
+                </tr>
+              </thead>
+              <tbody>
+                ${appData.accounts
+                  .map(
+                    (account) => `
+                  <tr>
+                    <td><span class="table-status ${account.role === "Amministratore" ? "progress" : "done"}">${account.role}</span></td>
+                    <td>${account.name}</td>
+                    <td>${account.phone}</td>
+                    <td>${account.email}</td>
+                    <td>${account.skills}</td>
+                  </tr>
+                `
+                  )
+                  .join("")}
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <div style="display:grid; gap:16px;">
+          <div class="surface">
+            <div class="surface-inner">
+              <div class="section-title">
+                <div>
+                  <h3>Regole di accesso</h3>
+                  <p>La demo rende chiaro chi puo' fare cosa.</p>
+                </div>
+              </div>
+              <div class="alert-list">
+                <div class="alert-item">
+                  <strong>6 account visualizzatore</strong>
+                  <span>Vedono dashboard, scheda ordine, cliente e lavorazione senza modificare dati sensibili.</span>
+                </div>
+                <div class="alert-item">
+                  <strong>4 account amministratori</strong>
+                  <span>Possono modificare ordini, pagamenti, planning, magazzino e configurazioni operative.</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+  `;
+}
+
 function renderNewOrder() {
   const draft = appState.draftOrder;
   return `
@@ -1179,11 +1601,60 @@ function renderNewOrder() {
                 <label>Origine reparto</label>
                 <input class="field-value" data-draft="department" value="${draft.department}" />
               </div>
+              <div class="field">
+                <label>Data ordine</label>
+                <input class="field-value" data-draft="orderDate" value="${draft.orderDate}" />
+              </div>
+              <div class="field">
+                <label>Data consegna stimata</label>
+                <input class="field-value" data-draft="estimatedDelivery" value="${draft.estimatedDelivery}" />
+              </div>
+              <div class="field span-2">
+                <label>Collegamento magazzino</label>
+                <input class="field-value" data-draft="warehouseLink" value="${draft.warehouseLink}" />
+              </div>
               <div class="field span-2">
                 <label>Nota di avvio</label>
                 <textarea class="field-value" data-draft="note" style="min-height:86px; align-items:flex-start; padding-top:12px;">${draft.note}</textarea>
               </div>
             </div>
+            <div style="height:18px;"></div>
+            <div class="section-title">
+              <div>
+                <h3>Sezione materiale</h3>
+                <p>Inserisci prodotto, collega il magazzino MMS o registra il materiale cliente.</p>
+              </div>
+              <button class="action-pill" data-open="inventory">+ Preordine magazzino</button>
+            </div>
+            <table>
+              <thead>
+                <tr>
+                  <th>Prodotto</th>
+                  <th>Origine</th>
+                  <th>Magazzino</th>
+                  <th>Stato consegna</th>
+                  <th>Preordine</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td>Tessuto 100% cotone</td>
+                  <td>MMS</td>
+                  <td>Collegato a magazzino</td>
+                  <td><span class="table-status done">Consegnato</span></td>
+                  <td>Ricerca materiale attiva</td>
+                </tr>
+                <tr>
+                  <td>Etichetta composizione</td>
+                  <td>Cliente</td>
+                  <td>Inserimento manuale</td>
+                  <td><span class="table-status hold">Non consegnato</span></td>
+                  <td>Attendere consegna cliente</td>
+                </tr>
+              </tbody>
+            </table>
+            <div style="height:16px;"></div>
+            <button class="action-pill">Salva ordine</button>
           </div>
         </div>
 
@@ -1321,7 +1792,9 @@ function renderLayout() {
     { id: "order-detail", label: "Scheda ordine", caption: "Task, allegati e stato operativo" },
     { id: "calendar", label: "Calendario", caption: "Pianificazione reparto e carichi" },
     { id: "client", label: "Scheda cliente", caption: "Storico, regole e contesto cliente" },
+    { id: "inventory", label: "Magazzino", caption: "Disponibilita' e preordini" },
     { id: "payments", label: "Pagamenti", caption: "Acconti, saldi e scadenze" },
+    { id: "accounts", label: "Account", caption: "Utenti, skill e permessi" },
     { id: "new-order", label: "Nuovo ordine", caption: "Da preventivo a task e planning" },
     { id: "ai-assistant", label: "Assistente AI", caption: "Suggerimenti e sintesi controllata" },
   ];
@@ -1360,7 +1833,9 @@ function renderLayout() {
           ${renderOrderDetail()}
           ${renderCalendar()}
           ${renderClient()}
+          ${renderInventory()}
           ${renderPayments()}
+          ${renderAccounts()}
           ${renderNewOrder()}
           ${renderAI()}
         </div>
@@ -1380,6 +1855,15 @@ function attachEvents() {
 
   document.querySelectorAll("[data-detail]").forEach((button) => {
     button.addEventListener("click", () => navigate("order-detail", Number(button.dataset.detail)));
+  });
+
+  document.querySelectorAll("[data-calendar-order]").forEach((button) => {
+    button.addEventListener("click", () => {
+      appState.selectedOrderId = Number(button.dataset.calendarOrder);
+      appState.calendarFilters.employee = button.dataset.calendarEmployee || "all";
+      appState.calendarFilters.phase = button.dataset.calendarPhase || "all";
+      navigate("calendar");
+    });
   });
 
   document.querySelectorAll(".clickable-row[data-order], .alert-item[data-order], .slot[data-detail]").forEach((node) => {
@@ -1408,11 +1892,26 @@ function attachEvents() {
     });
   });
 
+  document.querySelectorAll("[data-calendar-filter]").forEach((select) => {
+    select.addEventListener("change", (event) => {
+      appState.calendarFilters[event.target.dataset.calendarFilter] = event.target.value;
+      renderApp();
+    });
+  });
+
   document.querySelectorAll("[data-draft]").forEach((input) => {
     input.addEventListener("input", (event) => {
       appState.draftOrder[event.target.dataset.draft] = event.target.value;
     });
   });
+
+  const inventorySearch = document.getElementById("inventory-search");
+  if (inventorySearch) {
+    inventorySearch.addEventListener("input", (event) => {
+      appState.inventorySearch = event.target.value;
+      renderApp();
+    });
+  }
 }
 
 function renderApp() {
@@ -1421,4 +1920,23 @@ function renderApp() {
   attachEvents();
 }
 
-renderApp();
+async function initApp() {
+  try {
+    const response = await fetch("/api/bootstrap");
+    if (response.ok) {
+      const payload = await response.json();
+      if (payload && payload.orders && payload.orders.length) {
+        appData = { ...fallbackAppData, ...payload };
+        if (!appData.orders.some((order) => order.id === appState.selectedOrderId)) {
+          appState.selectedOrderId = appData.orders[0].id;
+        }
+      }
+    }
+  } catch (error) {
+    console.warn("Bootstrap API not available, using local fallback data.");
+  } finally {
+    renderApp();
+  }
+}
+
+initApp();
