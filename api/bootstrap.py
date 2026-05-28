@@ -2,10 +2,8 @@ from __future__ import annotations
 
 import json
 from http.server import BaseHTTPRequestHandler
-from pathlib import Path
 
-
-DATA_PATH = Path("data") / "bootstrap.json"
+from _supabase import build_bootstrap
 
 
 class handler(BaseHTTPRequestHandler):
@@ -17,7 +15,7 @@ class handler(BaseHTTPRequestHandler):
             self.wfile.write(b'{"error":"Not found"}')
             return
 
-        payload = load_bootstrap()
+        payload = build_bootstrap()
         body = json.dumps(payload, ensure_ascii=True).encode("utf-8")
 
         self.send_response(200)
@@ -29,9 +27,3 @@ class handler(BaseHTTPRequestHandler):
 
     def log_message(self, format, *args):
         return
-
-
-def load_bootstrap():
-    if not DATA_PATH.exists():
-        return {}
-    return json.loads(DATA_PATH.read_text(encoding="utf-8"))
