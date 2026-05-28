@@ -44,6 +44,12 @@ textarea {
   font: inherit;
 }
 
+input,
+select,
+textarea {
+  color: var(--text);
+}
+
 button {
   cursor: pointer;
 }
@@ -468,6 +474,10 @@ th {
   letter-spacing: 0.04em;
 }
 
+.clickable-row:hover td {
+  background: rgba(76, 122, 104, 0.05);
+}
+
 .table-status {
   display: inline-flex;
   align-items: center;
@@ -629,6 +639,11 @@ th {
   border-radius: 10px;
 }
 
+input.filter-chip,
+select.filter-chip {
+  width: 100%;
+}
+
 .filter-chip,
 .mini-btn {
   padding: 11px 12px;
@@ -652,6 +667,15 @@ th {
   display: flex;
   align-items: center;
   padding: 12px 14px;
+  width: 100%;
+  color: var(--text);
+}
+
+input.field-value,
+textarea.field-value {
+  display: block;
+  resize: vertical;
+  outline: none;
 }
 
 .span-2 {
@@ -766,6 +790,11 @@ th {
   color: var(--muted);
   font-size: 12px;
   line-height: 1.45;
+}
+
+.slot span + span {
+  margin-top: 4px;
+  font-size: 11px;
 }
 
 .client-badge {
