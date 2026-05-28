@@ -2,17 +2,18 @@
   --bg: #f2efe8;
   --panel: #fffdf8;
   --panel-alt: #f7f1e7;
-  --sidebar: #1e2d29;
-  --sidebar-soft: #31443f;
+  --sidebar: #070707;
+  --sidebar-soft: #181818;
   --text: #1d2320;
   --muted: #69716c;
-  --line: rgba(30, 45, 41, 0.11);
-  --accent: #4c7a68;
-  --accent-dark: #315447;
-  --accent-soft: rgba(76, 122, 104, 0.14);
-  --success: #2f7a51;
+  --line: rgba(16, 16, 16, 0.11);
+  --accent: #111111;
+  --accent-dark: #050505;
+  --accent-soft: rgba(17, 17, 17, 0.08);
+  --success: #111111;
   --warn: #c68124;
-  --danger: #a94442;
+  --danger: #f10845;
+  --danger-soft: rgba(241, 8, 69, 0.12);
   --shadow: 0 20px 48px rgba(18, 22, 20, 0.08);
   --shadow-soft: 0 12px 24px rgba(18, 22, 20, 0.05);
   --radius: 12px;
@@ -30,8 +31,8 @@ body {
 body {
   margin: 0;
   background:
-    radial-gradient(circle at top left, rgba(76, 122, 104, 0.08), transparent 24%),
-    radial-gradient(circle at bottom right, rgba(47, 122, 81, 0.08), transparent 26%),
+    radial-gradient(circle at top left, rgba(17, 17, 17, 0.08), transparent 24%),
+    radial-gradient(circle at bottom right, rgba(241, 8, 69, 0.08), transparent 26%),
     var(--bg);
   color: var(--text);
   font-family: Aptos, "Segoe UI", "Trebuchet MS", sans-serif;
@@ -80,16 +81,11 @@ button {
   gap: 10px;
 }
 
-.brand-mark {
-  width: 46px;
-  height: 46px;
-  border-radius: 14px;
-  background: linear-gradient(135deg, #7aa290, #315447);
-  display: grid;
-  place-items: center;
-  font-family: Georgia, "Times New Roman", serif;
-  font-size: 20px;
-  font-weight: 700;
+.brand-logo {
+  width: 168px;
+  max-width: 100%;
+  height: auto;
+  display: block;
 }
 
 .brand small {
@@ -226,10 +222,10 @@ button {
 }
 
 .action-pill {
-  background: var(--accent);
+  background: var(--danger);
   color: #fff;
   border: 0;
-  box-shadow: 0 12px 24px rgba(76, 122, 104, 0.24);
+  box-shadow: 0 12px 24px rgba(241, 8, 69, 0.24);
   transition: transform 180ms ease, filter 180ms ease;
 }
 
@@ -302,7 +298,7 @@ button {
 
 .hero-panel {
   background:
-    linear-gradient(135deg, rgba(30, 45, 41, 0.97), rgba(22, 31, 28, 0.96)),
+    linear-gradient(135deg, rgba(7, 7, 7, 0.98), rgba(18, 18, 18, 0.97)),
     var(--sidebar);
   color: #f7f4ed;
   border-radius: 14px;
@@ -488,13 +484,13 @@ th {
 }
 
 .done {
-  background: rgba(47, 122, 81, 0.12);
+  background: rgba(17, 17, 17, 0.1);
   color: var(--success);
 }
 
 .progress {
-  background: rgba(179, 100, 61, 0.12);
-  color: var(--accent-dark);
+  background: var(--danger-soft);
+  color: var(--danger);
 }
 
 .hold {
@@ -600,7 +596,7 @@ th {
 
 .mini-progress > div {
   height: 100%;
-  background: linear-gradient(90deg, #5f8e7b, #88ab7f);
+  background: linear-gradient(90deg, #111111, #f10845);
   border-radius: inherit;
 }
 
@@ -773,7 +769,7 @@ textarea.field-value {
   padding: 12px;
   border-radius: 10px;
   background: var(--panel);
-  border-top: 3px solid var(--accent);
+  border-top: 3px solid var(--danger);
 }
 
 .slot strong,
@@ -803,10 +799,32 @@ textarea.field-value {
   gap: 8px;
   padding: 8px 12px;
   border-radius: 999px;
-  background: rgba(47, 122, 81, 0.1);
+  background: rgba(17, 17, 17, 0.1);
   color: var(--success);
   font-size: 12px;
   font-weight: 700;
+}
+
+.priority-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 6px 10px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+}
+
+.priority-express {
+  background: var(--danger-soft);
+  color: var(--danger);
+}
+
+.priority-standard {
+  background: rgba(17, 17, 17, 0.08);
+  color: var(--accent-dark);
 }
 
 .footnote {
