@@ -413,6 +413,14 @@ function getStatusClass(status) {
   return "progress";
 }
 
+function getPriorityClass(priority) {
+  return priority && priority.toLowerCase() === "express" ? "priority-express" : "priority-standard";
+}
+
+function renderPriorityBadge(priority) {
+  return `<span class="priority-badge ${getPriorityClass(priority)}">${priority}</span>`;
+}
+
 function navigate(view, orderId) {
   appState.currentView = view;
   if (orderId) appState.selectedOrderId = orderId;
@@ -565,7 +573,7 @@ function renderDashboard() {
                     <td>#${order.id}</td>
                     <td>${order.client}</td>
                     <td>${order.department}</td>
-                    <td>${order.priority}</td>
+                    <td>${renderPriorityBadge(order.priority)}</td>
                     <td>${order.eta}</td>
                     <td><span class="table-status ${getStatusClass(order.status)}">${order.status}</span></td>
                   </tr>
@@ -744,7 +752,7 @@ function renderOrders() {
                       <td>${order.client}</td>
                       <td>${order.category}</td>
                       <td>${order.department}</td>
-                      <td>${order.priority}</td>
+                      <td>${renderPriorityBadge(order.priority)}</td>
                       <td><span class="table-status ${getStatusClass(order.status)}">${order.status}</span></td>
                       <td>${order.payment}</td>
                       <td>${order.eta}</td>
@@ -782,7 +790,7 @@ function renderOrderDetail() {
           <p>L'ordine diventa il centro operativo dove produzione, amministrazione e file restano collegati.</p>
         </div>
         <div class="screen-actions">
-          <div class="ghost-pill">Priorita': ${order.priority}</div>
+          <div class="ghost-pill">Priorita': ${renderPriorityBadge(order.priority)}</div>
           <button class="action-pill">Aggiorna stato</button>
         </div>
       </div>
@@ -1803,7 +1811,7 @@ function renderLayout() {
     <div class="app-shell">
       <aside class="sidebar">
         <div class="brand">
-          <div class="brand-mark">M</div>
+          <img class="brand-logo" src="./assets/logo-mms-studio.png" alt="MMS Studio" />
           <small>Frontend reale - base app</small>
           <h1>MMS Studio<br />Operations Hub</h1>
           <p>Una base concreta per portare il prototipo dentro un'app navigabile e pronta da estendere.</p>
