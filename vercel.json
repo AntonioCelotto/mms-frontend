@@ -1,4 +1,10 @@
 {
+  "$schema": "https://openapi.vercel.sh/vercel.json",
   "cleanUrls": true,
-  "trailingSlash": false
+  "trailingSlash": false,
+  "functions": {
+    "api/**/*.py": {
+      "excludeFiles": "{backend/**,user_files/**,memory/**,output/**}"
+    }
+  }
 }
