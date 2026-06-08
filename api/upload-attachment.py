@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import base64
+import binascii
 import json
 import re
 import socket
@@ -93,7 +94,7 @@ class handler(BaseHTTPRequestHandler):
 
         try:
             binary = base64.b64decode(raw_data, validate=True)
-        except (ValueError, base64.binascii.Error):
+        except (ValueError, binascii.Error):
             return write_json(self, {"error": "File non decodificabile"}, HTTPStatus.BAD_REQUEST)
 
         if not binary:
