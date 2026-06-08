@@ -1,52 +1,53 @@
 from __future__ import annotations
 
-import json
 from http import HTTPStatus
 from http.server import BaseHTTPRequestHandler
 
+from _api import clean_text, normalize_choice, parse_optional_number, parse_positive_int, read_json_body, write_json
 from _supabase import insert_rows, resolve_order
+
+
+ALLOWED_PAYMENT_TYPES = {"acconto", "saldo", "scadenza"}
+ALLOWED_PAYMENT_STATUSES = {"da_pagare", "pagato", "scaduto", "autorizzato"}
 
 
 class handler(BaseHTTPRequestHandler):
     def do_POST(self):
-        payload = self.read_json_body()
+        payload = read_json_body(self)
         if payload is None:
-            return self.write_json({"error": "JSON non valido"}, HTTPStatus.BAD_REQUEST)
+            return write_json(self, {"error": "JSON non valido"}, HTTPStatus.BAD_REQUEST)
 
-        order = resolve_order(int(payload.get("order_id") or 0))
+        order_ref = parse_positive_int(payload.get("order_id"))
+        if not order_ref:
+            return write_json(self, {"error": "Ordine non valido"}, HTTPStatus.BAD_REQUEST)
+
+        order = resolve_order(order_ref)
         if not order:
-            return self.write_json({"error": "Ordine non trovato"}, HTTPStatus.NOT_FOUND)
+            return write_json(self, {"error": "Ordine non trovato"}, HTTPStatus.NOT_FOUND)
 
-        created = insert_rows(
-            "payments",
-            {
-                "order_id": order["id"],
-                "payment_type": payload.get("payment_type") or "saldo",
-                "amount": payload.get("amount"),
-                "due_date": payload.get("due_date"),
-                "paid_date": payload.get("paid_date"),
-                "status": payload.get("status") or "pagato",
-                "notes": payload.get("notes"),
-            },
-        )
-        return self.write_json(created[0] if created else {"ok": True}, HTTPStatus.CREATED)
+        payment_type = normalize_choice(payload.get("payment_type"), ALLOWED_PAYMENT_TYPES, "saldo")
+        status = normalize_choice(payload.get("status"), ALLOWED_PAYMENT_STATUSES, "pagato")
+        amount = parse_optional_number(payload.get("amount"))
+        if payload.get("amount") not in (None, "") and amount is None:
+            return write_json(self, {"error": "Importo non valido"}, HTTPStatus.BAD_REQUEST)
 
-    def read_json_body(self):
-        length = int(self.headers.get("Content-Length", "0") or "0")
-        raw = self.rfile.read(length) if length else b"{}"
         try:
-            return json.loads(raw.decode("utf-8"))
-        except json.JSONDecodeError:
-            return None
+            created = insert_rows(
+                "payments",
+                {
+                    "order_id": order["id"],
+                    "payment_type": payment_type,
+                    "amount": amount,
+                    "due_date": clean_text(payload.get("due_date")) or None,
+                    "paid_date": clean_text(payload.get("paid_date")) or None,
+                    "status": status,
+                    "notes": clean_text(payload.get("notes")) or None,
+                },
+            )
+        except RuntimeError as error:
+            return write_json(self, {"error": "Registrazione pagamento non riuscita", "detail": str(error)}, HTTPStatus.INTERNAL_SERVER_ERROR)
 
-    def write_json(self, payload, status=HTTPStatus.OK):
-        body = json.dumps(payload, ensure_ascii=True).encode("utf-8")
-        self.send_response(status)
-        self.send_header("Content-Type", "application/json; charset=utf-8")
-        self.send_header("Cache-Control", "no-store")
-        self.send_header("Content-Length", str(len(body)))
-        self.end_headers()
-        self.wfile.write(body)
+        return write_json(self, created[0] if created else {"ok": True}, HTTPStatus.CREATED)
 
     def log_message(self, format, *args):
         return
