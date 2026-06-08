@@ -13,12 +13,27 @@ class handler(BaseHTTPRequestHandler):
         if payload is None:
             return self.write_json({"error": "JSON non valido"}, HTTPStatus.BAD_REQUEST)
 
-        task_id = int(payload.get("task_id") or 0)
+        try:
+            task_id = int(payload.get("task_id") or 0)
+        except (TypeError, ValueError):
+            task_id = 0
+
+        if task_id <= 0:
+            return self.write_json({"error": "Task non valido"}, HTTPStatus.BAD_REQUEST)
+
+        assigned_user_id = payload.get("assigned_user_id")
+        external_supplier_name = payload.get("external_supplier_name")
+        if assigned_user_id in ("", 0, "0"):
+            assigned_user_id = None
+        if assigned_user_id is not None:
+            external_supplier_name = None
+
         rows = patch_rows(
             "order_tasks",
             filters={"id": f"eq.{task_id}"},
             payload={
-                "assigned_user_id": payload.get("assigned_user_id"),
+                "assigned_user_id": assigned_user_id,
+                "external_supplier_name": external_supplier_name,
                 "planned_date": payload.get("planned_date"),
                 "calendar_day_label": payload.get("calendar_day_label"),
                 "notes": payload.get("notes"),
