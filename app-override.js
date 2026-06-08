@@ -477,3 +477,28 @@ attachEvents = function attachEventsOverride() {
     });
   });
 };
+
+const baseRenderApp = renderApp;
+renderApp = function renderAppFocusOverride() {
+  const active = document.activeElement;
+  const activeId = active?.id || "";
+  const preserveFocus = activeId === "global-search" || activeId === "inventory-search";
+  const selectionStart = preserveFocus && typeof active.selectionStart === "number" ? active.selectionStart : null;
+  const selectionEnd = preserveFocus && typeof active.selectionEnd === "number" ? active.selectionEnd : null;
+
+  baseRenderApp();
+
+  if (preserveFocus) {
+    const input = document.getElementById(activeId);
+    if (input) {
+      input.focus();
+      try {
+        const start = selectionStart ?? input.value.length;
+        const end = selectionEnd ?? input.value.length;
+        input.setSelectionRange(start, end);
+      } catch (error) {
+        // Ignore browsers/inputs that do not support selection ranges.
+      }
+    }
+  }
+};
