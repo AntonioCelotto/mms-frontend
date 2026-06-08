@@ -25,6 +25,38 @@ renderCalendar = function renderCalendarUxOverride() {
     .filter((account) => account.role === "Amministratore" || account.role === "Visualizzatore")
     .map((account) => ({ id: account.id, label: account.name }));
   const scheduledTasks = getScheduledTasksForSelectedOrder();
+  const selectedOrderWeekMap = {
+    "Lunedi'": [],
+    "Martedi'": [],
+    "Mercoledi'": [],
+    "Giovedi'": [],
+    "Venerdi'": [],
+  };
+
+  scheduledTasks.forEach((task) => {
+    const ownerMatches =
+      appState.calendarFilters.employee === "all" || getTaskOwner(task) === appState.calendarFilters.employee;
+    const phaseMatches =
+      appState.calendarFilters.phase === "all" || task.phase === appState.calendarFilters.phase;
+    const departmentMatches =
+      appState.calendarFilters.department === "all" || getTaskDepartment(task) === appState.calendarFilters.department;
+
+    if (!ownerMatches || !phaseMatches || !departmentMatches) {
+      return;
+    }
+
+    if (!selectedOrderWeekMap[task.calendarDay]) {
+      selectedOrderWeekMap[task.calendarDay] = [];
+    }
+
+    selectedOrderWeekMap[task.calendarDay].push({
+      orderId: order.id,
+      title: task.name,
+      owner: getTaskOwner(task),
+      time: task.time,
+      phase: task.phase,
+    });
+  });
 
   const loadByEmployee = {};
   Object.values(appData.orderTasks)
@@ -286,17 +318,17 @@ renderCalendar = function renderCalendarUxOverride() {
           <div class="section-title">
             <div>
               <h3>Planning settimana</h3>
-              <p>Qui sotto vedi i lavori distribuiti nei giorni del calendario.</p>
+              <p>Qui sotto vedi i lavori assegnati di questo ordine distribuiti nei giorni del calendario.</p>
             </div>
           </div>
           <div class="calendar-board">
-            ${appData.calendar
+            ${Object.keys(selectedOrderWeekMap)
               .map((day) => {
-                const slots = filterCalendarSlotsEnhanced(day.slots);
+                const slots = selectedOrderWeekMap[day];
                 return `
                   <div class="calendar-col">
-                    <h4>${day.day}</h4>
-                    <p>${day.date || "Settimana attiva"}</p>
+                    <h4>${day}</h4>
+                    <p>Ordine #${order.id}</p>
                     ${
                       slots.length
                         ? slots
