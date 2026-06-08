@@ -64,6 +64,12 @@ function getOrderOptions() {
     }));
 }
 
+function filterSelectedOrderCalendarSlots(slots) {
+  return filterCalendarSlots(slots).filter(
+    (slot) => Number(slot.orderId) === Number(appState.selectedOrderId)
+  );
+}
+
 saveTaskAssignment = async function saveTaskAssignmentOverride() {
   const taskId = Number(appState.assignmentDraft.taskId);
   const assignedUserId = Number(appState.assignmentDraft.assignedUserId);
@@ -299,14 +305,14 @@ renderCalendar = function renderCalendarOverride() {
           <div class="surface-inner">
             <div class="section-title">
               <div>
-                <h3>Pianificazione della settimana</h3>
-                <p>Con persone, task e blocchi sempre visibili.</p>
+                <h3>Planning ordine selezionato</h3>
+                <p>Qui sotto vedi nel calendario solo i task dell'ordine che stai gestendo.</p>
               </div>
             </div>
             <div class="calendar-board">
               ${appData.calendar
                 .map((day) => {
-                  const slots = filterCalendarSlots(day.slots);
+                  const slots = filterSelectedOrderCalendarSlots(day.slots);
                   return `
                 <div class="calendar-col">
                   <h4>${day.day}</h4>
@@ -385,6 +391,45 @@ renderCalendar = function renderCalendarOverride() {
                 </div>
               </div>
             </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="surface">
+        <div class="surface-inner">
+          <div class="section-title">
+            <div>
+              <h3>Calendario generale lavori</h3>
+              <p>Questa e' la vista operativa completa per gestire manualmente tutta la settimana.</p>
+            </div>
+          </div>
+          <div class="calendar-board">
+            ${appData.calendar
+              .map((day) => {
+                const slots = filterCalendarSlots(day.slots);
+                return `
+                <div class="calendar-col">
+                  <h4>${day.day}</h4>
+                  <p>${day.date || "Settimana attiva"}</p>
+                  ${
+                    slots.length
+                      ? slots
+                          .map(
+                            (slot) => `
+                    <div class="slot" data-detail="${slot.orderId}">
+                      <strong>#${slot.orderId} - ${slot.title}</strong>
+                      <span>${slot.owner} · ${slot.time}</span>
+                      <span>${slot.phase}</span>
+                    </div>
+                  `
+                          )
+                          .join("")
+                      : `<div class="empty-state">Nessun lavoro con i filtri attuali.</div>`
+                  }
+                </div>
+              `;
+              })
+              .join("")}
           </div>
         </div>
       </div>
