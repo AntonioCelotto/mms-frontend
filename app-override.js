@@ -511,10 +511,15 @@ saveTaskAssignment = async function saveTaskAssignmentOverride() {
   }
   setBusy(true);
   try {
+    const calendarDay = getCalendarDayFromDate(appState.assignmentDraft.plannedDate);
+    const plannedDateTime = formatPlannedDateTime(
+      appState.assignmentDraft.plannedDate,
+      appState.assignmentDraft.plannedTime
+    );
     await patchRows("order_tasks", { id: `eq.${taskId}` }, {
       assigned_user_id: assignedUserId,
-      planned_date: appState.assignmentDraft.plannedDate || null,
-      calendar_day_label: appState.assignmentDraft.calendarDay || null,
+      planned_date: plannedDateTime || null,
+      calendar_day_label: calendarDay !== "Da pianificare" ? calendarDay : null,
       notes: "Assegnazione aggiornata dalla UI",
     });
     await refreshBootstrap();
@@ -555,6 +560,35 @@ updateTaskFromUi = async function updateTaskFromUiOverride(taskId, nextStatus) {
 
 if (!appState.calendarFilters.department) {
   appState.calendarFilters.department = "all";
+}
+
+if (!appState.assignmentDraft.plannedTime) {
+  appState.assignmentDraft.plannedTime = "";
+}
+
+const WEEKDAY_LABELS = ["Domenica", "Lunedi'", "Martedi'", "Mercoledi'", "Giovedi'", "Venerdi'", "Sabato"];
+
+function getCalendarDayFromDate(dateValue) {
+  if (!dateValue) return "Da pianificare";
+  const date = new Date(`${dateValue}T12:00:00`);
+  if (Number.isNaN(date.getTime())) return "Da pianificare";
+  return WEEKDAY_LABELS[date.getDay()] || "Da pianificare";
+}
+
+function formatPlannedDateTime(dateValue, timeValue) {
+  if (!dateValue) return "";
+  return timeValue ? `${dateValue} ${timeValue}` : dateValue;
+}
+
+function splitPlannedDateTime(value) {
+  if (!value || value === "Da pianificare") {
+    return { date: "", time: "" };
+  }
+  const [datePart = "", timePart = ""] = String(value).split(" ");
+  if (/^\d{4}-\d{2}-\d{2}$/.test(datePart)) {
+    return { date: datePart, time: timePart || "" };
+  }
+  return { date: "", time: "" };
 }
 
 function getTaskOwner(task) {
@@ -766,19 +800,15 @@ renderCalendar = function renderCalendarOverride() {
                 </div>
                 <div class="field">
                   <label>Data pianificata</label>
-                  <input class="field-value" data-assignment-field="plannedDate" value="${appState.assignmentDraft.plannedDate}" placeholder="es. 10 giugno 2026" />
+                  <input type="date" class="field-value" data-assignment-field="plannedDate" value="${appState.assignmentDraft.plannedDate}" />
+                </div>
+                <div class="field">
+                  <label>Ora consegna / task</label>
+                  <input type="time" class="field-value" data-assignment-field="plannedTime" value="${appState.assignmentDraft.plannedTime}" />
                 </div>
                 <div class="field">
                   <label>Giorno calendario</label>
-                  <select class="filter-chip" data-assignment-field="calendarDay">
-                    ${["Lunedi'", "Martedi'", "Mercoledi'", "Giovedi'", "Venerdi'"]
-                      .map(
-                        (day) => `<option value="${day}" ${
-                          appState.assignmentDraft.calendarDay === day ? "selected" : ""
-                        }>${day}</option>`
-                      )
-                      .join("")}
-                  </select>
+                  <div class="field-value">${getCalendarDayFromDate(appState.assignmentDraft.plannedDate)}</div>
                 </div>
               </div>
             </div>
@@ -864,13 +894,14 @@ attachEvents = function attachEventsOverride() {
 
   document.querySelectorAll("[data-pick-task]").forEach((button) => {
     button.addEventListener("click", () => {
+      const parts = splitPlannedDateTime(button.dataset.pickDate);
       appState.assignmentDraft.taskId = button.dataset.pickTask;
       appState.assignmentDraft.calendarDay =
         button.dataset.pickDay && button.dataset.pickDay !== "Da pianificare"
           ? button.dataset.pickDay
           : appState.assignmentDraft.calendarDay || "Lunedi'";
-      appState.assignmentDraft.plannedDate =
-        button.dataset.pickDate && button.dataset.pickDate !== "Da pianificare" ? button.dataset.pickDate : "";
+      appState.assignmentDraft.plannedDate = parts.date;
+      appState.assignmentDraft.plannedTime = parts.time;
       renderApp();
     });
   });
