@@ -1,17 +1,25 @@
 from __future__ import annotations
 
 import json
+import os
+import socket
 from collections import defaultdict
-from urllib.error import HTTPError
+from urllib.error import HTTPError, URLError
 from urllib.parse import urlencode
 from urllib.request import Request, urlopen
 
 
-SUPABASE_URL = "https://fzdqemzowxjuotqalaol.supabase.co"
-SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZ6ZHFlbXpvd3hqdW90cWFsYW9sIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzk5Njg3NzYsImV4cCI6MjA5NTU0NDc3Nn0.fmZ9RThFxnaJGQsOYeu_ZjjUNHThlRX87qz9sX4N6Mk"
+DEFAULT_SUPABASE_URL = "https://fzdqemzowxjuotqalaol.supabase.co"
+DEFAULT_SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZ6ZHFlbXpvd3hqdW90cWFsYW9sIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzk5Njg3NzYsImV4cCI6MjA5NTU0NDc3Nn0.fmZ9RThFxnaJGQsOYeu_ZjjUNHThlRX87qz9sX4N6Mk"
+SUPABASE_URL = os.environ.get("SUPABASE_URL", DEFAULT_SUPABASE_URL).rstrip("/")
+SUPABASE_KEY = os.environ.get("SUPABASE_ANON_KEY", DEFAULT_SUPABASE_KEY)
+SUPABASE_TIMEOUT_SECONDS = 15
 
 
 def supabase_request(path: str, *, method: str = "GET", query: dict | None = None, payload=None, prefer: str | None = None):
+    if not SUPABASE_URL or not SUPABASE_KEY:
+        raise RuntimeError("Configurazione Supabase mancante")
+
     url = f"{SUPABASE_URL}{path}"
     if query:
         url = f"{url}?{urlencode(query, doseq=True)}"
@@ -30,12 +38,16 @@ def supabase_request(path: str, *, method: str = "GET", query: dict | None = Non
 
     request = Request(url, data=data, headers=headers, method=method)
     try:
-        with urlopen(request) as response:
+        with urlopen(request, timeout=SUPABASE_TIMEOUT_SECONDS) as response:
             body = response.read().decode("utf-8")
             return json.loads(body) if body else None
     except HTTPError as exc:
         detail = exc.read().decode("utf-8")
         raise RuntimeError(detail or exc.reason) from exc
+    except (URLError, TimeoutError, socket.timeout) as exc:
+        raise RuntimeError(f"Supabase non raggiungibile: {exc}") from exc
+    except json.JSONDecodeError as exc:
+        raise RuntimeError("Risposta Supabase non valida") from exc
 
 
 def fetch_table(table: str, *, select: str = "*", filters: dict | None = None, order: str | None = None):
