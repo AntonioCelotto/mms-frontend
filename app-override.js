@@ -55,6 +55,15 @@ function getScheduledTasksForSelectedOrder() {
   return tasks.filter((task) => task.calendarDay && task.calendarDay !== "Da pianificare");
 }
 
+function getOrderOptions() {
+  return [...appData.orders]
+    .sort((a, b) => Number(b.id) - Number(a.id))
+    .map((order) => ({
+      id: order.id,
+      label: `#${order.id} · ${order.client}`,
+    }));
+}
+
 saveTaskAssignment = async function saveTaskAssignmentOverride() {
   const taskId = Number(appState.assignmentDraft.taskId);
   const assignedUserId = Number(appState.assignmentDraft.assignedUserId);
@@ -95,6 +104,7 @@ renderCalendar = function renderCalendarOverride() {
   const order = getSelectedOrder();
   const selectedOrderTasks = appData.orderTasks[appState.selectedOrderId] || [];
   const scheduledTasks = getScheduledTasksForSelectedOrder();
+  const orderOptions = getOrderOptions();
   const employeeOptions = appData.accounts
     .filter((account) => account.role === "Amministratore" || account.role === "Visualizzatore")
     .map((account) => ({
@@ -118,7 +128,15 @@ renderCalendar = function renderCalendarOverride() {
       <div class="surface">
         <div class="surface-inner">
           <div class="filter-row" style="grid-template-columns: 1.2fr 1fr 1fr 1fr 1fr 1fr;">
-            <div class="filter-chip">Ordine collegato: #${order.id} · ${order.client}</div>
+            <select class="filter-chip" data-calendar-order-select>
+              ${orderOptions
+                .map(
+                  (item) => `<option value="${item.id}" ${
+                    Number(appState.selectedOrderId) === Number(item.id) ? "selected" : ""
+                  }>${item.label}</option>`
+                )
+                .join("")}
+            </select>
             <select class="filter-chip" data-calendar-filter="employee">
               ${employees
                 .map(
@@ -398,6 +416,18 @@ attachEvents = function attachEventsOverride() {
       if (parts.date) {
         appState.assignmentDraft.calendarDay = getCalendarDayFromDate(parts.date);
       }
+      renderApp();
+    });
+  });
+
+  document.querySelectorAll("[data-calendar-order-select]").forEach((select) => {
+    select.addEventListener("change", (event) => {
+      appState.selectedOrderId = Number(event.target.value);
+      appState.assignmentDraft.taskId = "";
+      appState.assignmentDraft.assignedUserId = "";
+      appState.assignmentDraft.plannedDate = "";
+      appState.assignmentDraft.plannedTime = "";
+      appState.assignmentDraft.calendarDay = "Lunedi'";
       renderApp();
     });
   });
