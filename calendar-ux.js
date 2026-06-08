@@ -15,16 +15,67 @@ function getTaskDisplayState(task) {
   return { label: "Da pianificare", className: "hold", actionLabel: "Segna finito", nextStatus: "completato" };
 }
 
+if (!appState.calendarFilters.department) appState.calendarFilters.department = "all";
+if (!appState.calendarFilters.periodView) appState.calendarFilters.periodView = "week";
+
+function getOrderOptions() {
+  return [...appData.orders]
+    .sort((a, b) => Number(b.id) - Number(a.id))
+    .map((order) => ({
+      id: order.id,
+      label: `#${order.id} · ${order.client}`,
+    }));
+}
+
+function buildGeneralCalendarWeekMap() {
+  const map = {
+    "Lunedi'": [],
+    "Martedi'": [],
+    "Mercoledi'": [],
+    "Giovedi'": [],
+    "Venerdi'": [],
+  };
+
+  appData.calendar.forEach((day) => {
+    const filteredSlots = filterCalendarSlotsEnhanced(day.slots);
+    if (!map[day.day]) {
+      map[day.day] = [];
+    }
+    map[day.day].push(...filteredSlots);
+  });
+
+  return map;
+}
+
+function getGeneralScheduledTasks() {
+  return Object.values(appData.orderTasks)
+    .flat()
+    .filter((task) => task.calendarDay && task.calendarDay !== "Da pianificare")
+    .filter((task) => {
+      const ownerMatches =
+        appState.calendarFilters.employee === "all" || getTaskOwner(task) === appState.calendarFilters.employee;
+      const phaseMatches =
+        appState.calendarFilters.phase === "all" || task.phase === appState.calendarFilters.phase;
+      const departmentMatches =
+        appState.calendarFilters.department === "all" || getTaskDepartment(task) === appState.calendarFilters.department;
+      return ownerMatches && phaseMatches && departmentMatches;
+    })
+    .sort((a, b) => String(a.time || "").localeCompare(String(b.time || "")));
+}
+
 renderCalendar = function renderCalendarUxOverride() {
   const order = getSelectedOrder();
   const selectedOrderTasks = appData.orderTasks[appState.selectedOrderId] || [];
   const departmentOptions = getDepartmentOptions();
   const employeeOptions = getEmployeeOptions();
   const phaseOptions = getPhaseOptions();
+  const orderOptions = getOrderOptions();
   const assignableAccounts = appData.accounts
     .filter((account) => account.role === "Amministratore" || account.role === "Visualizzatore")
     .map((account) => ({ id: account.id, label: account.name }));
   const scheduledTasks = getScheduledTasksForSelectedOrder();
+  const generalWeekMap = buildGeneralCalendarWeekMap();
+  const generalScheduledTasks = getGeneralScheduledTasks();
   const selectedOrderWeekMap = {
     "Lunedi'": [],
     "Martedi'": [],
@@ -90,8 +141,16 @@ renderCalendar = function renderCalendarUxOverride() {
 
       <div class="surface">
         <div class="surface-inner">
-          <div class="filter-row" style="grid-template-columns: 1.2fr 1fr 1fr 1fr 1fr 1fr;">
-            <div class="filter-chip">Ordine: #${order.id} · ${order.client}</div>
+          <div class="filter-row" style="grid-template-columns: 1.6fr 1fr 1fr 1fr 1fr 1fr;">
+            <select class="filter-chip" data-calendar-order-select>
+              ${orderOptions
+                .map(
+                  (item) => `<option value="${item.id}" ${
+                    Number(appState.selectedOrderId) === Number(item.id) ? "selected" : ""
+                  }>${item.label}</option>`
+                )
+                .join("")}
+            </select>
             <select class="filter-chip" data-calendar-department>
               ${departmentOptions
                 .map(
@@ -118,6 +177,10 @@ renderCalendar = function renderCalendarUxOverride() {
                   }>${phase === "all" ? "Tutte le lavorazioni" : phase}</option>`
                 )
                 .join("")}
+            </select>
+            <select class="filter-chip" data-calendar-filter="periodView">
+              <option value="week" ${appState.calendarFilters.periodView === "week" ? "selected" : ""}>Settimana</option>
+              <option value="month" ${appState.calendarFilters.periodView === "month" ? "selected" : ""}>Mese</option>
             </select>
             <div class="filter-chip">Stato ordine: ${order.status}</div>
             <div class="filter-chip">Consegna: ${order.estimatedDelivery}</div>
@@ -317,11 +380,31 @@ renderCalendar = function renderCalendarUxOverride() {
         <div class="surface-inner">
           <div class="section-title">
             <div>
-              <h3>Planning settimana</h3>
-              <p>Qui sotto vedi i lavori assegnati di questo ordine distribuiti nei giorni del calendario.</p>
+              <h3>Planning ${appState.calendarFilters.periodView === "month" ? "mese" : "settimana"} ordine</h3>
+              <p>Qui sotto vedi i lavori assegnati di questo ordine distribuiti nel calendario.</p>
             </div>
           </div>
-          <div class="calendar-board">
+          ${
+            appState.calendarFilters.periodView === "month"
+              ? `<div class="ledger-list">
+            ${
+              scheduledTasks.length
+                ? scheduledTasks
+                    .map(
+                      (task) => `
+                  <div class="ledger-row">
+                    <div><strong>${task.name}</strong><div class="muted">#${order.id} · ${getTaskDepartment(task)}</div></div>
+                    <div>${task.calendarDay}</div>
+                    <div>${task.time}</div>
+                    <div>${getTaskOwner(task)}</div>
+                  </div>
+                `
+                    )
+                    .join("")
+                : `<div class="empty-state">Nessun lavoro pianificato per questo ordine.</div>`
+            }
+          </div>`
+              : `<div class="calendar-board">
             ${Object.keys(selectedOrderWeekMap)
               .map((day) => {
                 const slots = selectedOrderWeekMap[day];
@@ -348,7 +431,71 @@ renderCalendar = function renderCalendarUxOverride() {
                 `;
               })
               .join("")}
+          </div>`
+          }
+        </div>
+      </div>
+
+      <div class="surface">
+        <div class="surface-inner">
+          <div class="section-title">
+            <div>
+              <h3>Calendario generale lavori</h3>
+              <p>Questa e' la vista operativa per chi deve gestire manualmente tutta la settimana o tutto il mese.</p>
+            </div>
           </div>
+          ${
+            appState.calendarFilters.periodView === "month"
+              ? `<div class="ledger-list">
+            ${
+              generalScheduledTasks.length
+                ? generalScheduledTasks
+                    .map(
+                      (task) => `
+                  <div class="ledger-row">
+                    <div>
+                      <strong>${task.name}</strong>
+                      <div class="muted">${getTaskDepartment(task)}</div>
+                    </div>
+                    <div>${task.calendarDay}</div>
+                    <div>${task.time}</div>
+                    <div>${getTaskOwner(task)}</div>
+                  </div>
+                `
+                    )
+                    .join("")
+                : `<div class="empty-state">Nessun lavoro disponibile con questi filtri.</div>`
+            }
+          </div>`
+              : `<div class="calendar-board">
+            ${Object.keys(generalWeekMap)
+              .map((day) => {
+                const slots = generalWeekMap[day];
+                return `
+                  <div class="calendar-col">
+                    <h4>${day}</h4>
+                    <p>Tutti i lavori</p>
+                    ${
+                      slots.length
+                        ? slots
+                            .map(
+                              (slot) => `
+                          <div class="slot" data-detail="${slot.orderId}">
+                            <strong>#${slot.orderId} - ${slot.title}</strong>
+                            <span>${slot.owner} · ${slot.time}</span>
+                            <span>${slot.phase}</span>
+                          </div>
+                        `
+                            )
+                            .join("")
+                        : `<div class="empty-state">Nessun lavoro con questi filtri.</div>`
+                    }
+                  </div>
+                `;
+              })
+              .join("")}
+          </div>`
+          }
         </div>
       </div>
     </section>
