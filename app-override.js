@@ -77,6 +77,7 @@ saveTaskAssignment = async function saveTaskAssignmentOverride() {
     setFlashMessage("Seleziona task e dipendente");
     return;
   }
+
   setBusy(true);
   try {
     const calendarDay = getCalendarDayFromDate(appState.assignmentDraft.plannedDate);
@@ -84,16 +85,24 @@ saveTaskAssignment = async function saveTaskAssignmentOverride() {
       appState.assignmentDraft.plannedDate,
       appState.assignmentDraft.plannedTime
     );
-    await patchRows(
-      "order_tasks",
-      { id: `eq.${taskId}` },
-      {
+
+    const response = await fetch("/api/assign-task", {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        task_id: taskId,
         assigned_user_id: assignedUserId,
         planned_date: plannedDateTime || null,
         calendar_day_label: calendarDay !== "Da pianificare" ? calendarDay : null,
         notes: "Assegnazione aggiornata dalla UI",
-      }
-    );
+      }),
+    });
+
+    if (!response.ok) {
+      const error = await response.json().catch(() => ({}));
+      throw new Error(error.error || "Assegnazione non riuscita");
+    }
+
     await refreshBootstrap();
     setFlashMessage("Assegnazione calendario salvata");
   } catch (error) {
