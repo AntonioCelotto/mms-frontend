@@ -1,29 +1,27 @@
 from __future__ import annotations
 
-import json
+from http import HTTPStatus
 from http.server import BaseHTTPRequestHandler
 
+from _api import write_json
 from _supabase import build_bootstrap
 
 
 class handler(BaseHTTPRequestHandler):
     def do_GET(self):
         if self.path not in ("/api/bootstrap", "/api/bootstrap/"):
-            self.send_response(404)
-            self.send_header("Content-Type", "application/json; charset=utf-8")
-            self.end_headers()
-            self.wfile.write(b'{"error":"Not found"}')
-            return
+            return write_json(self, {"error": "Not found"}, HTTPStatus.NOT_FOUND)
 
-        payload = build_bootstrap()
-        body = json.dumps(payload, ensure_ascii=True).encode("utf-8")
+        try:
+            payload = build_bootstrap()
+        except RuntimeError as error:
+            return write_json(
+                self,
+                {"error": "Bootstrap non disponibile", "detail": str(error)},
+                HTTPStatus.SERVICE_UNAVAILABLE,
+            )
 
-        self.send_response(200)
-        self.send_header("Content-Type", "application/json; charset=utf-8")
-        self.send_header("Cache-Control", "no-store")
-        self.send_header("Content-Length", str(len(body)))
-        self.end_headers()
-        self.wfile.write(body)
+        return write_json(self, payload)
 
     def log_message(self, format, *args):
         return
