@@ -552,3 +552,340 @@ updateTaskFromUi = async function updateTaskFromUiOverride(taskId, nextStatus) {
     console.warn("Override Supabase non disponibile", error);
   }
 })();
+
+if (!appState.calendarFilters.department) {
+  appState.calendarFilters.department = "all";
+}
+
+function getTaskOwner(task) {
+  return (task.team?.split(" - ").pop() || "Non assegnato").trim();
+}
+
+function getTaskDepartment(task) {
+  return (task.team?.split(" - ")[0] || "Da assegnare").trim();
+}
+
+function getDepartmentOptions() {
+  return ["all", ...new Set(appData.orders.map((order) => order.department).filter(Boolean))];
+}
+
+function getPhaseOptions() {
+  return ["all", ...new Set(Object.values(appData.orderTasks).flat().map((task) => task.phase).filter(Boolean))];
+}
+
+function getEmployeeOptions() {
+  return ["all", ...new Set(Object.values(appData.orderTasks).flat().map((task) => getTaskOwner(task)).filter(Boolean))];
+}
+
+function calendarOrderMap() {
+  return Object.fromEntries(appData.orders.map((order) => [order.id, order]));
+}
+
+function filterCalendarSlotsEnhanced(slots) {
+  const orderMap = calendarOrderMap();
+  return slots.filter((slot) => {
+    const matchesEmployee =
+      appState.calendarFilters.employee === "all" || slot.owner === appState.calendarFilters.employee;
+    const matchesPhase =
+      appState.calendarFilters.phase === "all" || slot.phase === appState.calendarFilters.phase;
+    const slotOrder = orderMap[slot.orderId];
+    const matchesDepartment =
+      appState.calendarFilters.department === "all" ||
+      slotOrder?.department === appState.calendarFilters.department;
+    return matchesEmployee && matchesPhase && matchesDepartment;
+  });
+}
+
+renderCalendar = function renderCalendarOverride() {
+  const order = getSelectedOrder();
+  const selectedOrderTasks = appData.orderTasks[appState.selectedOrderId] || [];
+  const departmentOptions = getDepartmentOptions();
+  const employeeOptions = getEmployeeOptions();
+  const phaseOptions = getPhaseOptions();
+  const assignableAccounts = appData.accounts
+    .filter((account) => account.role === "Amministratore" || account.role === "Visualizzatore")
+    .map((account) => ({ id: account.id, label: account.name }));
+
+  const loadByEmployee = {};
+  Object.values(appData.orderTasks)
+    .flat()
+    .forEach((task) => {
+      const owner = getTaskOwner(task);
+      if (!loadByEmployee[owner]) {
+        loadByEmployee[owner] = { tasks: 0, hours: 0, phases: new Set() };
+      }
+      loadByEmployee[owner].tasks += 1;
+      loadByEmployee[owner].hours += Number(String(task.hours || "0").replace(",", ".").split(" ")[0]) || 0;
+      loadByEmployee[owner].phases.add(task.phase);
+    });
+
+  const employeeLoadCards = Object.entries(loadByEmployee)
+    .sort((a, b) => b[1].tasks - a[1].tasks)
+    .slice(0, 6);
+
+  return `
+    <section class="view ${appState.currentView === "calendar" ? "active" : ""}">
+      <div class="screen-header">
+        <div>
+          <h2>Calendario operativo ordini</h2>
+          <p>Qui l'ordine diventa pianificazione vera: task, dipendente, giorno, stato e riassegnazione nello stesso flusso.</p>
+        </div>
+        <div class="screen-actions">
+          <div class="ghost-pill">Ordine attivo: #${order.id}</div>
+          <button class="action-pill" data-action="save-assignment">${appState.busy ? "Salvataggio..." : "Salva assegnazione"}</button>
+        </div>
+      </div>
+
+      <div class="surface">
+        <div class="surface-inner">
+          <div class="filter-row" style="grid-template-columns: 1.2fr 1fr 1fr 1fr 1fr 1fr;">
+            <div class="filter-chip">Ordine: #${order.id} · ${order.client}</div>
+            <select class="filter-chip" data-calendar-department>
+              ${departmentOptions
+                .map(
+                  (department) => `<option value="${department}" ${
+                    appState.calendarFilters.department === department ? "selected" : ""
+                  }>${department === "all" ? "Tutti i reparti" : department}</option>`
+                )
+                .join("")}
+            </select>
+            <select class="filter-chip" data-calendar-filter="employee">
+              ${employeeOptions
+                .map(
+                  (employee) => `<option value="${employee}" ${
+                    appState.calendarFilters.employee === employee ? "selected" : ""
+                  }>${employee === "all" ? "Tutti i dipendenti" : employee}</option>`
+                )
+                .join("")}
+            </select>
+            <select class="filter-chip" data-calendar-filter="phase">
+              ${phaseOptions
+                .map(
+                  (phase) => `<option value="${phase}" ${
+                    appState.calendarFilters.phase === phase ? "selected" : ""
+                  }>${phase === "all" ? "Tutte le lavorazioni" : phase}</option>`
+                )
+                .join("")}
+            </select>
+            <div class="filter-chip">Stato ordine: ${order.status}</div>
+            <div class="filter-chip">Consegna: ${order.estimatedDelivery}</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="layout-2">
+        <div class="surface">
+          <div class="surface-inner">
+            <div class="section-title">
+              <div>
+                <h3>Task dell'ordine #${order.id}</h3>
+                <p>Seleziona un task, assegnalo a una persona e spostalo sul giorno corretto.</p>
+              </div>
+            </div>
+            <table>
+              <thead>
+                <tr>
+                  <th>Task</th>
+                  <th>Reparto</th>
+                  <th>Fase</th>
+                  <th>Assegnato</th>
+                  <th>Data</th>
+                  <th>Giorno</th>
+                  <th>Stato</th>
+                  <th>Azioni</th>
+                </tr>
+              </thead>
+              <tbody>
+                ${
+                  selectedOrderTasks.length
+                    ? selectedOrderTasks
+                        .map(
+                          (task) => `
+                      <tr>
+                        <td>${task.name}</td>
+                        <td>${getTaskDepartment(task)}</td>
+                        <td>${task.phase}</td>
+                        <td>${getTaskOwner(task)}</td>
+                        <td>${task.time}</td>
+                        <td>${task.calendarDay}</td>
+                        <td><span class="table-status ${getStatusClass(task.state)}">${task.state}</span></td>
+                        <td>
+                          <div class="pill-row">
+                            <button class="mini-btn" data-pick-task="${task.id}" data-pick-day="${task.calendarDay}" data-pick-date="${task.time}">Pianifica</button>
+                            <button class="mini-btn" data-task-update="${task.id}" data-next-status="${
+                            task.state === "Completato" ? "in_corso" : "completato"
+                          }">${task.state === "Completato" ? "Riapri" : "Completa"}</button>
+                          </div>
+                        </td>
+                      </tr>
+                    `
+                        )
+                        .join("")
+                    : `<tr><td colspan="8"><div class="empty-state">Questo ordine non ha ancora task da pianificare.</div></td></tr>`
+                }
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <div style="display:grid; gap:16px;">
+          <div class="surface">
+            <div class="surface-inner">
+              <div class="section-title">
+                <div>
+                  <h3>Assegnazione rapida</h3>
+                  <p>La compilazione minima per mettere il task in calendario.</p>
+                </div>
+              </div>
+              <div class="form-grid">
+                <div class="field">
+                  <label>Task ordine</label>
+                  <select class="filter-chip" data-assignment-field="taskId">
+                    <option value="">Seleziona task</option>
+                    ${selectedOrderTasks
+                      .map(
+                        (task) => `<option value="${task.id}" ${
+                          String(appState.assignmentDraft.taskId) === String(task.id) ? "selected" : ""
+                        }>${task.name}</option>`
+                      )
+                      .join("")}
+                  </select>
+                </div>
+                <div class="field">
+                  <label>Dipendente</label>
+                  <select class="filter-chip" data-assignment-field="assignedUserId">
+                    <option value="">Seleziona dipendente</option>
+                    ${assignableAccounts
+                      .map(
+                        (employee) => `<option value="${employee.id}" ${
+                          String(appState.assignmentDraft.assignedUserId) === String(employee.id) ? "selected" : ""
+                        }>${employee.label}</option>`
+                      )
+                      .join("")}
+                  </select>
+                </div>
+                <div class="field">
+                  <label>Data pianificata</label>
+                  <input class="field-value" data-assignment-field="plannedDate" value="${appState.assignmentDraft.plannedDate}" placeholder="es. 10 giugno 2026" />
+                </div>
+                <div class="field">
+                  <label>Giorno calendario</label>
+                  <select class="filter-chip" data-assignment-field="calendarDay">
+                    ${["Lunedi'", "Martedi'", "Mercoledi'", "Giovedi'", "Venerdi'"]
+                      .map(
+                        (day) => `<option value="${day}" ${
+                          appState.assignmentDraft.calendarDay === day ? "selected" : ""
+                        }>${day}</option>`
+                      )
+                      .join("")}
+                  </select>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="surface">
+            <div class="surface-inner">
+              <div class="section-title">
+                <div>
+                  <h3>Carico per dipendente</h3>
+                  <p>Serve a capire se stiamo saturando una persona prima di promettere la consegna.</p>
+                </div>
+              </div>
+              <div class="dept-strip">
+                ${employeeLoadCards
+                  .map(
+                    ([owner, stats]) => `
+                  <div class="dept-row">
+                    <div class="dept-name">
+                      <strong>${owner}</strong>
+                      <span>${Array.from(stats.phases).join(", ")}</span>
+                    </div>
+                    <div>
+                      <div class="mini-progress"><div style="width:${Math.min(92, 22 + stats.tasks * 12)}%"></div></div>
+                    </div>
+                    <div class="mini-meta">${stats.tasks} task · ${stats.hours.toFixed(1).replace(".", ",")} h</div>
+                    <button class="mini-btn" data-calendar-employee-filter="${owner}">Filtra</button>
+                  </div>
+                `
+                  )
+                  .join("")}
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="surface">
+        <div class="surface-inner">
+          <div class="section-title">
+            <div>
+              <h3>Planning settimana</h3>
+              <p>Vista pratica per reparto e dipendente, utile per spostare i task dell'ordine appena creato.</p>
+            </div>
+          </div>
+          <div class="calendar-board">
+            ${appData.calendar
+              .map((day) => {
+                const slots = filterCalendarSlotsEnhanced(day.slots);
+                return `
+                  <div class="calendar-col">
+                    <h4>${day.day}</h4>
+                    <p>${day.date || "Settimana attiva"}</p>
+                    ${
+                      slots.length
+                        ? slots
+                            .map(
+                              (slot) => `
+                          <div class="slot" data-detail="${slot.orderId}">
+                            <strong>#${slot.orderId} - ${slot.title}</strong>
+                            <span>${slot.owner} · ${slot.time}</span>
+                            <span>${slot.phase}</span>
+                          </div>
+                        `
+                            )
+                            .join("")
+                        : `<div class="empty-state">Nessun task con questi filtri.</div>`
+                    }
+                  </div>
+                `;
+              })
+              .join("")}
+          </div>
+        </div>
+      </div>
+    </section>
+  `;
+};
+
+const baseAttachEvents = attachEvents;
+attachEvents = function attachEventsOverride() {
+  baseAttachEvents();
+
+  document.querySelectorAll("[data-pick-task]").forEach((button) => {
+    button.addEventListener("click", () => {
+      appState.assignmentDraft.taskId = button.dataset.pickTask;
+      appState.assignmentDraft.calendarDay =
+        button.dataset.pickDay && button.dataset.pickDay !== "Da pianificare"
+          ? button.dataset.pickDay
+          : appState.assignmentDraft.calendarDay || "Lunedi'";
+      appState.assignmentDraft.plannedDate =
+        button.dataset.pickDate && button.dataset.pickDate !== "Da pianificare" ? button.dataset.pickDate : "";
+      renderApp();
+    });
+  });
+
+  document.querySelectorAll("[data-calendar-department]").forEach((select) => {
+    select.addEventListener("change", (event) => {
+      appState.calendarFilters.department = event.target.value;
+      renderApp();
+    });
+  });
+
+  document.querySelectorAll("[data-calendar-employee-filter]").forEach((button) => {
+    button.addEventListener("click", () => {
+      appState.calendarFilters.employee = button.dataset.calendarEmployeeFilter;
+      renderApp();
+    });
+  });
+};
