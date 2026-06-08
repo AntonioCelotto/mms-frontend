@@ -630,6 +630,19 @@ function filterCalendarSlotsEnhanced(slots) {
   });
 }
 
+function getScheduledTasksForSelectedOrder() {
+  const tasks = appData.orderTasks[appState.selectedOrderId] || [];
+  return tasks.filter((task) => task.calendarDay && task.calendarDay !== "Da pianificare");
+}
+
+function getUpcomingScheduledTasks(limit = 6) {
+  return Object.values(appData.orderTasks)
+    .flat()
+    .filter((task) => task.calendarDay && task.calendarDay !== "Da pianificare")
+    .sort((a, b) => String(a.time || "").localeCompare(String(b.time || "")))
+    .slice(0, limit);
+}
+
 renderCalendar = function renderCalendarOverride() {
   const order = getSelectedOrder();
   const selectedOrderTasks = appData.orderTasks[appState.selectedOrderId] || [];
@@ -754,169 +767,4 @@ renderCalendar = function renderCalendarOverride() {
                       </tr>
                     `
                         )
-                        .join("")
-                    : `<tr><td colspan="8"><div class="empty-state">Questo ordine non ha ancora task da pianificare.</div></td></tr>`
-                }
-              </tbody>
-            </table>
-          </div>
-        </div>
-
-        <div style="display:grid; gap:16px;">
-          <div class="surface">
-            <div class="surface-inner">
-              <div class="section-title">
-                <div>
-                  <h3>Assegnazione rapida</h3>
-                  <p>La compilazione minima per mettere il task in calendario.</p>
-                </div>
-              </div>
-              <div class="form-grid">
-                <div class="field">
-                  <label>Task ordine</label>
-                  <select class="filter-chip" data-assignment-field="taskId">
-                    <option value="">Seleziona task</option>
-                    ${selectedOrderTasks
-                      .map(
-                        (task) => `<option value="${task.id}" ${
-                          String(appState.assignmentDraft.taskId) === String(task.id) ? "selected" : ""
-                        }>${task.name}</option>`
-                      )
-                      .join("")}
-                  </select>
-                </div>
-                <div class="field">
-                  <label>Dipendente</label>
-                  <select class="filter-chip" data-assignment-field="assignedUserId">
-                    <option value="">Seleziona dipendente</option>
-                    ${assignableAccounts
-                      .map(
-                        (employee) => `<option value="${employee.id}" ${
-                          String(appState.assignmentDraft.assignedUserId) === String(employee.id) ? "selected" : ""
-                        }>${employee.label}</option>`
-                      )
-                      .join("")}
-                  </select>
-                </div>
-                <div class="field">
-                  <label>Data pianificata</label>
-                  <input type="date" class="field-value" data-assignment-field="plannedDate" value="${appState.assignmentDraft.plannedDate}" />
-                </div>
-                <div class="field">
-                  <label>Ora consegna / task</label>
-                  <input type="time" class="field-value" data-assignment-field="plannedTime" value="${appState.assignmentDraft.plannedTime}" />
-                </div>
-                <div class="field">
-                  <label>Giorno calendario</label>
-                  <div class="field-value">${getCalendarDayFromDate(appState.assignmentDraft.plannedDate)}</div>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <div class="surface">
-            <div class="surface-inner">
-              <div class="section-title">
-                <div>
-                  <h3>Carico per dipendente</h3>
-                  <p>Serve a capire se stiamo saturando una persona prima di promettere la consegna.</p>
-                </div>
-              </div>
-              <div class="dept-strip">
-                ${employeeLoadCards
-                  .map(
-                    ([owner, stats]) => `
-                  <div class="dept-row">
-                    <div class="dept-name">
-                      <strong>${owner}</strong>
-                      <span>${Array.from(stats.phases).join(", ")}</span>
-                    </div>
-                    <div>
-                      <div class="mini-progress"><div style="width:${Math.min(92, 22 + stats.tasks * 12)}%"></div></div>
-                    </div>
-                    <div class="mini-meta">${stats.tasks} task · ${stats.hours.toFixed(1).replace(".", ",")} h</div>
-                    <button class="mini-btn" data-calendar-employee-filter="${owner}">Filtra</button>
-                  </div>
-                `
-                  )
-                  .join("")}
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <div class="surface">
-        <div class="surface-inner">
-          <div class="section-title">
-            <div>
-              <h3>Planning settimana</h3>
-              <p>Vista pratica per reparto e dipendente, utile per spostare i task dell'ordine appena creato.</p>
-            </div>
-          </div>
-          <div class="calendar-board">
-            ${appData.calendar
-              .map((day) => {
-                const slots = filterCalendarSlotsEnhanced(day.slots);
-                return `
-                  <div class="calendar-col">
-                    <h4>${day.day}</h4>
-                    <p>${day.date || "Settimana attiva"}</p>
-                    ${
-                      slots.length
-                        ? slots
-                            .map(
-                              (slot) => `
-                          <div class="slot" data-detail="${slot.orderId}">
-                            <strong>#${slot.orderId} - ${slot.title}</strong>
-                            <span>${slot.owner} · ${slot.time}</span>
-                            <span>${slot.phase}</span>
-                          </div>
-                        `
-                            )
-                            .join("")
-                        : `<div class="empty-state">Nessun task con questi filtri.</div>`
-                    }
-                  </div>
-                `;
-              })
-              .join("")}
-          </div>
-        </div>
-      </div>
-    </section>
-  `;
-};
-
-const baseAttachEvents = attachEvents;
-attachEvents = function attachEventsOverride() {
-  baseAttachEvents();
-
-  document.querySelectorAll("[data-pick-task]").forEach((button) => {
-    button.addEventListener("click", () => {
-      const parts = splitPlannedDateTime(button.dataset.pickDate);
-      appState.assignmentDraft.taskId = button.dataset.pickTask;
-      appState.assignmentDraft.calendarDay =
-        button.dataset.pickDay && button.dataset.pickDay !== "Da pianificare"
-          ? button.dataset.pickDay
-          : appState.assignmentDraft.calendarDay || "Lunedi'";
-      appState.assignmentDraft.plannedDate = parts.date;
-      appState.assignmentDraft.plannedTime = parts.time;
-      renderApp();
-    });
-  });
-
-  document.querySelectorAll("[data-calendar-department]").forEach((select) => {
-    select.addEventListener("change", (event) => {
-      appState.calendarFilters.department = event.target.value;
-      renderApp();
-    });
-  });
-
-  document.querySelectorAll("[data-calendar-employee-filter]").forEach((button) => {
-    button.addEventListener("click", () => {
-      appState.calendarFilters.employee = button.dataset.calendarEmployeeFilter;
-      renderApp();
-    });
-  });
-};
+                        .join("")}
