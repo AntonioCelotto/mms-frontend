@@ -19,7 +19,7 @@ class handler(BaseHTTPRequestHandler):
 
         visibility_enabled = payload.get("visibility_enabled")
         if isinstance(visibility_enabled, str):
-            visibility_enabled = visibility_enabled.strip().lower() in {"true", "1", "si", "sì", "yes"}
+            visibility_enabled = visibility_enabled.strip().lower() in {"true", "1", "si", "yes"}
         else:
             visibility_enabled = bool(visibility_enabled)
 
