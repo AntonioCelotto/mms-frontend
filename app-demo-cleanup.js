@@ -15,7 +15,8 @@ const DEMO_COPY_REPLACEMENTS = new Map([
   ["La base dell'app mostra AI assistiva, non sostitutiva, in linea con il documento tecnico.", "I suggerimenti AI restano tracciabili e approvati da un operatore."],
   ["Cosa il cliente deve percepire appena entra.", "Priorita' operative della giornata."],
   ["Dal foglio operativo a una cabina di regia unica per ordini, reparti e consegne.", "Cabina di regia per ordini, reparti e consegne."],
-  ["Questa base front-end trasforma il processo attuale in un'app navigabile, con una sola fonte dati e viste dedicate per chi coordina, produce o controlla i pagamenti.", "Il gestionale organizza ordini, reparti, task, materiali e pagamenti con una sola fonte dati."]
+  ["Questa base front-end trasforma il processo attuale in un'app navigabile, con una sola fonte dati e viste dedicate per chi coordina, produce o controlla i pagamenti.", "Il gestionale organizza ordini, reparti, task, materiali e pagamenti con una sola fonte dati."],
+  ["660 ordini storici rilevati", "Ordini caricati: aggiornamento in corso"]
 ]);
 
 const DEMO_ACCOUNT_MARKERS = [
@@ -41,6 +42,19 @@ function replaceDemoTextInNode(root) {
       value = value.split(source).join(replacement);
     });
     node.nodeValue = value;
+  });
+}
+
+function updateOrderArchiveCount(root) {
+  if (typeof appState === "undefined" || appState.currentView !== "orders") return;
+  if (typeof appData === "undefined" || !Array.isArray(appData.orders)) return;
+
+  const countText = `Ordini caricati: ${appData.orders.length}`;
+  root.querySelectorAll(".ghost-pill").forEach((pill) => {
+    const text = pill.textContent.trim();
+    if (text === "Ordini caricati: aggiornamento in corso" || /ordini storici rilevati/i.test(text)) {
+      pill.textContent = countText;
+    }
   });
 }
 
@@ -72,6 +86,7 @@ function applyDemoCleanup() {
   if (!root) return;
 
   replaceDemoTextInNode(root);
+  updateOrderArchiveCount(root);
   hideVisibleDemoAccounts(root);
 }
 
