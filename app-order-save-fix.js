@@ -25,9 +25,20 @@ function resolveDraftDepartment() {
 }
 
 async function readJsonResponse(response, fallbackMessage) {
-  const payload = await response.json().catch(() => ({}));
+  const raw = await response.text().catch(() => "");
+  let payload = {};
+  if (raw) {
+    try {
+      payload = JSON.parse(raw);
+    } catch (error) {
+      payload = { detail: raw.slice(0, 240) };
+    }
+  }
+
   if (!response.ok) {
-    throw new Error(payload.error || payload.detail || fallbackMessage);
+    const detail = payload.detail || payload.message || "";
+    const message = payload.error || fallbackMessage;
+    throw new Error(detail ? `${message}: ${detail}` : `${message} (HTTP ${response.status})`);
   }
   return payload;
 }
