@@ -18,17 +18,12 @@ class handler(BaseHTTPRequestHandler):
                 return write_json(self, {"error": "JSON non valido"}, HTTPStatus.BAD_REQUEST)
 
             client_name = clean_text(payload.get("client"))
-            category = clean_text(payload.get("category"))
+            category = clean_text(payload.get("category")) or None
             department_name = clean_text(payload.get("department")) or "Sartoria interna"
             priority_value = normalize_choice(payload.get("priority"), ALLOWED_PRIORITIES, "standard")
 
-            missing = []
             if not client_name:
-                missing.append("client")
-            if not category:
-                missing.append("category")
-            if missing:
-                return write_json(self, {"error": f"Campi obbligatori mancanti: {', '.join(missing)}"}, HTTPStatus.BAD_REQUEST)
+                return write_json(self, {"error": "Campo obbligatorio mancante: client"}, HTTPStatus.BAD_REQUEST)
 
             order = supabase_request(
                 "/rest/v1/rpc/create_order_atomic",
