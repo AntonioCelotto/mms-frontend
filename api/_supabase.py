@@ -13,7 +13,7 @@ DEFAULT_SUPABASE_URL = "https://fzdqemzowxjuotqalaol.supabase.co"
 DEFAULT_SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZ6ZHFlbXpvd3hqdW90cWFsYW9sIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzk5Njg3NzYsImV4cCI6MjA5NTU0NDc3Nn0.fmZ9RThFxnaJGQsOYeu_ZjjUNHThlRX87qz9sX4N6Mk"
 SUPABASE_URL = os.environ.get("SUPABASE_URL", DEFAULT_SUPABASE_URL).rstrip("/")
 SUPABASE_KEY = os.environ.get("SUPABASE_ANON_KEY", DEFAULT_SUPABASE_KEY)
-SUPABASE_TIMEOUT_SECONDS = 15
+SUPABASE_TIMEOUT_SECONDS = 5
 
 
 def supabase_request(path: str, *, method: str = "GET", query: dict | None = None, payload=None, prefer: str | None = None):
@@ -45,7 +45,7 @@ def supabase_request(path: str, *, method: str = "GET", query: dict | None = Non
         detail = exc.read().decode("utf-8")
         raise RuntimeError(detail or exc.reason) from exc
     except (URLError, TimeoutError, socket.timeout) as exc:
-        raise RuntimeError(f"Supabase non raggiungibile: {exc}") from exc
+        raise RuntimeError(f"Supabase non raggiungibile entro {SUPABASE_TIMEOUT_SECONDS}s: {exc}") from exc
     except json.JSONDecodeError as exc:
         raise RuntimeError("Risposta Supabase non valida") from exc
 
