@@ -34,7 +34,7 @@ function escapeOrderEnhancementHtml(value) {
     .replace(/&/g, "&amp;")
     .replace(/</g, "&lt;")
     .replace(/>/g, "&gt;")
-    .replace(/"/g, "&quot;")
+    .replace(/\"/g, "&quot;")
     .replace(/'/g, "&#39;");
 }
 
@@ -57,6 +57,16 @@ function ensureOrderAttachmentState() {
   if (!appState.loadingOrderAttachmentIds || typeof appState.loadingOrderAttachmentIds !== "object") {
     appState.loadingOrderAttachmentIds = {};
   }
+}
+
+function getSelectedOrderDisplayId() {
+  const order = getSelectedOrder();
+  return Number(order?.id || appState.selectedOrderId);
+}
+
+function getSelectedOrderStorageId() {
+  const order = getSelectedOrder();
+  return Number(order?.db_id || order?.id || appState.selectedOrderId);
 }
 
 function resetNewOrderDraft() {
@@ -107,8 +117,7 @@ function renderAttachmentCards(attachments, scope) {
 function getAttachmentList(scope) {
   ensureOrderAttachmentState();
   if (scope === "draft") return appState.draftOrderAttachments;
-  const order = getSelectedOrder();
-  return appState.orderAttachments[order.id] || [];
+  return appState.orderAttachments[getSelectedOrderDisplayId()] || [];
 }
 
 function renderNewOrderAttachments() {
@@ -141,7 +150,11 @@ function renderOrderDetailAttachments() {
             <h3>Foto e allegati ordine</h3>
             <p>File salvati e collegati all'ordine #${order.id}.</p>
           </div>
-          <div class="ghost-pill">${attachments.length} foto salvate</div>
+          <div class="pill-row">
+            <div class="ghost-pill">${attachments.length} foto salvate</div>
+            <button class="action-pill" data-action="pick-existing-order-photo" type="button">+ Foto</button>
+            <input class="visually-hidden" data-existing-order-photo-input type="file" accept="image/*" multiple />
+          </div>
         </div>
         ${renderAttachmentCards(attachments, "order")}
       </div>
@@ -195,10 +208,9 @@ function enhanceOrderDetailView() {
   const section = document.querySelector("section.view.active .metric-band")?.closest("section.view");
   if (!section || section.querySelector(".order-detail-attachments")) return;
 
-  const order = getSelectedOrder();
   const metricBand = section.querySelector(".metric-band");
   metricBand.insertAdjacentHTML("afterend", renderOrderDetailAttachments());
-  loadPersistedOrderAttachments(order.id);
+  loadPersistedOrderAttachments(getSelectedOrderStorageId(), false, getSelectedOrderDisplayId());
 }
 
 function readFileAsDataUrl(file) {
@@ -243,21 +255,59 @@ function normalizePersistedAttachment(attachment) {
   };
 }
 
-async function loadPersistedOrderAttachments(orderId, force = false) {
+async function loadPersistedOrderAttachments(orderId, force = false, stateKey = orderId) {
   ensureOrderAttachmentState();
-  if (!orderId || appState.loadingOrderAttachmentIds[orderId]) return;
-  if (!force && appState.loadedOrderAttachmentIds[orderId]) return;
+  if (!orderId || appState.loadingOrderAttachmentIds[stateKey]) return;
+  if (!force && appState.loadedOrderAttachmentIds[stateKey]) return;
 
-  appState.loadingOrderAttachmentIds[orderId] = true;
+  appState.loadingOrderAttachmentIds[stateKey] = true;
   try {
     const response = await fetch(`/api/list-attachments?order_id=${encodeURIComponent(orderId)}`);
     if (!response.ok) return;
     const payload = await response.json();
-    appState.orderAttachments[orderId] = (payload.attachments || []).map(normalizePersistedAttachment);
-    appState.loadedOrderAttachmentIds[orderId] = true;
+    appState.orderAttachments[stateKey] = (payload.attachments || []).map(normalizePersistedAttachment);
+    appState.loadedOrderAttachmentIds[stateKey] = true;
     renderApp();
   } finally {
-    appState.loadingOrderAttachmentIds[orderId] = false;
+    appState.loadingOrderAttachmentIds[stateKey] = false;
+  }
+}
+
+async function uploadFilesToExistingOrder(files) {
+  ensureOrderAttachmentState();
+  const order = getSelectedOrder();
+  const displayId = getSelectedOrderDisplayId();
+  const storageId = getSelectedOrderStorageId();
+  if (!order || !storageId || !files.length) return;
+
+  setBusy(true);
+  try {
+    const uploaded = [];
+    for (const file of files) {
+      const saved = await uploadAttachmentFile(storageId, {
+        name: file.name,
+        size: file.size,
+        sizeLabel: formatAttachmentSize(file.size),
+        type: file.type,
+        file,
+      });
+      if (saved) uploaded.push(saved);
+    }
+
+    const current = appState.orderAttachments[displayId] || [];
+    appState.orderAttachments[displayId] = [...current, ...uploaded];
+    appState.loadedOrderAttachmentIds[displayId] = true;
+    if (Number.isFinite(Number(order.files))) {
+      order.files = Number(order.files) + uploaded.length;
+    } else {
+      order.files = uploaded.length;
+    }
+    setFlashMessage(`${uploaded.length} foto aggiunte all'ordine #${displayId}`);
+  } catch (error) {
+    setFlashMessage(error.message || "Upload foto non riuscito");
+  } finally {
+    appState.busy = false;
+    renderApp();
   }
 }
 
@@ -283,6 +333,18 @@ function attachOrderEnhancementEvents() {
       });
       event.target.value = "";
       renderApp();
+    });
+  }
+
+  const pickExistingPhoto = document.querySelector("[data-action='pick-existing-order-photo']");
+  const existingPhotoInput = document.querySelector("[data-existing-order-photo-input]");
+
+  if (pickExistingPhoto && existingPhotoInput) {
+    pickExistingPhoto.addEventListener("click", () => existingPhotoInput.click());
+    existingPhotoInput.addEventListener("change", (event) => {
+      const files = Array.from(event.target.files || []);
+      event.target.value = "";
+      uploadFilesToExistingOrder(files);
     });
   }
 
@@ -340,16 +402,16 @@ saveDraftOrder = async function saveDraftOrderWithAttachments() {
     try {
       const uploaded = [];
       for (const attachment of pendingAttachments) {
-        const saved = await uploadAttachmentFile(appState.selectedOrderId, attachment);
+        const saved = await uploadAttachmentFile(getSelectedOrderStorageId(), attachment);
         if (saved) uploaded.push(saved);
       }
       pendingAttachments.forEach((attachment) => {
         if (attachment.localUrl) URL.revokeObjectURL(attachment.localUrl);
       });
       appState.draftOrderAttachments = [];
-      appState.orderAttachments[appState.selectedOrderId] = uploaded;
-      appState.loadedOrderAttachmentIds[appState.selectedOrderId] = true;
-      setFlashMessage(`Ordine #${appState.selectedOrderId} salvato con ${uploaded.length} allegati`);
+      appState.orderAttachments[getSelectedOrderDisplayId()] = uploaded;
+      appState.loadedOrderAttachmentIds[getSelectedOrderDisplayId()] = true;
+      setFlashMessage(`Ordine #${getSelectedOrderDisplayId()} salvato con ${uploaded.length} allegati`);
     } catch (error) {
       setFlashMessage(error.message || "Ordine salvato, ma upload allegati non riuscito");
     }
