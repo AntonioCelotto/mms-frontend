@@ -9,6 +9,10 @@ const ORDER_CATEGORY_OPTIONS = [
   "Altro",
 ];
 
+const ATTACHMENT_SUPABASE_URL = "https://fzdqemzowxjuotqalaol.supabase.co";
+const ATTACHMENT_SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXAiOiJmenRocWVtenY2hqdW90cWFsYW9sIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzk5Njg3NzYsImV4cCI6MjA5NTU0NDc3Nn0.fmZ9RThFxnaJGQsOYeu_ZjjUNHThlRX87qz9sX4N6Mk".replace("c3Vw", "c3VwYWJhc2U");
+const ATTACHMENT_STORAGE_BUCKET = "order-attachments";
+
 const EMPTY_ORDER_DRAFT = {
   client: "",
   category: "",
@@ -213,34 +217,97 @@ function enhanceOrderDetailView() {
   loadPersistedOrderAttachments(getSelectedOrderStorageId(), false, getSelectedOrderDisplayId());
 }
 
-function readFileAsDataUrl(file) {
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onload = () => resolve(reader.result);
-    reader.onerror = () => reject(reader.error || new Error("Lettura file non riuscita"));
-    reader.readAsDataURL(file);
+function safeAttachmentFileName(name) {
+  const cleaned = String(name || "attachment")
+    .normalize("NFKD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[^A-Za-z0-9._-]+/g, "-")
+    .replace(/^[._-]+|[._-]+$/g, "");
+  return cleaned || "attachment";
+}
+
+function encodeStoragePath(path) {
+  return path.split("/").map((part) => encodeURIComponent(part)).join("/");
+}
+
+function buildAttachmentStoragePath(orderId, file) {
+  const fileName = safeAttachmentFileName(file.name);
+  const unique = `${Date.now()}-${Math.random().toString(16).slice(2)}`;
+  return `orders/${orderId}/${unique}-${fileName}`;
+}
+
+async function readAttachmentJson(response, fallbackMessage) {
+  const raw = await response.text().catch(() => "");
+  let payload = null;
+  if (raw) {
+    try {
+      payload = JSON.parse(raw);
+    } catch (error) {
+      payload = { detail: raw.slice(0, 240) };
+    }
+  }
+  if (!response.ok) {
+    const detail = payload?.detail || payload?.message || payload?.error || "";
+    throw new Error(detail ? `${fallbackMessage}: ${detail}` : `${fallbackMessage} (HTTP ${response.status})`);
+  }
+  return payload;
+}
+
+async function uploadAttachmentObject(path, file) {
+  const response = await fetch(
+    `${ATTACHMENT_SUPABASE_URL}/storage/v1/object/${ATTACHMENT_STORAGE_BUCKET}/${encodeStoragePath(path)}`,
+    {
+      method: "POST",
+      headers: {
+        apikey: ATTACHMENT_SUPABASE_ANON_KEY,
+        Authorization: `Bearer ${ATTACHMENT_SUPABASE_ANON_KEY}`,
+        "Content-Type": file.type || "application/octet-stream",
+        "x-upsert": "false",
+      },
+      body: file,
+    }
+  );
+  await readAttachmentJson(response, "Upload file non riuscito");
+}
+
+async function insertAttachmentRow(orderId, attachment, path, publicUrl) {
+  const response = await fetch(`${ATTACHMENT_SUPABASE_URL}/rest/v1/attachments`, {
+    method: "POST",
+    headers: {
+      apikey: ATTACHMENT_SUPABASE_ANON_KEY,
+      Authorization: `Bearer ${ATTACHMENT_SUPABASE_ANON_KEY}`,
+      "Content-Type": "application/json",
+      Prefer: "return=representation",
+    },
+    body: JSON.stringify({
+      order_id: orderId,
+      file_type: "foto",
+      file_name: safeAttachmentFileName(attachment.name),
+      file_url: publicUrl,
+      storage_bucket: ATTACHMENT_STORAGE_BUCKET,
+      storage_path: path,
+      mime_type: attachment.type || "application/octet-stream",
+      file_size: attachment.size || 0,
+      notes: "Caricato dalla scheda ordine",
+    }),
   });
+  const payload = await readAttachmentJson(response, "Registrazione allegato non riuscita");
+  return Array.isArray(payload) ? payload[0] : payload;
 }
 
 async function uploadAttachmentFile(orderId, attachment) {
   if (!attachment.file) return null;
-  const dataUrl = await readFileAsDataUrl(attachment.file);
-  const response = await fetch("/api/upload-attachment", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
-      order_id: orderId,
-      file_name: attachment.name,
-      file_type: attachment.type,
-      data: dataUrl,
-    }),
+  const path = buildAttachmentStoragePath(orderId, attachment.file);
+  await uploadAttachmentObject(path, attachment.file);
+  const publicUrl = `${ATTACHMENT_SUPABASE_URL}/storage/v1/object/public/${ATTACHMENT_STORAGE_BUCKET}/${encodeStoragePath(path)}`;
+  const row = await insertAttachmentRow(orderId, attachment, path, publicUrl);
+  return normalizePersistedAttachment({
+    id: row?.id,
+    name: row?.file_name || attachment.name,
+    url: row?.file_url || publicUrl,
+    mime_type: row?.mime_type || attachment.type,
+    size: row?.file_size || attachment.size,
   });
-  if (!response.ok) {
-    const error = await response.json().catch(() => ({}));
-    throw new Error(error.error || "Upload allegato non riuscito");
-  }
-  const payload = await response.json();
-  return normalizePersistedAttachment(payload.attachment);
 }
 
 function normalizePersistedAttachment(attachment) {
