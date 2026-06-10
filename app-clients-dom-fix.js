@@ -33,6 +33,10 @@ function attachClientsDomEvents() {
     button.addEventListener("click", () => navigate("clients"));
   });
 
+  document.querySelectorAll("section[data-clients-registry='true'] [data-detail]").forEach((button) => {
+    button.addEventListener("click", () => navigate("order-detail", Number(button.dataset.detail)));
+  });
+
   document.querySelectorAll("[data-select-client]").forEach((button) => {
     button.addEventListener("click", () => {
       appState.selectedClientId = Number(button.dataset.selectClient);
