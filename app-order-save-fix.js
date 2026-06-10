@@ -68,8 +68,8 @@ saveDraftOrder = async function saveDraftOrderConfirmed() {
 
   const client = (appState.draftOrder.client || "").trim();
   const category = (appState.draftOrder.category || "").trim();
-  if (!client || !category) {
-    setFlashMessage("Inserisci cliente e categoria prima di salvare l'ordine");
+  if (!client) {
+    setFlashMessage("Inserisci almeno il cliente prima di salvare l'ordine");
     return;
   }
 
@@ -85,7 +85,7 @@ saveDraftOrder = async function saveDraftOrderConfirmed() {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         client,
-        category,
+        category: category || null,
         priority: appState.draftOrder.priority || "Standard",
         department,
         order_date: appState.draftOrder.orderDate || null,
