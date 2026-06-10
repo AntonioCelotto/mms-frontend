@@ -20,6 +20,9 @@ function ensurePaymentState() {
   if (!appState.billingLoadedClientId) {
     appState.billingLoadedClientId = null;
   }
+  if (!appState.billingClient || typeof appState.billingClient !== "object") {
+    appState.billingClient = null;
+  }
 }
 
 function paymentHeaders(extra = {}) {
@@ -53,7 +56,7 @@ async function paymentRequest(path, options = {}) {
 
 function getPaymentClientFromSelectedOrder() {
   const order = getSelectedOrder();
-  return appData.clients.find((client) => client.name === order?.client) || null;
+  return appData.clients.find((client) => client.name === order?.client) || appState.billingClient || null;
 }
 
 function emptyBillingDraft(client) {
@@ -63,20 +66,38 @@ function emptyBillingDraft(client) {
   }, {});
 }
 
+async function fetchBillingClientFromSelectedOrder() {
+  const order = getSelectedOrder();
+  const knownClient = appData.clients.find((client) => client.name === order?.client && client.id);
+  if (knownClient) return knownClient;
+
+  const dbOrderId = Number(order?.db_id || order?.id);
+  if (!dbOrderId) return null;
+  const orderRows = await paymentRequest(`/rest/v1/orders?select=id,client_id&id=eq.${dbOrderId}&limit=1`);
+  const rawOrder = Array.isArray(orderRows) ? orderRows[0] : null;
+  if (!rawOrder?.client_id) return null;
+
+  const fields = ["id", "name", "email", "phone", "payment_terms", ...BILLING_FIELDS.map(([field]) => field)].join(",");
+  const clientRows = await paymentRequest(`/rest/v1/clients?select=${fields}&id=eq.${rawOrder.client_id}&limit=1`);
+  const client = Array.isArray(clientRows) ? clientRows[0] : null;
+  if (client) {
+    appState.billingClient = client;
+  }
+  return client;
+}
+
 async function loadBillingForSelectedClient(force = false) {
   ensurePaymentState();
-  const client = getPaymentClientFromSelectedOrder();
+  const client = await fetchBillingClientFromSelectedOrder();
   if (!client?.id) return;
   if (!force && appState.billingLoadedClientId === client.id) return;
 
-  const query = new URLSearchParams({
-    select: `id,name,${BILLING_FIELDS.map(([field]) => field).join(",")}`,
-    id: `eq.${client.id}`,
-    limit: "1",
-  });
-  const rows = await paymentRequest(`/rest/v1/clients?${query.toString()}`);
+  const fields = ["id", "name", ...BILLING_FIELDS.map(([field]) => field)].join(",");
+  const rows = await paymentRequest(`/rest/v1/clients?select=${fields}&id=eq.${client.id}&limit=1`);
   const row = Array.isArray(rows) ? rows[0] : null;
-  appState.billingDraft = emptyBillingDraft(row || client);
+  const billingClient = row || client;
+  appState.billingClient = billingClient;
+  appState.billingDraft = emptyBillingDraft(billingClient);
   appState.billingLoadedClientId = client.id;
 }
 
@@ -174,7 +195,7 @@ async function exportPaymentsForAccountant() {
 
 async function saveBillingForSelectedClient() {
   ensurePaymentState();
-  const client = getPaymentClientFromSelectedOrder();
+  const client = await fetchBillingClientFromSelectedOrder();
   if (!client?.id) {
     setFlashMessage("Cliente non disponibile per la fatturazione");
     return;
@@ -197,6 +218,7 @@ async function saveBillingForSelectedClient() {
     const updated = Array.isArray(rows) ? rows[0] : null;
     if (updated) {
       Object.assign(client, updated);
+      appState.billingClient = updated;
       appState.billingDraft = emptyBillingDraft(updated);
       appState.billingLoadedClientId = client.id;
     }
@@ -281,7 +303,7 @@ renderPayments = function renderPaymentsEnhanced() {
             <div class="section-title">
               <div>
                 <h3>Dati fatturazione cliente</h3>
-                <p>${client ? `Cliente collegato: ${client.name}` : "Seleziona un ordine per completare i dati fiscali."}</p>
+                <p>${client ? `Cliente collegato: ${client.name}` : "Dati cliente in caricamento."}</p>
               </div>
               <button class="action-pill" data-action="save-billing">Salva fatturazione</button>
             </div>
