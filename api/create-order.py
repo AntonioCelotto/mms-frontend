@@ -10,25 +10,31 @@ from _supabase import ensure_client, get_department_by_name, infer_production_mo
 ALLOWED_PRIORITIES = {"standard", "express"}
 
 
+def require_created_row(rows, label):
+    if not isinstance(rows, list) or not rows:
+        raise RuntimeError(f"{label}: Supabase non ha restituito il record creato")
+    return rows[0]
+
+
 class handler(BaseHTTPRequestHandler):
     def do_POST(self):
-        payload = read_json_body(self)
-        if payload is None:
-            return write_json(self, {"error": "JSON non valido"}, HTTPStatus.BAD_REQUEST)
-
-        client_name = clean_text(payload.get("client"))
-        category = clean_text(payload.get("category"))
-        department_name = clean_text(payload.get("department")) or "Sartoria interna"
-        priority_value = normalize_choice(payload.get("priority"), ALLOWED_PRIORITIES, "standard")
-        missing = []
-        if not client_name:
-            missing.append("client")
-        if not category:
-            missing.append("category")
-        if missing:
-            return write_json(self, {"error": f"Campi obbligatori mancanti: {', '.join(missing)}"}, HTTPStatus.BAD_REQUEST)
-
         try:
+            payload = read_json_body(self)
+            if payload is None:
+                return write_json(self, {"error": "JSON non valido"}, HTTPStatus.BAD_REQUEST)
+
+            client_name = clean_text(payload.get("client"))
+            category = clean_text(payload.get("category"))
+            department_name = clean_text(payload.get("department")) or "Sartoria interna"
+            priority_value = normalize_choice(payload.get("priority"), ALLOWED_PRIORITIES, "standard")
+            missing = []
+            if not client_name:
+                missing.append("client")
+            if not category:
+                missing.append("category")
+            if missing:
+                return write_json(self, {"error": f"Campi obbligatori mancanti: {', '.join(missing)}"}, HTTPStatus.BAD_REQUEST)
+
             client = ensure_client(client_name)
             order_number = next_order_number()
             department = get_department_by_name(department_name)
@@ -48,7 +54,7 @@ class handler(BaseHTTPRequestHandler):
                     "internal_notes": clean_text(payload.get("note")) or None,
                 },
             )
-            order = created[0]
+            order = require_created_row(created, "Ordine")
 
             phase_map = {
                 "Sartoria interna": ["cartamodello", "taglio", "confezione"],
@@ -86,6 +92,15 @@ class handler(BaseHTTPRequestHandler):
             detail = str(error)
             status = HTTPStatus.BAD_REQUEST if "Reparto non trovato" in detail else HTTPStatus.INTERNAL_SERVER_ERROR
             return write_json(self, {"error": "Creazione ordine non riuscita", "detail": detail}, status)
+        except Exception as error:
+            return write_json(
+                self,
+                {
+                    "error": "Creazione ordine non riuscita",
+                    "detail": f"{type(error).__name__}: {error}",
+                },
+                HTTPStatus.INTERNAL_SERVER_ERROR,
+            )
 
         return write_json(self, {"order": {"id": int(order_number), "db_id": order["id"]}}, HTTPStatus.CREATED)
 
