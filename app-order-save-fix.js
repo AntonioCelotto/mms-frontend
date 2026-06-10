@@ -77,6 +77,18 @@ function upsertCreatedOrderPreview(created, uploadedCount = 0) {
   }
 }
 
+function rememberUploadedOrderAttachments(displayOrderId, uploaded) {
+  if (!uploaded.length) return;
+  if (!appState.orderAttachments || typeof appState.orderAttachments !== "object") {
+    appState.orderAttachments = {};
+  }
+  if (!appState.loadedOrderAttachmentIds || typeof appState.loadedOrderAttachmentIds !== "object") {
+    appState.loadedOrderAttachmentIds = {};
+  }
+  appState.orderAttachments[displayOrderId] = uploaded;
+  appState.loadedOrderAttachmentIds[displayOrderId] = true;
+}
+
 async function readJsonResponse(response, fallbackMessage) {
   const raw = await response.text().catch(() => "");
   let payload = {};
@@ -308,16 +320,17 @@ saveDraftOrder = async function saveDraftOrderConfirmed() {
     }
 
     upsertCreatedOrderPreview(createdOrder, uploaded.length);
+    rememberUploadedOrderAttachments(createdOrderNumber, uploaded);
     resetOrderFiltersForNewOrder();
     appState.selectedOrderId = createdOrderNumber;
-    appState.currentView = "orders";
+    appState.currentView = uploaded.length ? "order-detail" : "orders";
 
     const orderVisible = appData.orders.some((order) => Number(order.id) === Number(createdOrderNumber));
     const suffix = uploaded.length ? ` con ${uploaded.length} allegati` : "";
     const refreshSuffix = refreshError ? " L'archivio e' stato aggiornato localmente; ricarica se vuoi riallineare tutti i dati." : "";
     setFlashMessage(
       orderVisible
-        ? `Ordine #${createdOrderNumber} salvato e visibile in Archivio Ordini${suffix}.${refreshSuffix}`
+        ? `Ordine #${createdOrderNumber} salvato${suffix}${uploaded.length ? " e aperto in Scheda ordine" : " e visibile in Archivio Ordini"}.${refreshSuffix}`
         : `Ordine #${createdOrderNumber} salvato, ma l'archivio non si e' aggiornato: ricarica la pagina`
     );
   } catch (error) {
