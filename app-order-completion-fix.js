@@ -15,6 +15,20 @@ function orderCompleteEscape(value) {
     .replace(/'/g, "&#39;");
 }
 
+function orderCompleteCache() {
+  if (!appState.orderCompletionCache) {
+    appState.orderCompletionCache = {
+      attachments: {},
+      materials: {},
+      tasks: {},
+      loadingAttachments: {},
+      loadingMaterials: {},
+      loadingTasks: {},
+    };
+  }
+  return appState.orderCompletionCache;
+}
+
 function orderCompleteState() {
   if (!appState.newOrderTaskPlan) {
     appState.newOrderTaskPlan = ORDER_COMPLETE_PHASES.map(([phase, label]) => ({
@@ -22,7 +36,7 @@ function orderCompleteState() {
       label,
       enabled: true,
       assignedUserId: "",
-      plannedDate: appState.draftOrder?.estimatedDelivery || "",
+      plannedDate: "",
       plannedTime: "",
     }));
   }
@@ -30,11 +44,7 @@ function orderCompleteState() {
 }
 
 function orderCompleteHeaders(extra = {}) {
-  return {
-    apikey: ORDER_COMPLETE_KEY,
-    Authorization: `Bearer ${ORDER_COMPLETE_KEY}`,
-    ...extra,
-  };
+  return { apikey: ORDER_COMPLETE_KEY, Authorization: `Bearer ${ORDER_COMPLETE_KEY}`, ...extra };
 }
 
 async function orderCompleteRequest(path, options = {}) {
@@ -100,12 +110,20 @@ if (typeof normalizePersistedAttachment === "function") {
   normalizePersistedAttachment = orderCompleteNormalizeAttachment;
 }
 
-async function orderCompleteLoadAttachments(order) {
+async function orderCompleteLoadAttachments(order, force = false) {
   if (typeof loadPersistedOrderAttachments !== "function") return;
   const displayId = orderCompleteDisplayId(order);
   const dbId = orderCompleteDbId(order);
-  if (!displayId || !dbId) return;
-  await loadPersistedOrderAttachments(dbId, true, displayId).catch(() => {});
+  const cache = orderCompleteCache();
+  if (!displayId || !dbId || cache.loadingAttachments[displayId]) return;
+  if (!force && cache.attachments[displayId]) return;
+  cache.loadingAttachments[displayId] = true;
+  try {
+    await loadPersistedOrderAttachments(dbId, force, displayId).catch(() => {});
+    cache.attachments[displayId] = true;
+  } finally {
+    cache.loadingAttachments[displayId] = false;
+  }
 }
 
 function orderCompleteNormalizeMaterial(material, inventoryById = new Map()) {
@@ -120,19 +138,27 @@ function orderCompleteNormalizeMaterial(material, inventoryById = new Map()) {
   };
 }
 
-async function orderCompleteLoadMaterials(order) {
+async function orderCompleteLoadMaterials(order, force = false) {
   const displayId = orderCompleteDisplayId(order);
   const dbId = orderCompleteDbId(order);
-  if (!displayId || !dbId) return [];
-  const [materials, inventory] = await Promise.all([
-    orderCompleteRequest(`/rest/v1/order_materials?select=*&order_id=eq.${dbId}&order=id.asc`),
-    orderCompleteRequest("/rest/v1/inventory_items?select=id,sku,name"),
-  ]);
-  const inventoryById = new Map((Array.isArray(inventory) ? inventory : []).map((item) => [Number(item.id), item]));
-  const shaped = (Array.isArray(materials) ? materials : []).map((material) => orderCompleteNormalizeMaterial(material, inventoryById));
-  if (!appData.orderMaterials || typeof appData.orderMaterials !== "object") appData.orderMaterials = {};
-  appData.orderMaterials[displayId] = shaped;
-  return shaped;
+  const cache = orderCompleteCache();
+  if (!displayId || !dbId || cache.loadingMaterials[displayId]) return appData.orderMaterials?.[displayId] || [];
+  if (!force && cache.materials[displayId]) return appData.orderMaterials?.[displayId] || [];
+  cache.loadingMaterials[displayId] = true;
+  try {
+    const [materials, inventory] = await Promise.all([
+      orderCompleteRequest(`/rest/v1/order_materials?select=*&order_id=eq.${dbId}&order=id.asc`),
+      orderCompleteRequest("/rest/v1/inventory_items?select=id,sku,name"),
+    ]);
+    const inventoryById = new Map((Array.isArray(inventory) ? inventory : []).map((item) => [Number(item.id), item]));
+    const shaped = (Array.isArray(materials) ? materials : []).map((material) => orderCompleteNormalizeMaterial(material, inventoryById));
+    if (!appData.orderMaterials || typeof appData.orderMaterials !== "object") appData.orderMaterials = {};
+    appData.orderMaterials[displayId] = shaped;
+    cache.materials[displayId] = true;
+    return shaped;
+  } finally {
+    cache.loadingMaterials[displayId] = false;
+  }
 }
 
 async function orderCompleteInventoryIdForSku(sku) {
@@ -170,39 +196,47 @@ async function orderCompleteSaveMaterialsDirect(order, materials) {
     headers: { "Content-Type": "application/json", Prefer: "return=representation" },
     body: JSON.stringify(payload),
   });
-  await orderCompleteLoadMaterials(order);
+  await orderCompleteLoadMaterials(order, true);
   return payload.length;
 }
 
-async function orderCompleteLoadTasks(order) {
+async function orderCompleteLoadTasks(order, force = false) {
   const displayId = orderCompleteDisplayId(order);
   const dbId = orderCompleteDbId(order);
-  if (!displayId || !dbId) return [];
-  const rows = await orderCompleteRequest(`/rest/v1/order_tasks?select=*,departments(name),users(first_name,last_name)&order_id=eq.${dbId}&order=id.asc`);
-  const tasks = (Array.isArray(rows) ? rows : []).map((task) => {
-    const userName = [task.users?.first_name, task.users?.last_name].filter(Boolean).join(" ").trim();
-    const owner = userName || task.external_supplier_name || "Non assegnato";
-    const dept = task.departments?.name || "Reparto";
-    return {
-      id: task.id,
-      name: task.task_name,
-      phase: task.task_phase,
-      team: `${dept} - ${owner}`,
-      hours: `${Number(task.estimated_hours || 0).toFixed(1).replace(".", ",")} h`,
-      time: task.planned_date || "Da pianificare",
-      state: String(task.status || "").replace(/_/g, " ").replace(/^./, (c) => c.toUpperCase()),
-      calendarDay: task.calendar_day_label || "Da pianificare",
-    };
-  });
-  if (!appData.orderTasks || typeof appData.orderTasks !== "object") appData.orderTasks = {};
-  appData.orderTasks[displayId] = tasks;
-  return tasks;
+  const cache = orderCompleteCache();
+  if (!displayId || !dbId || cache.loadingTasks[displayId]) return appData.orderTasks?.[displayId] || [];
+  if (!force && cache.tasks[displayId]) return appData.orderTasks?.[displayId] || [];
+  cache.loadingTasks[displayId] = true;
+  try {
+    const rows = await orderCompleteRequest(`/rest/v1/order_tasks?select=*,departments(name),users(first_name,last_name)&order_id=eq.${dbId}&order=id.asc`);
+    const tasks = (Array.isArray(rows) ? rows : []).map((task) => {
+      const userName = [task.users?.first_name, task.users?.last_name].filter(Boolean).join(" ").trim();
+      const owner = userName || task.external_supplier_name || "Non assegnato";
+      const dept = task.departments?.name || "Reparto";
+      return {
+        id: task.id,
+        name: task.task_name,
+        phase: task.task_phase,
+        team: `${dept} - ${owner}`,
+        hours: `${Number(task.estimated_hours || 0).toFixed(1).replace(".", ",")} h`,
+        time: task.planned_date || "Da pianificare",
+        state: String(task.status || "").replace(/_/g, " ").replace(/^./, (c) => c.toUpperCase()),
+        calendarDay: task.calendar_day_label || "Da pianificare",
+      };
+    });
+    if (!appData.orderTasks || typeof appData.orderTasks !== "object") appData.orderTasks = {};
+    appData.orderTasks[displayId] = tasks;
+    cache.tasks[displayId] = true;
+    return tasks;
+  } finally {
+    cache.loadingTasks[displayId] = false;
+  }
 }
 
 async function orderCompleteApplyTaskPlan(order) {
-  const plan = orderCompleteState().filter((item) => item.enabled && (item.assignedUserId || item.plannedDate || item.plannedTime));
+  const plan = orderCompleteState().filter((item) => item.enabled && item.assignedUserId);
   if (!plan.length) return 0;
-  let tasks = await orderCompleteLoadTasks(order);
+  const tasks = await orderCompleteLoadTasks(order, true);
   let count = 0;
   for (const planItem of plan) {
     const task = tasks.find((item) => String(item.phase || "").toLowerCase() === planItem.phase);
@@ -222,7 +256,7 @@ async function orderCompleteApplyTaskPlan(order) {
     });
     if (response.ok) count += 1;
   }
-  if (count) await orderCompleteLoadTasks(order);
+  if (count) await orderCompleteLoadTasks(order, true);
   return count;
 }
 
@@ -302,9 +336,9 @@ async function orderCompleteFinalize(order, materialsSnapshot) {
     return 0;
   });
   await Promise.all([
-    orderCompleteLoadAttachments(order),
-    orderCompleteLoadMaterials(order),
-    orderCompleteLoadTasks(order),
+    orderCompleteLoadAttachments(order, true),
+    orderCompleteLoadMaterials(order, true),
+    orderCompleteLoadTasks(order, true),
   ]);
   if (savedMaterials || assignedTasks) {
     setFlashMessage(`Ordine completato: ${savedMaterials} materiali collegati, ${assignedTasks} task assegnati`);
@@ -326,8 +360,8 @@ refreshBootstrap = async function refreshBootstrapWithOrderCompletion() {
   const order = getSelectedOrder?.();
   if (order?.id || order?.db_id) {
     await Promise.all([
-      orderCompleteLoadMaterials(order).catch(() => []),
-      orderCompleteLoadTasks(order).catch(() => []),
+      orderCompleteLoadMaterials(order, true).catch(() => []),
+      orderCompleteLoadTasks(order, true).catch(() => []),
     ]);
   }
 };
@@ -339,12 +373,12 @@ renderApp = function renderAppWithOrderCompletionFix() {
   orderCompleteAttachEvents();
   const order = getSelectedOrder?.();
   if (appState.currentView === "order-detail" && order) {
-    orderCompleteLoadAttachments(order).then(() => {}).catch(() => {});
+    orderCompleteLoadAttachments(order).catch(() => {});
     orderCompleteLoadMaterials(order).then((materials) => {
-      if (materials.length) renderApp();
+      if (materials.length && !document.querySelector(".order-completion-material-rendered")) renderApp();
     }).catch(() => {});
     orderCompleteLoadTasks(order).then((tasks) => {
-      if (tasks.length) renderApp();
+      if (tasks.length && !document.querySelector(".order-completion-task-rendered")) renderApp();
     }).catch(() => {});
   }
 };
