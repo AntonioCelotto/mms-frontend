@@ -29,15 +29,27 @@ function clientOverlayState() {
   return appState.clientOverlayDraft;
 }
 
+function clientOverlayAllClients() {
+  if (typeof clientsFallbackState === "function") return clientsFallbackState().clients || [];
+  if (Array.isArray(appState.realClients)) return appState.realClients;
+  return [];
+}
+
 function clientOverlaySelectedClient() {
+  const clients = clientOverlayAllClients();
   if (typeof clientsFallbackState === "function") {
     const state = clientsFallbackState();
-    return state.clients.find((client) => Number(client.id) === Number(state.selectedClientId)) || state.clients[0] || null;
+    return clients.find((client) => Number(client.id) === Number(state.selectedClientId)) || clients[0] || null;
   }
-  if (Array.isArray(appState.realClients)) {
-    return appState.realClients.find((client) => Number(client.id) === Number(appState.selectedClientId)) || appState.realClients[0] || null;
+  return clients.find((client) => Number(client.id) === Number(appState.selectedClientId)) || clients[0] || null;
+}
+
+function clientOverlaySetSelectedClient(clientId) {
+  if (typeof clientsFallbackState === "function") {
+    clientsFallbackState().selectedClientId = Number(clientId);
   }
-  return null;
+  appState.selectedClientId = Number(clientId);
+  appState.clientOverlayDraft = {};
 }
 
 function clientOverlayEnsureDraft(client) {
@@ -50,6 +62,19 @@ function clientOverlayEnsureDraft(client) {
     });
   }
   return draft;
+}
+
+function clientOverlaySelector(client) {
+  const clients = clientOverlayAllClients();
+  if (!clients.length) return "";
+  return `
+    <div class="field span-2" style="margin-bottom:12px;">
+      <label>Cliente da modificare</label>
+      <select class="filter-chip" data-client-overlay-select>
+        ${clients.map((item) => `<option value="${item.id}" ${Number(item.id) === Number(client?.id) ? "selected" : ""}>${clientOverlayEscape(item.name)}</option>`).join("")}
+      </select>
+    </div>
+  `;
 }
 
 function clientOverlayMarkup() {
@@ -67,6 +92,7 @@ function clientOverlayMarkup() {
         </div>
         <button class="action-pill" data-client-overlay-save>Salva modifiche cliente</button>
       </div>
+      ${clientOverlaySelector(client)}
       <div class="form-grid">
         ${CLIENT_OVERLAY_FIELDS.map(([field, label]) => `
           <div class="field ${field === "notes" || field === "billing_address" ? "span-2" : ""}">
@@ -165,6 +191,13 @@ async function clientOverlaySave() {
 }
 
 function clientOverlayAttach() {
+  document.querySelectorAll("[data-client-overlay-select]").forEach((select) => {
+    select.onchange = (event) => {
+      clientOverlaySetSelectedClient(event.target.value);
+      clientOverlayRefresh();
+      renderApp();
+    };
+  });
   document.querySelectorAll("[data-client-overlay-field]").forEach((input) => {
     const handler = (event) => {
       clientOverlayState()[event.target.dataset.clientOverlayField] = event.target.value;
