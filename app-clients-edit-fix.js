@@ -23,9 +23,12 @@ function clientEditState() {
 }
 
 function selectedClientForEdit() {
-  if (typeof clientsFallbackState !== "function") return null;
-  const state = clientsFallbackState();
-  return state.clients.find((client) => Number(client.id) === Number(state.selectedClientId)) || state.clients[0] || null;
+  if (typeof clientsFallbackState === "function") {
+    const state = clientsFallbackState();
+    return state.clients.find((client) => Number(client.id) === Number(state.selectedClientId)) || state.clients[0] || null;
+  }
+  if (typeof getSelectedClientRecord === "function") return getSelectedClientRecord();
+  return null;
 }
 
 function escapeClientEdit(value) {
@@ -51,44 +54,62 @@ function ensureClientEditDraft(client) {
 
 function renderClientEditPanel() {
   const client = selectedClientForEdit();
-  if (!client) return "";
+  if (!client) {
+    return `
+      <div class="clients-edit-panel surface" style="margin:16px 0;">
+        <div class="surface-inner">
+          <div class="section-title">
+            <div>
+              <h3>Modifica scheda cliente</h3>
+              <p>Seleziona un cliente dall'elenco per modificare contatti e dati fatturazione.</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    `;
+  }
   const draft = ensureClientEditDraft(client);
   return `
-    <div class="clients-edit-panel" style="margin:16px 0; padding:16px; border:1px solid rgba(148,163,184,.25); border-radius:8px; background:rgba(15,23,42,.03);">
-      <div class="section-title">
-        <div>
-          <h3>Modifica scheda cliente</h3>
-          <p>Aggiorna contatti, cellulare, condizioni pagamento e dati fatturazione.</p>
-        </div>
-        <button class="action-pill" data-client-edit-save>${appState.busy ? "Salvataggio..." : "Salva modifiche cliente"}</button>
-      </div>
-      <div class="form-grid">
-        ${CLIENT_EDIT_FIELDS.map(([field, label]) => `
-          <div class="field ${field === "notes" || field === "billing_address" ? "span-2" : ""}">
-            <label>${label}</label>
-            ${field === "notes" ? `<textarea class="field-value" data-client-edit-field="${field}" style="min-height:84px; align-items:flex-start; padding-top:12px;">${escapeClientEdit(draft[field])}</textarea>` : `<input class="field-value" data-client-edit-field="${field}" value="${escapeClientEdit(draft[field])}" />`}
+    <div class="clients-edit-panel surface" style="margin:16px 0;">
+      <div class="surface-inner">
+        <div class="section-title">
+          <div>
+            <h3>Modifica scheda cliente</h3>
+            <p>Aggiorna contatti, cellulare, condizioni pagamento e dati fatturazione.</p>
           </div>
-        `).join("")}
+          <button class="action-pill" data-client-edit-save>${appState.busy ? "Salvataggio..." : "Salva modifiche cliente"}</button>
+        </div>
+        <div class="form-grid">
+          ${CLIENT_EDIT_FIELDS.map(([field, label]) => `
+            <div class="field ${field === "notes" || field === "billing_address" ? "span-2" : ""}">
+              <label>${label}</label>
+              ${field === "notes" ? `<textarea class="field-value" data-client-edit-field="${field}" style="min-height:84px; align-items:flex-start; padding-top:12px;">${escapeClientEdit(draft[field])}</textarea>` : `<input class="field-value" data-client-edit-field="${field}" value="${escapeClientEdit(draft[field])}" />`}
+            </div>
+          `).join("")}
+        </div>
       </div>
     </div>
   `;
 }
 
-function injectClientEditPanel() {
-  if (appState.currentView !== "client") return;
+function findClientActiveSection() {
   const active = document.querySelector("section.view.active");
+  if (!active) return null;
+  if (appState.currentView === "client" || appState.currentView === "clients") return active;
+  const heading = active.querySelector(".screen-header h2")?.textContent.trim().toLowerCase();
+  return heading === "clienti" ? active : null;
+}
+
+function injectClientEditPanel() {
+  const active = findClientActiveSection();
   if (!active || active.querySelector(".clients-edit-panel")) return;
 
-  const titles = Array.from(active.querySelectorAll(".section-title"));
-  const title = titles.find((node) => node.textContent.includes("Scheda cliente"));
-  const target = title?.parentElement;
-  if (!target) return;
-
-  const actions = title.querySelector(".action-pill") || title.querySelector("button");
-  if (!actions) {
-    title.insertAdjacentHTML("beforeend", `<button class="mini-btn" data-scroll-client-edit>Modifica scheda</button>`);
+  const screenHeader = active.querySelector(".screen-header");
+  if (screenHeader) {
+    screenHeader.insertAdjacentHTML("afterend", renderClientEditPanel());
+  } else {
+    active.insertAdjacentHTML("afterbegin", renderClientEditPanel());
   }
-  title.insertAdjacentHTML("afterend", renderClientEditPanel());
   attachClientEditEvents();
   document.querySelectorAll(".empty-state").forEach((node) => {
     if (node.textContent.trim() === "Nessun pagamento collegato.") {
@@ -133,10 +154,16 @@ async function saveClientEditDraft() {
       body: JSON.stringify(body),
     });
     const updated = Array.isArray(rows) ? rows[0] : null;
-    if (updated && typeof clientsFallbackState === "function") {
-      const state = clientsFallbackState();
-      const index = state.clients.findIndex((client) => Number(client.id) === Number(updated.id));
-      if (index >= 0) state.clients[index] = { ...state.clients[index], ...updated };
+    if (updated) {
+      if (typeof clientsFallbackState === "function") {
+        const state = clientsFallbackState();
+        const index = state.clients.findIndex((client) => Number(client.id) === Number(updated.id));
+        if (index >= 0) state.clients[index] = { ...state.clients[index], ...updated };
+      }
+      if (Array.isArray(appState.realClients)) {
+        const realIndex = appState.realClients.findIndex((client) => Number(client.id) === Number(updated.id));
+        if (realIndex >= 0) appState.realClients[realIndex] = { ...appState.realClients[realIndex], ...updated };
+      }
       appState.clientEditDraft = { id: updated.id };
       CLIENT_EDIT_FIELDS.forEach(([field]) => { appState.clientEditDraft[field] = updated[field] || ""; });
     }
@@ -161,9 +188,6 @@ function attachClientEditEvents() {
     button.onclick = () => {
       if (!appState.busy) saveClientEditDraft();
     };
-  });
-  document.querySelectorAll("[data-scroll-client-edit]").forEach((button) => {
-    button.onclick = () => document.querySelector(".clients-edit-panel")?.scrollIntoView({ behavior: "smooth", block: "start" });
   });
 }
 
