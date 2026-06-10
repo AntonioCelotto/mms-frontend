@@ -1,5 +1,5 @@
 const CLIENTS_SUPABASE_URL = "https://fzdqemzowxjuotqalaol.supabase.co";
-const CLIENTS_SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJIUzI1NiIsInJlZiI6ImZ6ZHFlbXpvd3hqdW90cWFsYW9sIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzk5Njg3NzYsImV4cCI6MjA5NTU0NDc3Nn0.fmZ9RThFxnaJGQsOYeu_ZjjUNHThlRX87qz9sX4N6Mk".replace("eyJpc3MiOiJIUzI1Ni", "eyJpc3MiOiJzdXBhYmFzZS");
+const CLIENTS_SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZ6ZHFlbXpvd3hqdW90cWFsYW9sIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzk5Njg3NzYsImV4cCI6MjA5NTU0NDc3Nn0.fmZ9RThFxnaJGQsOYeu_ZjjUNHThlRX87qz9sX4N6Mk";
 
 const CLIENT_BILLING_FIELDS = typeof BILLING_FIELDS !== "undefined" ? BILLING_FIELDS : [
   ["billing_company_name", "Ragione sociale"],
@@ -355,12 +355,7 @@ function enhanceClientSelectorInNewOrder() {
 const baseRenderLayoutClientsEnhancements = renderLayout;
 renderLayout = function renderLayoutWithClients() {
   ensureClientsState();
-  return baseRenderLayoutClientsEnhancements()
-    .replace(
-      `{ id: "client", label: "Scheda cliente", caption: "Storico, regole e contesto cliente" },`,
-      `{ id: "clients", label: "Clienti", caption: "Anagrafiche, ordini e pagamenti" },\n    { id: "client", label: "Scheda cliente", caption: "Storico, regole e contesto cliente" },`
-    )
-    .replace("${renderInventory()}", "${renderClientsRegistry()}${renderInventory()}");
+  return baseRenderLayoutClientsEnhancements();
 };
 
 const baseRenderOrderDetailClientsEnhancements = renderOrderDetail;
