@@ -54,23 +54,21 @@ function renderClientEditPanel() {
   if (!client) return "";
   const draft = ensureClientEditDraft(client);
   return `
-    <div class="surface clients-edit-panel" style="margin-top:16px;">
-      <div class="surface-inner">
-        <div class="section-title">
-          <div>
-            <h3>Modifica cliente</h3>
-            <p>Aggiorna contatti, cellulare, condizioni pagamento e dati fatturazione.</p>
+    <div class="clients-edit-panel" style="margin:16px 0; padding:16px; border:1px solid rgba(148,163,184,.25); border-radius:8px; background:rgba(15,23,42,.03);">
+      <div class="section-title">
+        <div>
+          <h3>Modifica scheda cliente</h3>
+          <p>Aggiorna contatti, cellulare, condizioni pagamento e dati fatturazione.</p>
+        </div>
+        <button class="action-pill" data-client-edit-save>${appState.busy ? "Salvataggio..." : "Salva modifiche cliente"}</button>
+      </div>
+      <div class="form-grid">
+        ${CLIENT_EDIT_FIELDS.map(([field, label]) => `
+          <div class="field ${field === "notes" || field === "billing_address" ? "span-2" : ""}">
+            <label>${label}</label>
+            ${field === "notes" ? `<textarea class="field-value" data-client-edit-field="${field}" style="min-height:84px; align-items:flex-start; padding-top:12px;">${escapeClientEdit(draft[field])}</textarea>` : `<input class="field-value" data-client-edit-field="${field}" value="${escapeClientEdit(draft[field])}" />`}
           </div>
-          <button class="action-pill" data-client-edit-save>${appState.busy ? "Salvataggio..." : "Salva modifiche cliente"}</button>
-        </div>
-        <div class="form-grid">
-          ${CLIENT_EDIT_FIELDS.map(([field, label]) => `
-            <div class="field ${field === "notes" || field === "billing_address" ? "span-2" : ""}">
-              <label>${label}</label>
-              ${field === "notes" ? `<textarea class="field-value" data-client-edit-field="${field}" style="min-height:84px; align-items:flex-start; padding-top:12px;">${escapeClientEdit(draft[field])}</textarea>` : `<input class="field-value" data-client-edit-field="${field}" value="${escapeClientEdit(draft[field])}" />`}
-            </div>
-          `).join("")}
-        </div>
+        `).join("")}
       </div>
     </div>
   `;
@@ -80,11 +78,17 @@ function injectClientEditPanel() {
   if (appState.currentView !== "client") return;
   const active = document.querySelector("section.view.active");
   if (!active || active.querySelector(".clients-edit-panel")) return;
-  const target = Array.from(active.querySelectorAll(".surface .surface-inner")).find((node) =>
-    node.textContent.includes("Scheda cliente")
-  );
+
+  const titles = Array.from(active.querySelectorAll(".section-title"));
+  const title = titles.find((node) => node.textContent.includes("Scheda cliente"));
+  const target = title?.parentElement;
   if (!target) return;
-  target.insertAdjacentHTML("beforeend", renderClientEditPanel());
+
+  const actions = title.querySelector(".action-pill") || title.querySelector("button");
+  if (!actions) {
+    title.insertAdjacentHTML("beforeend", `<button class="mini-btn" data-scroll-client-edit>Modifica scheda</button>`);
+  }
+  title.insertAdjacentHTML("afterend", renderClientEditPanel());
   attachClientEditEvents();
   document.querySelectorAll(".empty-state").forEach((node) => {
     if (node.textContent.trim() === "Nessun pagamento collegato.") {
@@ -157,6 +161,9 @@ function attachClientEditEvents() {
     button.onclick = () => {
       if (!appState.busy) saveClientEditDraft();
     };
+  });
+  document.querySelectorAll("[data-scroll-client-edit]").forEach((button) => {
+    button.onclick = () => document.querySelector(".clients-edit-panel")?.scrollIntoView({ behavior: "smooth", block: "start" });
   });
 }
 
