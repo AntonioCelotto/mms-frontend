@@ -41,8 +41,7 @@ function taskAssignmentIsExternalOption(account) {
 }
 
 function taskAssignmentIsActive(account) {
-  if (account.is_active === false || account.isActive === false || account.active === false) return false;
-  return true;
+  return !(account.is_active === false || account.isActive === false || account.active === false);
 }
 
 function taskAssignmentIsOperationalAccount(account) {
@@ -127,7 +126,7 @@ function taskAssignmentRawAccounts() {
   if (Array.isArray(appData.accounts) && appData.accounts.length) return appData.accounts;
   if (taskAssignmentSupabaseAccounts.length) return taskAssignmentSupabaseAccounts;
   taskAssignmentLoadSupabaseAccounts().then(() => {
-    if (appState.currentView === "new-order") renderApp();
+    if (appState.currentView === "new-order" || appState.currentView === "calendar") renderApp();
   }).catch(() => {});
   return fallback;
 }
@@ -154,7 +153,7 @@ function taskAssignmentOptionsMarkup(phase, selectedValue) {
   const others = accounts.filter((account) => account.score === 0);
   const renderOption = (account) => {
     const skills = account.skills.length ? ` - ${account.skills.join(", ")}` : "";
-    return `<option value="${taskAssignmentEscape(account.value)}" ${selectedValue === account.value ? "selected" : ""}>${taskAssignmentEscape(account.label + skills)}</option>`;
+    return `<option value="${taskAssignmentEscape(account.value)}" ${String(selectedValue || "") === String(account.value) ? "selected" : ""}>${taskAssignmentEscape(account.label + skills)}</option>`;
   };
 
   return `
@@ -167,6 +166,77 @@ function taskAssignmentOptionsMarkup(phase, selectedValue) {
 function taskAssignmentMissingPlanItems() {
   if (typeof orderFlowPlan !== "function") return [];
   return orderFlowPlan().filter((item) => item.enabled && !item.assignedUserId);
+}
+
+function taskAssignmentAssigneePayload(value) {
+  if (typeof orderFlowParseAssignee === "function") return orderFlowParseAssignee(value);
+  const raw = String(value || "");
+  if (!raw) return { assigned_user_id: null, external_supplier_name: null };
+  if (raw.startsWith("external:")) return { assigned_user_id: null, external_supplier_name: decodeURIComponent(raw.slice(9)) };
+  const parsed = Number(raw.replace(/^user:/, ""));
+  if (Number.isFinite(parsed) && parsed > 0) return { assigned_user_id: parsed, external_supplier_name: null };
+  return { assigned_user_id: null, external_supplier_name: raw };
+}
+
+function taskAssignmentDateTime(dateValue, timeValue) {
+  if (typeof orderFlowDateTime === "function") return orderFlowDateTime(dateValue, timeValue);
+  const date = String(dateValue || "").trim();
+  const time = String(timeValue || "").trim();
+  return date ? (time ? `${date} ${time}` : date) : null;
+}
+
+async function taskAssignmentPatchTask(taskId, assigneeValue, plannedDate, plannedTime, notes) {
+  const assignee = taskAssignmentAssigneePayload(assigneeValue);
+  if (!taskId || (!assignee.assigned_user_id && !assignee.external_supplier_name)) throw new Error("Dipendente non valido");
+  const planned = taskAssignmentDateTime(plannedDate, plannedTime);
+  const calendarDay = typeof getCalendarDayFromDate === "function" ? getCalendarDayFromDate(plannedDate) : null;
+  const payload = {
+    task_id: Number(taskId),
+    assigned_user_id: assignee.assigned_user_id,
+    external_supplier_name: assignee.external_supplier_name,
+    planned_date: planned || null,
+    calendar_day_label: calendarDay && calendarDay !== "Da pianificare" ? calendarDay : null,
+    notes: notes || "Assegnazione task",
+  };
+
+  try {
+    const response = await fetch("/api/assign-task", {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload),
+    });
+    if (response.ok) return true;
+  } catch (error) {
+    console.warn("API assegnazione non disponibile, uso Supabase diretto", error);
+  }
+
+  await orderFlowRequest(`/rest/v1/order_tasks?id=eq.${Number(taskId)}`, {
+    method: "PATCH",
+    headers: { "Content-Type": "application/json", Prefer: "return=representation" },
+    body: JSON.stringify({
+      assigned_user_id: assignee.assigned_user_id,
+      external_supplier_name: assignee.external_supplier_name,
+      planned_date: planned || null,
+      calendar_day_label: payload.calendar_day_label,
+      notes: payload.notes,
+    }),
+  });
+  return true;
+}
+
+async function orderFlowApplyTaskPlan(order) {
+  const selected = orderFlowPlan().filter((item) => item.enabled && item.assignedUserId);
+  if (!selected.length) return 0;
+  const tasks = await orderFlowLoadTasks(order);
+  let count = 0;
+  for (const plan of selected) {
+    const task = tasks.find((item) => String(item.phase || "").toLowerCase() === String(plan.phase || "").toLowerCase());
+    if (!task?.id) continue;
+    await taskAssignmentPatchTask(task.id, plan.assignedUserId, plan.plannedDate, plan.plannedTime, "Assegnazione impostata durante la creazione ordine");
+    count += 1;
+  }
+  if (count) await orderFlowLoadTasks(order);
+  return count;
 }
 
 function orderFlowTaskPanelMarkup() {
@@ -210,6 +280,37 @@ function orderFlowTaskPanelMarkup() {
   `;
 }
 
+function taskAssignmentSelectedCalendarTask() {
+  const taskId = Number(appState.assignmentDraft?.taskId || 0);
+  const tasks = appData.orderTasks?.[appState.selectedOrderId] || [];
+  return tasks.find((task) => Number(task.id) === taskId) || null;
+}
+
+function taskAssignmentEnhanceCalendar() {
+  if (appState.currentView !== "calendar") return;
+  const section = document.querySelector("section.view.active");
+  if (!section) return;
+  const selects = Array.from(section.querySelectorAll("select"));
+  const assigneeSelect = selects.find((select) => {
+    const label = select.closest(".field")?.querySelector("label")?.textContent || "";
+    const text = `${label} ${Array.from(select.options || []).map((option) => option.textContent || "").join(" ")}`.toLowerCase();
+    return text.includes("dipendente") || text.includes("seleziona dipendente");
+  });
+  if (!assigneeSelect) return;
+
+  const task = taskAssignmentSelectedCalendarTask();
+  const selected = String(appState.assignmentDraft?.assignedUserId || assigneeSelect.value || "");
+  const markup = taskAssignmentOptionsMarkup(task?.phase || "", selected);
+  if (assigneeSelect.dataset.taskAssignmentMarkup !== markup) {
+    assigneeSelect.innerHTML = markup;
+    assigneeSelect.value = selected;
+    assigneeSelect.dataset.taskAssignmentMarkup = markup;
+  }
+  assigneeSelect.onchange = (event) => {
+    appState.assignmentDraft.assignedUserId = event.target.value;
+  };
+}
+
 const baseSaveDraftOrderTaskAssignmentGuard = saveDraftOrder;
 saveDraftOrder = async function saveDraftOrderWithTaskAssignmentGuard() {
   const missing = taskAssignmentMissingPlanItems();
@@ -221,6 +322,33 @@ saveDraftOrder = async function saveDraftOrderWithTaskAssignmentGuard() {
   await baseSaveDraftOrderTaskAssignmentGuard();
 };
 
+saveTaskAssignment = async function saveTaskAssignmentWithTaskAssignmentGuard() {
+  const taskId = Number(appState.assignmentDraft?.taskId || 0);
+  const assignee = String(appState.assignmentDraft?.assignedUserId || "");
+  if (!taskId || !assignee) {
+    setFlashMessage("Seleziona task e dipendente");
+    renderApp();
+    return;
+  }
+  setBusy(true);
+  try {
+    await taskAssignmentPatchTask(taskId, assignee, appState.assignmentDraft.plannedDate, appState.assignmentDraft.plannedTime, "Assegnazione aggiornata dalla UI calendario");
+    await refreshBootstrap();
+    setFlashMessage("Assegnazione calendario salvata");
+  } catch (error) {
+    setFlashMessage(error.message || "Errore nell'assegnazione");
+  } finally {
+    appState.busy = false;
+    renderApp();
+  }
+};
+
+const baseRenderAppTaskAssignmentGuard = renderApp;
+renderApp = function renderAppWithTaskAssignmentGuard() {
+  baseRenderAppTaskAssignmentGuard();
+  taskAssignmentEnhanceCalendar();
+};
+
 taskAssignmentLoadSupabaseAccounts().then(() => {
-  if (appState.currentView === "new-order") renderApp();
+  if (appState.currentView === "new-order" || appState.currentView === "calendar") renderApp();
 }).catch(() => {});
