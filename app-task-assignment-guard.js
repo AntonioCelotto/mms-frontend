@@ -14,6 +14,9 @@ const TASK_ASSIGNMENT_EXCLUDED_SKILLS = [
   "approvazioni",
 ];
 
+let taskAssignmentSupabaseAccounts = [];
+let taskAssignmentLoadingAccounts = false;
+
 function taskAssignmentEscape(value) {
   if (typeof orderFlowEscape === "function") return orderFlowEscape(value);
   return String(value ?? "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/\"/g, "&quot;").replace(/'/g, "&#39;");
@@ -24,11 +27,11 @@ function taskAssignmentNormalize(value) {
 }
 
 function taskAssignmentAccountName(account) {
-  return account.name || [account.first_name, account.last_name].filter(Boolean).join(" ").trim() || account.email || "Operatore";
+  return account.name || [account.first_name, account.last_name].filter(Boolean).join(" ").trim() || [account.firstName, account.lastName].filter(Boolean).join(" ").trim() || account.email || "Operatore";
 }
 
 function taskAssignmentAccountSkills(account) {
-  const raw = account.skills || account.skill_names || account.skillName || account.roleSkills || "";
+  const raw = account.skills || account.skill_names || account.skillNames || account.skillName || account.roleSkills || "";
   if (Array.isArray(raw)) return raw.map((item) => String(item || "").trim()).filter(Boolean);
   return String(raw || "").split(/[,;|]/).map((item) => item.trim()).filter(Boolean);
 }
@@ -37,13 +40,18 @@ function taskAssignmentIsExternalOption(account) {
   return String(account.id || "").startsWith("external:") || !account.id;
 }
 
+function taskAssignmentIsActive(account) {
+  if (account.is_active === false || account.isActive === false || account.active === false) return false;
+  return true;
+}
+
 function taskAssignmentIsOperationalAccount(account) {
   const name = taskAssignmentNormalize(taskAssignmentAccountName(account));
   const email = taskAssignmentNormalize(account.email || "");
   const role = taskAssignmentNormalize(account.role || "");
   const skills = taskAssignmentAccountSkills(account).map(taskAssignmentNormalize);
 
-  if (account.is_active === false) return false;
+  if (!taskAssignmentIsActive(account)) return false;
   if (name.includes("cliente portal") || email.includes("cliente@portal")) return false;
   if (taskAssignmentIsExternalOption(account)) return true;
 
@@ -70,19 +78,65 @@ function taskAssignmentAccountValue(account) {
   return `external:${encodeURIComponent(taskAssignmentAccountName(account))}`;
 }
 
-function taskAssignmentAccounts() {
+function taskAssignmentShapeAccount(account) {
+  const skills = taskAssignmentAccountSkills(account);
+  return {
+    value: taskAssignmentAccountValue(account),
+    label: taskAssignmentAccountName(account),
+    skills,
+    search: taskAssignmentNormalize(`${taskAssignmentAccountName(account)} ${skills.join(" ")}`),
+    external: taskAssignmentIsExternalOption(account),
+  };
+}
+
+async function taskAssignmentLoadSupabaseAccounts(force = false) {
+  if (taskAssignmentLoadingAccounts) return;
+  if (!force && taskAssignmentSupabaseAccounts.length) return;
+  if (typeof orderFlowRequest !== "function") return;
+
+  taskAssignmentLoadingAccounts = true;
+  try {
+    const [users, skills] = await Promise.all([
+      orderFlowRequest("/rest/v1/users?select=id,first_name,last_name,email,role,is_active&order=first_name.asc"),
+      orderFlowRequest("/rest/v1/user_skills?select=user_id,skill_name&order=skill_name.asc"),
+    ]);
+    const skillsByUser = new Map();
+    (Array.isArray(skills) ? skills : []).forEach((skill) => {
+      const userId = Number(skill.user_id);
+      if (!skillsByUser.has(userId)) skillsByUser.set(userId, []);
+      if (skill.skill_name) skillsByUser.get(userId).push(skill.skill_name);
+    });
+    taskAssignmentSupabaseAccounts = (Array.isArray(users) ? users : []).map((user) => ({
+      id: user.id,
+      first_name: user.first_name,
+      last_name: user.last_name,
+      email: user.email,
+      role: user.role,
+      is_active: user.is_active,
+      skills: skillsByUser.get(Number(user.id)) || [],
+    }));
+  } catch (error) {
+    console.warn("Dipendenti non caricati per assegnazione task", error);
+  } finally {
+    taskAssignmentLoadingAccounts = false;
+  }
+}
+
+function taskAssignmentRawAccounts() {
   const fallback = typeof getFallbackAssignableAccounts === "function" ? getFallbackAssignableAccounts() : [];
-  const accounts = Array.isArray(appData.accounts) && appData.accounts.length ? appData.accounts : fallback;
-  return accounts.filter(taskAssignmentIsOperationalAccount).map((account) => {
-    const skills = taskAssignmentAccountSkills(account);
-    return {
-      value: taskAssignmentAccountValue(account),
-      label: taskAssignmentAccountName(account),
-      skills,
-      search: taskAssignmentNormalize(`${taskAssignmentAccountName(account)} ${skills.join(" ")}`),
-      external: taskAssignmentIsExternalOption(account),
-    };
-  });
+  if (Array.isArray(appData.accounts) && appData.accounts.length) return appData.accounts;
+  if (taskAssignmentSupabaseAccounts.length) return taskAssignmentSupabaseAccounts;
+  taskAssignmentLoadSupabaseAccounts().then(() => {
+    if (appState.currentView === "new-order") renderApp();
+  }).catch(() => {});
+  return fallback;
+}
+
+function taskAssignmentAccounts() {
+  const accounts = taskAssignmentRawAccounts();
+  const operational = accounts.filter(taskAssignmentIsOperationalAccount);
+  const usable = operational.length ? operational : accounts.filter((account) => taskAssignmentIsActive(account) && !taskAssignmentNormalize(taskAssignmentAccountName(account)).includes("cliente portal"));
+  return usable.map(taskAssignmentShapeAccount);
 }
 
 function orderFlowEmployeeOptions() {
@@ -94,7 +148,7 @@ function taskAssignmentOptionsMarkup(phase, selectedValue) {
     .map((account) => ({ ...account, score: taskAssignmentScoreForPhase({ skills: account.skills }, phase) }))
     .sort((a, b) => b.score - a.score || a.label.localeCompare(b.label));
 
-  if (!accounts.length) return `<option value="">Nessun dipendente operativo configurato</option>`;
+  if (!accounts.length) return `<option value="">${taskAssignmentLoadingAccounts ? "Caricamento dipendenti..." : "Nessun dipendente operativo configurato"}</option>`;
 
   const exact = accounts.filter((account) => account.score > 0);
   const others = accounts.filter((account) => account.score === 0);
@@ -166,3 +220,7 @@ saveDraftOrder = async function saveDraftOrderWithTaskAssignmentGuard() {
   }
   await baseSaveDraftOrderTaskAssignmentGuard();
 };
+
+taskAssignmentLoadSupabaseAccounts().then(() => {
+  if (appState.currentView === "new-order") renderApp();
+}).catch(() => {});
