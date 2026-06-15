@@ -300,7 +300,7 @@ function renderAccounts() {
           <p>Gestione completa degli account: creazione, modifica, disattivazione, competenze e collegamento ai task.</p>
         </div>
         <div class="screen-actions">
-          <div class="ghost-pill">Account v9</div>
+          <div class="ghost-pill">Account v10</div>
           <div class="ghost-pill">${accounts.length} account totali</div>
           <button class="action-pill" data-action="save-account">${appState.busy ? "Salvataggio..." : "Crea account"}</button>
         </div>
