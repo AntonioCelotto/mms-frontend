@@ -53,7 +53,7 @@ const OPERATIONS_COPY_REPLACEMENTS = new Map([
   ["DEMO", "PRESENTAZIONE"],
 ]);
 
-const OPERATIONS_ACCOUNT_MARKERS = ["cliente@portal.mms", "333 100200", "333 100210"];
+const OPERATIONS_ACCOUNT_MARKERS = ["cliente@portal.mms"];
 
 function replaceOperationsTextInNode(root) {
   const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT);
