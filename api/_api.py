@@ -27,7 +27,7 @@ def write_json(handler, payload, status=HTTPStatus.OK):
     handler.send_header("Content-Type", "application/json; charset=utf-8")
     handler.send_header("Cache-Control", "no-store")
     handler.send_header("Access-Control-Allow-Origin", "*")
-    handler.send_header("Access-Control-Allow-Methods", "GET, POST, PATCH, OPTIONS")
+    handler.send_header("Access-Control-Allow-Methods", "GET, POST, PATCH, DELETE, OPTIONS")
     handler.send_header("Access-Control-Allow-Headers", "Content-Type")
     handler.send_header("Content-Length", str(len(body)))
     handler.end_headers()
@@ -37,7 +37,7 @@ def write_json(handler, payload, status=HTTPStatus.OK):
 def write_options(handler):
     handler.send_response(HTTPStatus.NO_CONTENT)
     handler.send_header("Access-Control-Allow-Origin", "*")
-    handler.send_header("Access-Control-Allow-Methods", "GET, POST, PATCH, OPTIONS")
+    handler.send_header("Access-Control-Allow-Methods", "GET, POST, PATCH, DELETE, OPTIONS")
     handler.send_header("Access-Control-Allow-Headers", "Content-Type")
     handler.send_header("Cache-Control", "no-store")
     handler.end_headers()
