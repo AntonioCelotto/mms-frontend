@@ -33,9 +33,6 @@ const ACCOUNT_QUICK_SKILLS = [
   "Vista lavorazione cliente",
 ];
 
-const ACCOUNT_SUPABASE_URL = "https://fzdqemzowxjuotqalaol.supabase.co";
-const ACCOUNT_SUPABASE_KEY =
-  "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZ6ZHFlbXpvd3hqdW90cWFsYW9sIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzk5Njg3NzYsImV4cCI6MjA5NTU0NDc3Nn0.fmZ9RThFxnaJGQsOYeu_ZjjUNHThlRX87qz9sX4N6Mk";
 
 function accountText(value) {
   return String(value || "").trim();
@@ -476,28 +473,6 @@ async function refreshAccountsWorkspaceData({ rerender = true } = {}) {
   return false;
 }
 
-async function accountSupabaseRequest(path, { method = "GET", body, prefer } = {}) {
-  const headers = {
-    apikey: ACCOUNT_SUPABASE_KEY,
-    Authorization: `Bearer ${ACCOUNT_SUPABASE_KEY}`,
-    "Content-Type": "application/json",
-  };
-  if (prefer) headers.Prefer = prefer;
-
-  const response = await fetch(`${ACCOUNT_SUPABASE_URL}${path}`, {
-    method,
-    headers,
-    body: body ? JSON.stringify(body) : undefined,
-  });
-  const text = await response.text();
-  const payload = text ? JSON.parse(text) : null;
-  if (!response.ok) {
-    const message = payload?.message || payload?.error || payload?.details || text || "Errore Supabase";
-    throw new Error(message);
-  }
-  return payload;
-}
-
 function accountCreatePayload() {
   return {
     first_name: accountText(appState.accountDraft.first_name),
@@ -522,31 +497,6 @@ async function createAccountViaApi(payload) {
   return result;
 }
 
-async function createAccountDirect(payload) {
-  const created = await accountSupabaseRequest("/rest/v1/users", {
-    method: "POST",
-    prefer: "return=representation",
-    body: {
-      first_name: payload.first_name,
-      last_name: payload.last_name || null,
-      phone: payload.phone || null,
-      email: payload.email,
-      role: payload.role,
-      is_active: true,
-    },
-  });
-  const user = Array.isArray(created) ? created[0] : created;
-  if (!user?.id) throw new Error("Account creato senza ID");
-
-  for (const skill of payload.skills) {
-    await accountSupabaseRequest("/rest/v1/user_skills", {
-      method: "POST",
-      prefer: "return=minimal",
-      body: { user_id: user.id, skill_name: skill },
-    });
-  }
-  return user;
-}
 
 async function updateAccountDraft() {
   const draft = appState.accountEditDraft;
@@ -697,11 +647,7 @@ saveAccountDraft = async function saveAccountDraftAccountsWorkspace() {
 
   setBusy(true);
   try {
-    try {
-      await createAccountViaApi(payload);
-    } catch (apiError) {
-      await createAccountDirect(payload);
-    }
+    await createAccountViaApi(payload);
     await refreshBootstrap();
     await refreshAccountsWorkspaceData({ rerender: false });
     appState.accountDraft = { first_name: "", last_name: "", phone: "", email: "", role: "viewer", skills: "" };
