@@ -64,17 +64,19 @@ function calendarPlanningBuild(slots) {
 }
 
 async function calendarPlanningLoad(force = false) {
-  if (calendarPlanningLoading) return;
-  if (!force && calendarPlanningLoaded) return;
-  if (typeof orderFlowRequest !== "function") return;
+  if (calendarPlanningLoading) return false;
+  if (!force && calendarPlanningLoaded) return false;
+  if (typeof orderFlowRequest !== "function") return false;
   calendarPlanningLoading = true;
   try {
     const rows = await orderFlowRequest("/rest/v1/order_tasks?select=id,order_id,task_name,task_phase,status,planned_date,calendar_day_label,external_supplier_name,orders(order_number),users(first_name,last_name)&order=planned_date.asc");
     const slots = (Array.isArray(rows) ? rows : []).map(calendarPlanningSlot).filter(Boolean);
     appData.calendar = calendarPlanningBuild(slots);
     calendarPlanningLoaded = true;
+    return true;
   } catch (error) {
     console.warn("Planning calendario non caricato", error);
+    return false;
   } finally {
     calendarPlanningLoading = false;
   }
@@ -106,22 +108,23 @@ const baseSaveTaskAssignmentCalendarPlanning = saveTaskAssignment;
 saveTaskAssignment = async function saveTaskAssignmentWithCalendarPlanning() {
   await baseSaveTaskAssignmentCalendarPlanning();
   calendarPlanningLoaded = false;
-  await calendarPlanningLoad(true);
+  const changed = await calendarPlanningLoad(true);
+  if (changed && appState.currentView === "calendar") renderApp();
 };
 
 const baseRenderAppCalendarPlanning = renderApp;
 renderApp = function renderAppWithCalendarPlanning() {
   baseRenderAppCalendarPlanning();
-  if (appState.currentView === "calendar") {
-    calendarPlanningLoad().then(() => {
-      if (appState.currentView === "calendar") {
-        calendarPlanningEnhanceText();
-      }
+  if (appState.currentView !== "calendar") return;
+  calendarPlanningEnhanceText();
+  if (!calendarPlanningLoaded && !calendarPlanningLoading) {
+    calendarPlanningLoad().then((changed) => {
+      if (changed && appState.currentView === "calendar") renderApp();
+      else calendarPlanningEnhanceText();
     }).catch(() => {});
-    calendarPlanningEnhanceText();
   }
 };
 
-calendarPlanningLoad().then(() => {
-  if (appState.currentView === "calendar") renderApp();
+calendarPlanningLoad().then((changed) => {
+  if (changed && appState.currentView === "calendar") renderApp();
 }).catch(() => {});
