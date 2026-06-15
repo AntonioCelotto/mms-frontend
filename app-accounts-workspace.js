@@ -616,7 +616,7 @@ saveAccountDraft = async function saveAccountDraftAccountsWorkspace() {
   }
 
   await baseSaveAccountDraftAccountsWorkspace();
-  await refreshAccountsWorkspaceData({ rerender: false });
+  await refreshAccountsWorkspaceData({ rerender: true });
 };
 
 const accountsWorkspaceRoot = document.getElementById("app");
