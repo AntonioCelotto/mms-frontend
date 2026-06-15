@@ -1,14 +1,41 @@
 from __future__ import annotations
 
+import json
+import os
+import socket
 from collections import defaultdict
 from http import HTTPStatus
 from http.server import BaseHTTPRequestHandler
+from urllib.error import HTTPError, URLError
+from urllib.parse import urlencode
+from urllib.request import Request, urlopen
 
-from _api import clean_text, normalize_choice, parse_positive_int, read_json_body, write_json, write_options
-from _supabase import delete_rows, fetch_table, insert_rows, patch_rows
 
-
+SUPABASE_URL = os.environ.get("SUPABASE_URL", "https://fzdqemzowxjuotqalaol.supabase.co").rstrip("/")
+SUPABASE_KEY = os.environ.get(
+    "SUPABASE_ANON_KEY",
+    "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZ6ZHFlbXpvd3hqdW90cWFsYW9sIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzk5Njg3NzYsImV4cCI6MjA5NTU0NDc3Nn0.fmZ9RThFxnaJGQsOYeu_ZjjUNHThlRX87qz9sX4N6Mk",
+)
+TIMEOUT_SECONDS = 8
+MAX_JSON_BODY_BYTES = 128 * 1024
 ALLOWED_ROLES = {"admin", "viewer"}
+
+
+def clean_text(value):
+    return "" if value is None else str(value).strip()
+
+
+def parse_positive_int(value):
+    try:
+        parsed = int(value)
+    except (TypeError, ValueError):
+        return None
+    return parsed if parsed > 0 else None
+
+
+def normalize_role(value):
+    role = clean_text(value).lower()
+    return role if role in ALLOWED_ROLES else "viewer"
 
 
 def clean_skills(raw):
@@ -23,6 +50,101 @@ def clean_skills(raw):
             cleaned.append(skill)
             seen.add(key)
     return cleaned
+
+
+def read_json_body(handler):
+    try:
+        length = int(handler.headers.get("Content-Length", "0") or "0")
+    except ValueError:
+        return None
+    if length > MAX_JSON_BODY_BYTES:
+        return None
+    raw = handler.rfile.read(length) if length else b"{}"
+    try:
+        payload = json.loads(raw.decode("utf-8"))
+    except (UnicodeDecodeError, json.JSONDecodeError):
+        return None
+    return payload if isinstance(payload, dict) else None
+
+
+def write_json(handler, payload, status=HTTPStatus.OK):
+    body = json.dumps(payload, ensure_ascii=True).encode("utf-8")
+    handler.send_response(status)
+    handler.send_header("Content-Type", "application/json; charset=utf-8")
+    handler.send_header("Cache-Control", "no-store")
+    handler.send_header("Access-Control-Allow-Origin", "*")
+    handler.send_header("Access-Control-Allow-Methods", "GET, POST, PATCH, DELETE, OPTIONS")
+    handler.send_header("Access-Control-Allow-Headers", "Content-Type")
+    handler.send_header("Content-Length", str(len(body)))
+    handler.end_headers()
+    handler.wfile.write(body)
+
+
+def write_options(handler):
+    handler.send_response(HTTPStatus.NO_CONTENT)
+    handler.send_header("Access-Control-Allow-Origin", "*")
+    handler.send_header("Access-Control-Allow-Methods", "GET, POST, PATCH, DELETE, OPTIONS")
+    handler.send_header("Access-Control-Allow-Headers", "Content-Type")
+    handler.send_header("Cache-Control", "no-store")
+    handler.end_headers()
+
+
+def supabase_request(path, *, method="GET", query=None, payload=None, prefer=None):
+    url = f"{SUPABASE_URL}{path}"
+    if query:
+        url = f"{url}?{urlencode(query, doseq=True)}"
+
+    headers = {
+        "apikey": SUPABASE_KEY,
+        "Authorization": f"Bearer {SUPABASE_KEY}",
+        "Content-Type": "application/json",
+    }
+    if prefer:
+        headers["Prefer"] = prefer
+
+    data = None
+    if payload is not None:
+        data = json.dumps(payload, ensure_ascii=True).encode("utf-8")
+
+    request = Request(url, data=data, headers=headers, method=method)
+    try:
+        with urlopen(request, timeout=TIMEOUT_SECONDS) as response:
+            body = response.read().decode("utf-8")
+            return json.loads(body) if body else None
+    except HTTPError as exc:
+        detail = exc.read().decode("utf-8")
+        raise RuntimeError(detail or exc.reason) from exc
+    except (URLError, TimeoutError, socket.timeout) as exc:
+        raise RuntimeError(f"Supabase non raggiungibile entro {TIMEOUT_SECONDS}s: {exc}") from exc
+    except json.JSONDecodeError as exc:
+        raise RuntimeError("Risposta Supabase non valida") from exc
+
+
+def fetch_table(table, *, select="*", filters=None, order=None):
+    query = {"select": select}
+    if filters:
+        query.update(filters)
+    if order:
+        query["order"] = order
+    return supabase_request(f"/rest/v1/{table}", query=query) or []
+
+
+def insert_rows(table, payload, *, returning="representation"):
+    return supabase_request(f"/rest/v1/{table}", method="POST", payload=payload, prefer=f"return={returning}")
+
+
+def patch_rows(table, *, filters, payload, returning="representation"):
+    return supabase_request(
+        f"/rest/v1/{table}",
+        method="PATCH",
+        query=filters,
+        payload=payload,
+        prefer=f"return={returning}",
+    )
+
+
+def delete_rows(table, *, filters):
+    return supabase_request(f"/rest/v1/{table}", method="DELETE", query=filters, prefer="return=minimal")
 
 
 def load_accounts():
@@ -74,10 +196,8 @@ class handler(BaseHTTPRequestHandler):
     def do_GET(self):
         try:
             return write_json(self, {"accounts": load_accounts()})
-        except RuntimeError as error:
-            return write_json(self, {"error": "Lettura account non riuscita", "detail": str(error)}, HTTPStatus.INTERNAL_SERVER_ERROR)
         except Exception as error:
-            return write_json(self, {"error": "Errore account non previsto", "detail": str(error)}, HTTPStatus.INTERNAL_SERVER_ERROR)
+            return write_json(self, {"error": "Lettura account non riuscita", "detail": str(error)}, HTTPStatus.INTERNAL_SERVER_ERROR)
 
     def do_POST(self):
         payload = read_json_body(self)
@@ -86,7 +206,7 @@ class handler(BaseHTTPRequestHandler):
 
         first_name = clean_text(payload.get("first_name"))
         email = clean_text(payload.get("email")).lower()
-        role = normalize_choice(payload.get("role"), ALLOWED_ROLES, "viewer")
+        role = normalize_role(payload.get("role"))
         skills = clean_skills(payload.get("skills", []))
 
         if not first_name:
@@ -112,12 +232,10 @@ class handler(BaseHTTPRequestHandler):
             for skill in skills:
                 insert_rows("user_skills", {"user_id": user["id"], "skill_name": skill}, returning="minimal")
             return write_json(self, {"account": user, "accounts": load_accounts()}, HTTPStatus.CREATED)
-        except RuntimeError as error:
+        except Exception as error:
             detail = str(error)
             status = HTTPStatus.CONFLICT if "duplicate key" in detail.lower() or "unique" in detail.lower() else HTTPStatus.INTERNAL_SERVER_ERROR
             return write_json(self, {"error": "Creazione account non riuscita", "detail": detail}, status)
-        except Exception as error:
-            return write_json(self, {"error": "Errore account non previsto", "detail": str(error)}, HTTPStatus.INTERNAL_SERVER_ERROR)
 
     def do_PATCH(self):
         payload = read_json_body(self)
@@ -127,7 +245,7 @@ class handler(BaseHTTPRequestHandler):
         user_id = parse_positive_int(payload.get("user_id"))
         first_name = clean_text(payload.get("first_name"))
         email = clean_text(payload.get("email")).lower()
-        role = normalize_choice(payload.get("role"), ALLOWED_ROLES, "viewer")
+        role = normalize_role(payload.get("role"))
         skills = clean_skills(payload.get("skills", []))
 
         if not user_id:
@@ -158,12 +276,8 @@ class handler(BaseHTTPRequestHandler):
             for skill in skills:
                 insert_rows("user_skills", {"user_id": user_id, "skill_name": skill}, returning="minimal")
             return write_json(self, {"account": rows[0], "accounts": load_accounts()})
-        except RuntimeError as error:
-            detail = str(error)
-            status = HTTPStatus.CONFLICT if "duplicate key" in detail.lower() or "unique" in detail.lower() else HTTPStatus.INTERNAL_SERVER_ERROR
-            return write_json(self, {"error": "Aggiornamento account non riuscito", "detail": detail}, status)
         except Exception as error:
-            return write_json(self, {"error": "Errore account non previsto", "detail": str(error)}, HTTPStatus.INTERNAL_SERVER_ERROR)
+            return write_json(self, {"error": "Aggiornamento account non riuscito", "detail": str(error)}, HTTPStatus.INTERNAL_SERVER_ERROR)
 
     def do_DELETE(self):
         payload = read_json_body(self)
@@ -188,10 +302,8 @@ class handler(BaseHTTPRequestHandler):
             delete_rows("user_skills", filters={"user_id": f"eq.{user_id}"})
             delete_rows("users", filters={"id": f"eq.{user_id}"})
             return write_json(self, {"mode": "deleted", "message": "Account eliminato", "accounts": load_accounts()})
-        except RuntimeError as error:
-            return write_json(self, {"error": "Eliminazione account non riuscita", "detail": str(error)}, HTTPStatus.INTERNAL_SERVER_ERROR)
         except Exception as error:
-            return write_json(self, {"error": "Errore account non previsto", "detail": str(error)}, HTTPStatus.INTERNAL_SERVER_ERROR)
+            return write_json(self, {"error": "Eliminazione account non riuscita", "detail": str(error)}, HTTPStatus.INTERNAL_SERVER_ERROR)
 
     def log_message(self, format, *args):
         return
