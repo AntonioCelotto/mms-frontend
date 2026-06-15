@@ -33,6 +33,10 @@ const ACCOUNT_QUICK_SKILLS = [
   "Vista lavorazione cliente",
 ];
 
+const ACCOUNT_SUPABASE_URL = "https://fzdqemzowxjuotqalaol.supabase.co";
+const ACCOUNT_SUPABASE_KEY =
+  "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZ6ZHFlbXpvd3hqdW90cWFsYW9sIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzk5Njg3NzYsImV4cCI6MjA5NTU0NDc3Nn0.fmZ9RThFxnaJGQsOYeu_ZjjUNHThlRX87qz9sX4N6Mk";
+
 function accountText(value) {
   return String(value || "").trim();
 }
@@ -472,6 +476,78 @@ async function refreshAccountsWorkspaceData({ rerender = true } = {}) {
   return false;
 }
 
+async function accountSupabaseRequest(path, { method = "GET", body, prefer } = {}) {
+  const headers = {
+    apikey: ACCOUNT_SUPABASE_KEY,
+    Authorization: `Bearer ${ACCOUNT_SUPABASE_KEY}`,
+    "Content-Type": "application/json",
+  };
+  if (prefer) headers.Prefer = prefer;
+
+  const response = await fetch(`${ACCOUNT_SUPABASE_URL}${path}`, {
+    method,
+    headers,
+    body: body ? JSON.stringify(body) : undefined,
+  });
+  const text = await response.text();
+  const payload = text ? JSON.parse(text) : null;
+  if (!response.ok) {
+    const message = payload?.message || payload?.error || payload?.details || text || "Errore Supabase";
+    throw new Error(message);
+  }
+  return payload;
+}
+
+function accountCreatePayload() {
+  return {
+    first_name: accountText(appState.accountDraft.first_name),
+    last_name: accountText(appState.accountDraft.last_name),
+    phone: accountText(appState.accountDraft.phone),
+    email: accountText(appState.accountDraft.email).toLowerCase(),
+    role: appState.accountDraft.role === "admin" ? "admin" : "viewer",
+    skills: accountDraftSkills(appState.accountDraft.skills),
+  };
+}
+
+async function createAccountViaApi(payload) {
+  const response = await fetch("/api/create-account", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(payload),
+  });
+  const result = await response.json().catch(() => ({}));
+  if (!response.ok) {
+    throw new Error(result.detail || result.error || "Creazione account API non riuscita");
+  }
+  return result;
+}
+
+async function createAccountDirect(payload) {
+  const created = await accountSupabaseRequest("/rest/v1/users", {
+    method: "POST",
+    prefer: "return=representation",
+    body: {
+      first_name: payload.first_name,
+      last_name: payload.last_name || null,
+      phone: payload.phone || null,
+      email: payload.email,
+      role: payload.role,
+      is_active: true,
+    },
+  });
+  const user = Array.isArray(created) ? created[0] : created;
+  if (!user?.id) throw new Error("Account creato senza ID");
+
+  for (const skill of payload.skills) {
+    await accountSupabaseRequest("/rest/v1/user_skills", {
+      method: "POST",
+      prefer: "return=minimal",
+      body: { user_id: user.id, skill_name: skill },
+    });
+  }
+  return user;
+}
+
 async function updateAccountDraft() {
   const draft = appState.accountEditDraft;
   if (!draft?.user_id) return;
@@ -606,17 +682,36 @@ attachEvents = function attachEventsAccountsWorkspace() {
   });
 };
 
-const baseSaveAccountDraftAccountsWorkspace = saveAccountDraft;
 saveAccountDraft = async function saveAccountDraftAccountsWorkspace() {
-  appState.accountDraft.skills = accountDraftSkills(appState.accountDraft.skills).join(", ");
+  const payload = accountCreatePayload();
+  appState.accountDraft.skills = payload.skills.join(", ");
 
-  if (!accountText(appState.accountDraft.first_name) || !accountText(appState.accountDraft.email)) {
+  if (!payload.first_name || !payload.email) {
     setFlashMessage("Inserisci almeno nome ed email dell'account");
     return;
   }
+  if (!payload.email.includes("@")) {
+    setFlashMessage("Email account non valida");
+    return;
+  }
 
-  await baseSaveAccountDraftAccountsWorkspace();
-  await refreshAccountsWorkspaceData({ rerender: true });
+  setBusy(true);
+  try {
+    try {
+      await createAccountViaApi(payload);
+    } catch (apiError) {
+      await createAccountDirect(payload);
+    }
+    await refreshBootstrap();
+    await refreshAccountsWorkspaceData({ rerender: false });
+    appState.accountDraft = { first_name: "", last_name: "", phone: "", email: "", role: "viewer", skills: "" };
+    setFlashMessage("Account creato");
+  } catch (error) {
+    setFlashMessage(error.message || "Creazione account non riuscita");
+  } finally {
+    appState.busy = false;
+    renderApp();
+  }
 };
 
 const accountsWorkspaceRoot = document.getElementById("app");
