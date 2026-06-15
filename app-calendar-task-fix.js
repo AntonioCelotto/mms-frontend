@@ -63,6 +63,12 @@ function calendarTaskFixAssignedValue(task) {
   return "";
 }
 
+function calendarTaskFixRefreshAssignee(section) {
+  if (typeof taskAssignmentEnhanceCalendar === "function") taskAssignmentEnhanceCalendar();
+  const select = section?.querySelector("select[data-assignment-field='assignedUserId']");
+  if (select && appState.assignmentDraft.assignedUserId) select.value = String(appState.assignmentDraft.assignedUserId);
+}
+
 function calendarTaskFixSyncDraftFromTask(task, overwrite = false) {
   if (!task) return;
   if (overwrite || !appState.assignmentDraft.assignedUserId) appState.assignmentDraft.assignedUserId = calendarTaskFixAssignedValue(task);
@@ -96,7 +102,10 @@ function calendarTaskFixEnhanceTaskSelect(section) {
     select.dataset.calendarTaskFixMarkup = markup;
   }
   const selectedTask = tasks.find((task) => String(task.id) === selected);
-  if (selectedTask) calendarTaskFixSyncDraftFromTask(selectedTask, false);
+  if (selectedTask) {
+    calendarTaskFixSyncDraftFromTask(selectedTask, false);
+    calendarTaskFixRefreshAssignee(section);
+  }
   select.onchange = (event) => {
     appState.assignmentDraft.taskId = event.target.value;
     const task = tasks.find((item) => String(item.id) === String(event.target.value));
