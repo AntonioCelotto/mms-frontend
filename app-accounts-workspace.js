@@ -367,3 +367,8 @@ saveAccountDraft = async function saveAccountDraftAccountsWorkspace() {
 
   await baseSaveAccountDraftAccountsWorkspace();
 };
+
+const accountsWorkspaceRoot = document.getElementById("app");
+if (accountsWorkspaceRoot && accountsWorkspaceRoot.innerHTML) {
+  renderApp();
+}
