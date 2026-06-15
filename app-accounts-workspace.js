@@ -459,7 +459,7 @@ function renderAccounts() {
 
 async function refreshAccountsWorkspaceData({ rerender = true } = {}) {
   try {
-    const response = await fetch("/api/list-accounts");
+    const response = await fetch("/api/create-account");
     if (!response.ok) return false;
     const payload = await response.json();
     if (payload && Array.isArray(payload.accounts)) {
@@ -509,7 +509,7 @@ async function updateAccountDraft() {
 
   setBusy(true);
   try {
-    const response = await fetch("/api/update-account", {
+    const response = await fetch("/api/create-account", {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
@@ -549,7 +549,7 @@ async function deleteOrDeactivateAccount(accountId) {
 
   setBusy(true);
   try {
-    const response = await fetch("/api/delete-account", {
+    const response = await fetch("/api/create-account", {
       method: "DELETE",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ user_id: account.id }),
