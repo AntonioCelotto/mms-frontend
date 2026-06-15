@@ -33,6 +33,8 @@ const ACCOUNT_QUICK_SKILLS = [
   "Vista lavorazione cliente",
 ];
 
+const ACCOUNT_API_PATH = "/api/accounts";
+
 
 function accountText(value) {
   return String(value || "").trim();
@@ -298,7 +300,7 @@ function renderAccounts() {
           <p>Gestione completa degli account: creazione, modifica, disattivazione, competenze e collegamento ai task.</p>
         </div>
         <div class="screen-actions">
-          <div class="ghost-pill">Account v8</div>
+          <div class="ghost-pill">Account v9</div>
           <div class="ghost-pill">${accounts.length} account totali</div>
           <button class="action-pill" data-action="save-account">${appState.busy ? "Salvataggio..." : "Crea account"}</button>
         </div>
@@ -460,7 +462,7 @@ function renderAccounts() {
 
 async function refreshAccountsWorkspaceData({ rerender = true } = {}) {
   try {
-    const response = await fetch("/api/create-account");
+    const response = await fetch(ACCOUNT_API_PATH);
     if (!response.ok) return false;
     const payload = await response.json();
     if (payload && Array.isArray(payload.accounts)) {
@@ -486,14 +488,14 @@ function accountCreatePayload() {
 }
 
 async function createAccountViaApi(payload) {
-  const response = await fetch("/api/create-account", {
+  const response = await fetch(ACCOUNT_API_PATH, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(payload),
   });
   const result = await response.json().catch(() => ({}));
   if (!response.ok) {
-    throw new Error(result.detail || result.error || "Creazione account API non riuscita");
+    throw new Error(result.detail || result.error || `Creazione account API non riuscita (${response.status})`);
   }
   return result;
 }
@@ -510,7 +512,7 @@ async function updateAccountDraft() {
 
   setBusy(true);
   try {
-    const response = await fetch("/api/create-account", {
+    const response = await fetch(ACCOUNT_API_PATH, {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
@@ -550,7 +552,7 @@ async function deleteOrDeactivateAccount(accountId) {
 
   setBusy(true);
   try {
-    const response = await fetch("/api/create-account", {
+    const response = await fetch(ACCOUNT_API_PATH, {
       method: "DELETE",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ user_id: account.id }),
