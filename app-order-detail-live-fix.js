@@ -9,6 +9,12 @@ function orderDetailLiveDbId(order) {
   return Number(order?.db_id || order?.internal_id || order?.id || appState.selectedOrderId || 0);
 }
 
+function orderDetailLiveKey(order) {
+  const displayId = orderDetailLiveDisplayId(order);
+  const dbId = orderDetailLiveDbId(order);
+  return displayId && dbId ? `${displayId}:${dbId}` : "";
+}
+
 function orderDetailLiveHasRows(collection, displayId) {
   const rows = collection?.[displayId];
   return Array.isArray(rows) && rows.length > 0;
@@ -16,7 +22,10 @@ function orderDetailLiveHasRows(collection, displayId) {
 
 function orderDetailLiveNeedsLoad(order) {
   const displayId = orderDetailLiveDisplayId(order);
-  if (!displayId || !orderDetailLiveDbId(order)) return false;
+  const dbId = orderDetailLiveDbId(order);
+  const key = orderDetailLiveKey(order);
+  if (!displayId || !dbId) return false;
+  if (key && orderDetailLiveLoadedKeys.has(key)) return false;
   const hasTasks = orderDetailLiveHasRows(appData.orderTasks, displayId);
   const hasMaterials = orderDetailLiveHasRows(appData.orderMaterials, displayId);
   return !hasTasks || !hasMaterials;
@@ -25,9 +34,10 @@ function orderDetailLiveNeedsLoad(order) {
 async function orderDetailLiveLoad(order, force = false) {
   const displayId = orderDetailLiveDisplayId(order);
   const dbId = orderDetailLiveDbId(order);
-  if (!displayId || !dbId) return;
-  const key = `${displayId}:${dbId}`;
-  if (!force && orderDetailLiveLoadedKeys.has(key) && !orderDetailLiveNeedsLoad(order)) return;
+  const key = orderDetailLiveKey(order);
+  if (!displayId || !dbId || !key) return;
+  if (!force && orderDetailLiveLoadedKeys.has(key)) return;
+  if (!force && !orderDetailLiveNeedsLoad(order)) return;
   if (orderDetailLiveLoadingKey === key) return;
 
   orderDetailLiveLoadingKey = key;
@@ -37,8 +47,8 @@ async function orderDetailLiveLoad(order, force = false) {
       typeof orderFlowLoadMaterials === "function" ? orderFlowLoadMaterials(order).catch(() => []) : Promise.resolve([]),
       typeof orderFlowLoadAttachments === "function" ? orderFlowLoadAttachments(order).catch(() => {}) : Promise.resolve(),
     ]);
-    orderDetailLiveLoadedKeys.add(key);
   } finally {
+    orderDetailLiveLoadedKeys.add(key);
     orderDetailLiveLoadingKey = "";
   }
 }
