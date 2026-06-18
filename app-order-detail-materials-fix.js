@@ -2,6 +2,8 @@ const ORDER_DETAIL_MATERIAL_STATUS = {
   saving: false,
   selectedSku: "",
   quantity: "1",
+  inventoryLoaded: false,
+  inventoryLoading: false,
 };
 
 function orderDetailMaterialsEscape(value) {
@@ -32,23 +34,35 @@ function orderDetailMaterialsDbId(order) {
 }
 
 async function orderDetailMaterialsLoadInventory(force = false) {
-  if (!force && orderDetailMaterialsItems().length) return;
-  if (typeof inventoryOrderLoadItems === "function") {
-    await inventoryOrderLoadItems(force);
+  if (ORDER_DETAIL_MATERIAL_STATUS.inventoryLoading) return;
+  if (!force && ORDER_DETAIL_MATERIAL_STATUS.inventoryLoaded) return;
+  if (!force && orderDetailMaterialsItems().length) {
+    ORDER_DETAIL_MATERIAL_STATUS.inventoryLoaded = true;
     return;
   }
-  if (typeof orderFlowRequest !== "function") return;
-  const rows = await orderFlowRequest("/rest/v1/inventory_items?select=id,sku,name,category,available_quantity,reserved_quantity,status,notes&order=name.asc");
-  appData.inventory = (Array.isArray(rows) ? rows : []).map((row) => ({
-    id: row.id,
-    sku: row.sku || "",
-    product: row.name || "",
-    category: row.category || "",
-    available: row.available_quantity ?? 0,
-    reserved: row.reserved_quantity ?? 0,
-    status: row.status || "",
-    reorder: row.notes || "Senza note",
-  }));
+
+  ORDER_DETAIL_MATERIAL_STATUS.inventoryLoading = true;
+  try {
+    if (typeof inventoryOrderLoadItems === "function") {
+      await inventoryOrderLoadItems(force);
+      return;
+    }
+    if (typeof orderFlowRequest !== "function") return;
+    const rows = await orderFlowRequest("/rest/v1/inventory_items?select=id,sku,name,category,available_quantity,reserved_quantity,status,notes&order=name.asc");
+    appData.inventory = (Array.isArray(rows) ? rows : []).map((row) => ({
+      id: row.id,
+      sku: row.sku || "",
+      product: row.name || "",
+      category: row.category || "",
+      available: row.available_quantity ?? 0,
+      reserved: row.reserved_quantity ?? 0,
+      status: row.status || "",
+      reorder: row.notes || "Senza note",
+    }));
+  } finally {
+    ORDER_DETAIL_MATERIAL_STATUS.inventoryLoaded = true;
+    ORDER_DETAIL_MATERIAL_STATUS.inventoryLoading = false;
+  }
 }
 
 function orderDetailMaterialsEnsureSelection() {
@@ -64,6 +78,7 @@ function orderDetailMaterialsSelectedItem() {
 }
 
 function orderDetailMaterialsInfo(item) {
+  if (ORDER_DETAIL_MATERIAL_STATUS.inventoryLoading) return "Caricamento magazzino...";
   if (!item) return "Nessun prodotto disponibile in magazzino";
   return `${item.sku || "SKU n/d"} - disponibili ${item.available ?? 0}, impegnati ${item.reserved ?? 0}`;
 }
@@ -85,7 +100,7 @@ function orderDetailMaterialsPanelMarkup() {
         <div class="field span-2">
           <label>Prodotto magazzino</label>
           <select class="filter-chip" data-order-detail-material-field="selectedSku">
-            ${items.length ? items.map((item) => `<option value="${orderDetailMaterialsEscape(item.sku)}" ${item.sku === ORDER_DETAIL_MATERIAL_STATUS.selectedSku ? "selected" : ""}>${orderDetailMaterialsEscape(item.product || item.name || "Prodotto")} - ${orderDetailMaterialsEscape(item.sku || "SKU n/d")}</option>`).join("") : `<option value="">Nessun prodotto in magazzino</option>`}
+            ${items.length ? items.map((item) => `<option value="${orderDetailMaterialsEscape(item.sku)}" ${item.sku === ORDER_DETAIL_MATERIAL_STATUS.selectedSku ? "selected" : ""}>${orderDetailMaterialsEscape(item.product || item.name || "Prodotto")} - ${orderDetailMaterialsEscape(item.sku || "SKU n/d")}</option>`).join("") : `<option value="">${ORDER_DETAIL_MATERIAL_STATUS.inventoryLoading ? "Caricamento magazzino..." : "Nessun prodotto in magazzino"}</option>`}
           </select>
           <div class="muted" style="margin-top:6px;">${orderDetailMaterialsEscape(orderDetailMaterialsInfo(selected))}</div>
         </div>
@@ -103,9 +118,8 @@ function orderDetailMaterialsMount() {
   const section = document.querySelector("section.view.active");
   if (!section || section.querySelector(".order-detail-material-add")) return;
   const materialTitle = Array.from(section.querySelectorAll(".section-title h3")).find((title) => title.textContent.trim().toLowerCase() === "sezione materiale");
-  const surfaceInner = materialTitle?.closest(".surface-inner");
   const titleBlock = materialTitle?.closest(".section-title");
-  if (surfaceInner && titleBlock) {
+  if (titleBlock) {
     titleBlock.insertAdjacentHTML("afterend", orderDetailMaterialsPanelMarkup());
   }
 }
@@ -189,7 +203,7 @@ renderApp = function renderAppWithOrderDetailMaterials() {
   if (appState.currentView !== "order-detail") return;
   orderDetailMaterialsMount();
   orderDetailMaterialsAttachEvents();
-  if (!orderDetailMaterialsItems().length) {
+  if (!ORDER_DETAIL_MATERIAL_STATUS.inventoryLoaded && !ORDER_DETAIL_MATERIAL_STATUS.inventoryLoading && !orderDetailMaterialsItems().length) {
     orderDetailMaterialsLoadInventory().then(() => {
       if (appState.currentView === "order-detail") renderApp();
     }).catch(() => {});
