@@ -57,13 +57,13 @@ function quoteListFind(id = appState.selectedQuoteId) {
 
 function quoteListEmailText(quote) {
   return [
-    "Buongiorno,",
-    "",
+    `Buongiorno,`,
+    ``,
     `in allegato trova il preventivo ${quote.id} per ${quote.client}.`,
     `Totale preventivo: ${quoteMoney(quote.total)}.`,
-    "",
-    "Resto a disposizione per conferma o modifiche.",
-    "MMS Studio",
+    ``,
+    `Resto a disposizione per conferma o modifiche.`,
+    `MMS Studio`,
   ].join("\n");
 }
 
@@ -150,7 +150,7 @@ function quoteListPdfHtml(quote) {
 function quoteListDownloadPdf(quoteId) {
   const quote = quoteListFind(quoteId);
   if (!quote) return;
-  const win = window.open("", "_blank", "noopener");
+  const win = window.open("", "_blank");
   if (!win) {
     setFlashMessage("Il browser ha bloccato la finestra PDF. Consenti i popup per scaricare il preventivo.");
     renderApp();
@@ -158,6 +158,8 @@ function quoteListDownloadPdf(quoteId) {
   }
   win.document.write(quoteListPdfHtml(quote));
   win.document.close();
+  win.focus();
+  setTimeout(() => win.print(), 400);
 }
 
 function quoteListMailto(quoteId) {
@@ -229,20 +231,44 @@ function renderQuotes() {
       <div class="layout-2">
         <div class="surface">
           <div class="surface-inner">
-            <div class="section-title"><div><h3>Elenco preventivi</h3><p>Solo i preventivi accettati vengono trasformati in ordini operativi.</p></div></div>
+            <div class="section-title">
+              <div>
+                <h3>Elenco preventivi</h3>
+                <p>Solo i preventivi accettati vengono trasformati in ordini operativi.</p>
+              </div>
+            </div>
             <table>
-              <thead><tr><th>N.</th><th>Cliente</th><th>Categoria</th><th>Articoli</th><th>Totale</th><th>Stato</th><th>Azioni</th></tr></thead>
+              <thead>
+                <tr>
+                  <th>N.</th>
+                  <th>Cliente</th>
+                  <th>Categoria</th>
+                  <th>Articoli</th>
+                  <th>Totale</th>
+                  <th>Stato</th>
+                  <th>Azioni</th>
+                </tr>
+              </thead>
               <tbody>
-                ${quotes.length ? quotes.map((quote) => `
-                  <tr>
-                    <td><button class="mini-btn" data-quote-select="${quote.id}" type="button">${quote.id}</button></td>
-                    <td>${quoteHtml(quote.client)}</td>
-                    <td>${quoteHtml(quote.category)}</td>
-                    <td>${quoteListArticleCount(quote)}</td>
-                    <td>${quoteMoney(quote.total)}</td>
-                    <td><span class="table-status ${quoteListStatusClass(quote.status)}">${quoteHtml(quote.status)}</span></td>
-                    <td><button class="mini-btn" data-quote-pdf="${quote.id}" type="button">PDF</button></td>
-                  </tr>`).join("") : `<tr><td colspan="7"><div class="empty-state">Nessun preventivo salvato. Crea un preventivo e salvalo per vederlo qui.</div></td></tr>`}
+                ${
+                  quotes.length
+                    ? quotes
+                        .map(
+                          (quote) => `
+                            <tr>
+                              <td><button class="mini-btn" data-quote-select="${quote.id}" type="button">${quote.id}</button></td>
+                              <td>${quoteHtml(quote.client)}</td>
+                              <td>${quoteHtml(quote.category)}</td>
+                              <td>${quoteListArticleCount(quote)}</td>
+                              <td>${quoteMoney(quote.total)}</td>
+                              <td><span class="table-status ${quoteListStatusClass(quote.status)}">${quoteHtml(quote.status)}</span></td>
+                              <td><button class="mini-btn" data-quote-pdf="${quote.id}" type="button">PDF</button></td>
+                            </tr>
+                          `
+                        )
+                        .join("")
+                    : `<tr><td colspan="7"><div class="empty-state">Nessun preventivo salvato. Crea un preventivo e salvalo per vederlo qui.</div></td></tr>`
+                }
               </tbody>
             </table>
           </div>
@@ -250,21 +276,32 @@ function renderQuotes() {
 
         <div class="surface">
           <div class="surface-inner">
-            ${selected ? `
-              <div class="section-title"><div><h3>Scheda ${quoteHtml(selected.id)}</h3><p>${quoteHtml(selected.client)} - ${quoteListArticleCount(selected)} articoli, ${quoteListMaterialCount(selected)} materiali.</p></div><span class="table-status ${quoteListStatusClass(selected.status)}">${quoteHtml(selected.status)}</span></div>
-              <div class="alert-list">
-                <div class="alert-item"><strong>Totale</strong><span>${quoteMoney(selected.total)}</span></div>
-                <div class="alert-item"><strong>Data preventivo</strong><span>${quoteHtml(selected.quoteDate || "Da definire")}</span></div>
-                <div class="alert-item"><strong>Note</strong><span>${quoteHtml(selected.note || "Nessuna nota")}</span></div>
-              </div>
-              <div style="height:16px;"></div>
-              <div class="pill-row">
-                <button class="mini-btn" data-quote-pdf="${selected.id}" type="button">Scarica PDF</button>
-                <button class="mini-btn" data-quote-email="${selected.id}" type="button">Invia mail</button>
-                <button class="mini-btn" data-quote-status="${selected.id}" data-next-status="Inviato" type="button">Segna inviato</button>
-                <button class="mini-btn" data-quote-status="${selected.id}" data-next-status="Rifiutato" type="button">Rifiutato</button>
-                <button class="action-pill" data-quote-convert="${selected.id}" type="button">Conferma e crea ordine</button>
-              </div>` : `<div class="empty-state">Seleziona un preventivo per vedere azioni e dettaglio.</div>`}
+            ${
+              selected
+                ? `
+                  <div class="section-title">
+                    <div>
+                      <h3>Scheda ${quoteHtml(selected.id)}</h3>
+                      <p>${quoteHtml(selected.client)} - ${quoteListArticleCount(selected)} articoli, ${quoteListMaterialCount(selected)} materiali.</p>
+                    </div>
+                    <span class="table-status ${quoteListStatusClass(selected.status)}">${quoteHtml(selected.status)}</span>
+                  </div>
+                  <div class="alert-list">
+                    <div class="alert-item"><strong>Totale</strong><span>${quoteMoney(selected.total)}</span></div>
+                    <div class="alert-item"><strong>Data preventivo</strong><span>${quoteHtml(selected.quoteDate || "Da definire")}</span></div>
+                    <div class="alert-item"><strong>Note</strong><span>${quoteHtml(selected.note || "Nessuna nota")}</span></div>
+                  </div>
+                  <div style="height:16px;"></div>
+                  <div class="pill-row">
+                    <button class="mini-btn" data-quote-pdf="${selected.id}" type="button">Scarica PDF</button>
+                    <button class="mini-btn" data-quote-email="${selected.id}" type="button">Invia mail</button>
+                    <button class="mini-btn" data-quote-status="${selected.id}" data-next-status="Inviato" type="button">Segna inviato</button>
+                    <button class="mini-btn" data-quote-status="${selected.id}" data-next-status="Rifiutato" type="button">Rifiutato</button>
+                    <button class="action-pill" data-quote-convert="${selected.id}" type="button">Conferma e crea ordine</button>
+                  </div>
+                `
+                : `<div class="empty-state">Seleziona un preventivo per vedere azioni e dettaglio.</div>`
+            }
           </div>
         </div>
       </div>
@@ -282,31 +319,47 @@ renderLayout = function renderLayoutQuotesList() {
       `<button class="${quotesClass}" data-nav="quotes"><strong>Preventivi</strong><span>PDF, invio e conferma</span></button><button class="$1" data-nav="new-order">`
     );
   }
-  html = html.replace("</main>", `${renderQuotes()}</main>`);
+  if (!html.includes('data-quotes-list-view="true"')) {
+    html = html.replace(
+      "\n        </div>\n      </main>",
+      `\n          <div data-quotes-list-view="true">${renderQuotes()}</div>\n        </div>\n      </main>`
+    );
+  }
   return html;
 };
 
 function attachQuotesListEvents() {
   document.querySelectorAll("[data-action='save-quote']").forEach((button) => {
-    button.addEventListener("click", (event) => {
-      event.preventDefault();
-      event.stopImmediatePropagation();
-      quoteListSaveCurrent();
-    }, true);
+    button.addEventListener(
+      "click",
+      (event) => {
+        event.preventDefault();
+        event.stopImmediatePropagation();
+        quoteListSaveCurrent();
+      },
+      true
+    );
   });
 
   document.querySelectorAll("[data-quote-select]").forEach((button) => {
-    button.addEventListener("click", () => { appState.selectedQuoteId = button.dataset.quoteSelect; renderApp(); });
+    button.addEventListener("click", () => {
+      appState.selectedQuoteId = button.dataset.quoteSelect;
+      renderApp();
+    });
   });
+
   document.querySelectorAll("[data-quote-pdf]").forEach((button) => {
     button.addEventListener("click", () => quoteListDownloadPdf(button.dataset.quotePdf));
   });
+
   document.querySelectorAll("[data-quote-email]").forEach((button) => {
     button.addEventListener("click", () => quoteListMailto(button.dataset.quoteEmail));
   });
+
   document.querySelectorAll("[data-quote-status]").forEach((button) => {
     button.addEventListener("click", () => quoteListSetStatus(button.dataset.quoteStatus, button.dataset.nextStatus));
   });
+
   document.querySelectorAll("[data-quote-convert]").forEach((button) => {
     button.addEventListener("click", () => quoteListConvertToOrder(button.dataset.quoteConvert));
   });
