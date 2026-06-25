@@ -1,6 +1,6 @@
 {
-  "version": "order-from-quote-1",
-  "label": "Ordine da preventivo v1",
-  "updated_at": "2026-06-25T09:45:00Z",
-  "purpose": "Conferma preventivo verso ordine con date, pagamento, dati riportati e task"
+  "version": "order-from-quote-2",
+  "label": "Ordine da preventivo v2",
+  "updated_at": "2026-06-25T09:55:00Z",
+  "purpose": "Pagamenti multipli, materiali modificabili e ore lavoro manuali nei task"
 }
