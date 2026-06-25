@@ -1,6 +1,6 @@
 {
-  "version": "quote-2",
-  "label": "Preventivo v2",
-  "updated_at": "2026-06-25T07:58:00Z",
-  "purpose": "Verifica pubblicazione pagina Preventivo e cache browser"
+  "version": "quotes-1",
+  "label": "Preventivi v1",
+  "updated_at": "2026-06-25T08:18:00Z",
+  "purpose": "Sezione Preventivi con PDF, mail, conferma e trasformazione in ordine"
 }
