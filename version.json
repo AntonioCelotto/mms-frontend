@@ -1,6 +1,6 @@
 {
-  "version": "order-from-quote-2",
-  "label": "Ordine da preventivo v2",
-  "updated_at": "2026-06-25T09:55:00Z",
-  "purpose": "Pagamenti multipli, materiali modificabili e ore lavoro manuali nei task"
+  "version": "quotes-persist-1",
+  "label": "Preventivi persistenti v1",
+  "updated_at": "2026-06-25T10:10:00Z",
+  "purpose": "Salvataggio locale lista preventivi e stati accettati/rifiutati/trasformati"
 }
