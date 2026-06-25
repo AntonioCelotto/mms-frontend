@@ -1,6 +1,6 @@
 {
-  "version": "quotes-2",
-  "label": "Preventivi v2",
-  "updated_at": "2026-06-25T08:32:00Z",
-  "purpose": "Fix PDF preventivo e margini sezione Preventivi"
+  "version": "photos-1",
+  "label": "Preventivi foto v1",
+  "updated_at": "2026-06-25T09:10:00Z",
+  "purpose": "Sezione foto nel preventivo e foto allegate nel PDF"
 }
