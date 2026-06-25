@@ -1,6 +1,6 @@
 {
-  "version": "quotes-persist-1",
-  "label": "Preventivi persistenti v1",
-  "updated_at": "2026-06-25T10:10:00Z",
-  "purpose": "Salvataggio locale lista preventivi e stati accettati/rifiutati/trasformati"
+  "version": "order-payment-layout-1",
+  "label": "Pagamenti ordine layout v1",
+  "updated_at": "2026-06-25T10:30:00Z",
+  "purpose": "Fix grafico pannello pagamenti ordine da preventivo"
 }
