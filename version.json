@@ -1,6 +1,6 @@
 {
-  "version": "order-preview-1",
-  "label": "Ordine visibile da preventivo v1",
-  "updated_at": "2026-06-30T10:00:00Z",
-  "purpose": "Mostra in Ordini il preventivo trasformato come ordine da completare"
+  "version": "quotes-history-2",
+  "label": "Storico preventivi v2",
+  "updated_at": "2026-06-30T10:20:00Z",
+  "purpose": "Storico preventivi leggero e resistente anche con foto grandi"
 }
