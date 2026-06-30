@@ -1,6 +1,6 @@
 {
-  "version": "order-payment-layout-1",
-  "label": "Pagamenti ordine layout v1",
-  "updated_at": "2026-06-25T10:30:00Z",
-  "purpose": "Fix grafico pannello pagamenti ordine da preventivo"
+  "version": "order-preview-1",
+  "label": "Ordine visibile da preventivo v1",
+  "updated_at": "2026-06-30T10:00:00Z",
+  "purpose": "Mostra in Ordini il preventivo trasformato come ordine da completare"
 }
