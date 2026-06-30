@@ -1,6 +1,6 @@
 {
-  "version": "order-fields-1",
-  "label": "Campi ordine approvato v1",
-  "updated_at": "2026-06-30T10:35:00Z",
-  "purpose": "Stabilizza compilazione dati ordine dopo approvazione preventivo"
+  "version": "order-detail-edit-1",
+  "label": "Scheda ordine modificabile v1",
+  "updated_at": "2026-06-30T09:22:00Z",
+  "purpose": "Rende modificabile la scheda ordine riaperta e conserva le foto del preventivo negli allegati ordine"
 }
