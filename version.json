@@ -1,6 +1,6 @@
 {
-  "version": "quotes-history-2",
-  "label": "Storico preventivi v2",
-  "updated_at": "2026-06-30T10:20:00Z",
-  "purpose": "Storico preventivi leggero e resistente anche con foto grandi"
+  "version": "order-fields-1",
+  "label": "Campi ordine approvato v1",
+  "updated_at": "2026-06-30T10:35:00Z",
+  "purpose": "Stabilizza compilazione dati ordine dopo approvazione preventivo"
 }
