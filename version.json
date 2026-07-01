@@ -1,6 +1,6 @@
 {
-  "version": "order-core-tasks-1",
-  "label": "Ordine con tre task standard",
-  "updated_at": "2026-07-01T11:45:00Z",
-  "purpose": "Mantiene negli ordini standard solo i tre task core: cartamodello, taglio e confezione"
+  "version": "calendar-task-actions-cleanup-1",
+  "label": "Pulizia azioni task calendario",
+  "updated_at": "2026-07-01T12:05:00Z",
+  "purpose": "Rimuove Segna finito dai task calendario e sostituisce valori undefined con Da pianificare"
 }
