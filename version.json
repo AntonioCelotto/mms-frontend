@@ -1,6 +1,6 @@
 {
-  "version": "order-task-sync-1",
-  "label": "Task ordine sincronizzati v1",
-  "updated_at": "2026-07-01T07:45:00Z",
-  "purpose": "Sincronizza i task della scheda ordine con modifica ordine, selezione personale e calendario"
+  "version": "order-task-sync-2",
+  "label": "Task ordine sincronizzati v2",
+  "updated_at": "2026-07-01T07:50:00Z",
+  "purpose": "Mostra tutti i task nella modifica ordine e collega i task a personale, ore lavoro e calendario"
 }
