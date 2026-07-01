@@ -1,6 +1,6 @@
 {
-  "version": "task-actions-cleanup-1",
-  "label": "Pulizia azioni task ordine",
-  "updated_at": "2026-07-01T08:45:00Z",
-  "purpose": "Rimuove il pulsante di completamento dalla lista task ordine lasciando la gestione stato alle lavorazioni dipendenti"
+  "version": "calendar-order-sync-1",
+  "label": "Calendario operativo ordini e lavorazioni",
+  "updated_at": "2026-07-01T10:15:00Z",
+  "purpose": "Sincronizza planning generale, task ordine e lavorazioni dipendenti nella sezione Calendario"
 }
