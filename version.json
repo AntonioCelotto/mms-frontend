@@ -1,6 +1,6 @@
 {
-  "version": "calendar-worklog-database-1",
-  "label": "Lavorazioni calendario su database",
-  "updated_at": "2026-07-01T13:12:00Z",
-  "purpose": "Salva e carica Inizio/Pausa/Stop delle lavorazioni calendario su Supabase mantenendo il registro locale come fallback"
+  "version": "calendar-quick-plan-1",
+  "label": "Pianificazione rapida dal calendario",
+  "updated_at": "2026-07-01T14:55:00Z",
+  "purpose": "Aggiunge il bottone Pianifica sulle card del calendario per aggiornare dipendente, data, ora e giorno direttamente dalla vista settimanale"
 }
