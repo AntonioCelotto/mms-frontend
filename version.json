@@ -1,6 +1,6 @@
 {
-  "version": "calendar-order-sync-1",
-  "label": "Calendario operativo ordini e lavorazioni",
-  "updated_at": "2026-07-01T10:15:00Z",
-  "purpose": "Sincronizza planning generale, task ordine e lavorazioni dipendenti nella sezione Calendario"
+  "version": "quotes-history-recovery-1",
+  "label": "Recupero storico preventivi",
+  "updated_at": "2026-07-01T10:45:00Z",
+  "purpose": "Ripristina la visualizzazione dello storico Preventivi unendo archivi locali completi, leggeri e legacy"
 }
