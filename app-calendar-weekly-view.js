@@ -249,13 +249,29 @@
                             .map((slot) => {
                               const order = calendarWeeklyOrder(slot);
                               const color = calendarWeeklyColor(slot.owner);
+                              const taskId = slot.taskId || slot.id || "";
+                              const session =
+                                taskId && typeof calendarWorklogSessionFor === "function"
+                                  ? calendarWorklogSessionFor(taskId)
+                                  : null;
+                              const workState = session?.status || slot.status || "Da avviare";
+                              const isRunning = String(workState).toLowerCase().includes("corso");
                               return `
-                                <button class="calendar-event" data-detail="${calendarWeeklyEscape(slot.orderId)}" style="--owner-color:${color}" type="button">
+                                <div class="calendar-event" data-detail="${calendarWeeklyEscape(slot.orderId)}" style="--owner-color:${color}" role="button" tabindex="0">
                                   <span class="calendar-event-time">${calendarWeeklyEscape(slot.time || "Da pianificare")}</span>
                                   <strong>#${calendarWeeklyEscape(slot.orderId)} - ${calendarWeeklyEscape(slot.title || slot.phase || "Task")}</strong>
                                   <span>${calendarWeeklyEscape(order?.client || "Cliente")} · ${calendarWeeklyEscape(slot.phase || "Lavorazione")}</span>
                                   <small>${calendarWeeklyEscape(slot.owner || "Non assegnato")}</small>
-                                </button>
+                                  <div class="calendar-event-actions">
+                                    <button class="mini-btn" data-calendar-open-order="${calendarWeeklyEscape(slot.orderId)}" type="button">Apri</button>
+                                    <button class="mini-btn" data-weekly-worklog-action="${isRunning ? "pause" : "start"}" data-weekly-worklog-task="${calendarWeeklyEscape(
+                                taskId
+                              )}" type="button">${isRunning ? "Pausa" : "Inizio"}</button>
+                                    <button class="mini-btn" data-weekly-worklog-action="finish" data-weekly-worklog-task="${calendarWeeklyEscape(
+                                      taskId
+                                    )}" type="button">Stop</button>
+                                  </div>
+                                </div>
                               `;
                             })
                             .join("")
@@ -327,15 +343,7 @@
           </div>
         </div>
         ${calendarWeeklyFilters()}
-        ${calendarWeeklyAssignmentPanel()}
-        <div class="calendar-main-grid">
-          <div>
-            ${calendarWeeklyBoard()}
-          </div>
-          <div class="calendar-side-stack">
-            ${calendarWeeklySelectedTasks()}
-          </div>
-        </div>
+        ${calendarWeeklyBoard()}
         ${worklog}
       </section>
     `;
@@ -348,10 +356,10 @@
     style.textContent = `
       .calendar-filter-grid{display:grid;grid-template-columns:minmax(260px,1.5fr) minmax(180px,.8fr) minmax(180px,.8fr) minmax(190px,.7fr);gap:12px}
       .calendar-assignment-grid{display:grid;grid-template-columns:minmax(220px,1.35fr) minmax(190px,1fr) minmax(150px,.75fr) minmax(120px,.6fr) minmax(150px,.7fr);gap:12px;align-items:end}
-      .calendar-main-grid{display:grid;grid-template-columns:minmax(0,1.65fr) minmax(340px,.72fr);gap:16px}
+      .calendar-main-grid{display:grid;grid-template-columns:1fr;gap:16px}
       .calendar-side-stack{display:grid;gap:16px;align-content:start}
-      .calendar-week-board{display:grid;grid-template-columns:repeat(7,minmax(132px,1fr));gap:10px;overflow-x:auto;padding-bottom:4px}
-      .calendar-week-day{min-height:410px;background:rgba(255,255,255,.62);border:1px solid var(--line);border-radius:8px;padding:10px;display:flex;flex-direction:column;gap:10px}
+      .calendar-week-board{display:grid;grid-template-columns:repeat(7,minmax(150px,1fr));gap:10px;overflow-x:auto;padding-bottom:4px}
+      .calendar-week-day{min-height:560px;background:rgba(255,255,255,.62);border:1px solid var(--line);border-radius:8px;padding:10px;display:flex;flex-direction:column;gap:10px}
       .calendar-day-head{display:flex;justify-content:space-between;align-items:flex-start;gap:8px;border-bottom:1px solid var(--line);padding-bottom:9px;min-height:48px}
       .calendar-day-head h4{margin:0;font-size:14px}
       .calendar-day-head span{color:var(--muted);font-size:12px;white-space:nowrap}
@@ -362,6 +370,8 @@
       .calendar-event strong{font-size:12px;line-height:1.25}
       .calendar-event span,.calendar-event small{font-size:11px;color:var(--muted);line-height:1.35}
       .calendar-event-time{font-weight:700;color:var(--text)!important}
+      .calendar-event-actions{display:flex;gap:6px;flex-wrap:wrap;margin-top:6px}
+      .calendar-event-actions .mini-btn{padding:6px 8px;font-size:11px;border-radius:7px;background:rgba(255,255,255,.84)}
       .calendar-empty{border:1px dashed rgba(30,45,41,.18);border-radius:8px;color:var(--muted);font-size:12px;text-align:center;padding:16px 8px}
       .calendar-task-list{display:grid;gap:8px}
       .calendar-task-row{display:grid;grid-template-columns:minmax(0,1.1fr) minmax(90px,.75fr) minmax(95px,.75fr) auto;gap:10px;align-items:center;padding:10px 0;border-bottom:1px solid var(--line);font-size:12px}
@@ -372,7 +382,7 @@
       section.view.active .calendar-task-finish,
       section.view.active [data-action='finish-task'],
       section.view.active [data-next-status='completato']{display:none!important}
-      @media(max-width:1500px){.calendar-main-grid{grid-template-columns:1fr}.calendar-week-board{grid-template-columns:repeat(7,minmax(150px,1fr))}}
+      @media(max-width:1500px){.calendar-main-grid{grid-template-columns:1fr}.calendar-week-board{grid-template-columns:repeat(7,minmax(155px,1fr))}}
       @media(max-width:980px){.calendar-filter-grid,.calendar-assignment-grid{grid-template-columns:1fr}.calendar-week-day{min-height:260px}}
     `;
     document.head.appendChild(style);
@@ -431,13 +441,34 @@
   document.addEventListener(
     "click",
     (event) => {
-      const button = event.target.closest?.("button");
-      if (!button || appState.currentView !== "calendar") return;
-      if (button.classList.contains("calendar-event") && button.dataset.detail) {
+      if (appState.currentView !== "calendar") return;
+      const openButton = event.target.closest?.("[data-calendar-open-order]");
+      if (openButton) {
         event.preventDefault();
-        navigate("order-detail", Number(button.dataset.detail));
+        event.stopPropagation();
+        navigate("order-detail", Number(openButton.dataset.calendarOpenOrder));
         return;
       }
+      const worklogButton = event.target.closest?.("[data-weekly-worklog-action]");
+      if (worklogButton) {
+        event.preventDefault();
+        event.stopPropagation();
+        const taskId = worklogButton.dataset.weeklyWorklogTask;
+        if (!taskId || typeof calendarWorklogUpdate !== "function") {
+          setFlashMessage("Task non disponibile per questa lavorazione");
+          return;
+        }
+        calendarWorklogUpdate(taskId, worklogButton.dataset.weeklyWorklogAction);
+        return;
+      }
+      const eventCard = event.target.closest?.(".calendar-event");
+      if (eventCard?.dataset.detail) {
+        event.preventDefault();
+        navigate("order-detail", Number(eventCard.dataset.detail));
+        return;
+      }
+      const button = event.target.closest?.("button");
+      if (!button) return;
       const label = button.textContent.trim().toLowerCase();
       if (label === "segna finito" || label === "finito") {
         event.preventDefault();
@@ -447,6 +478,15 @@
     },
     true
   );
+
+  document.addEventListener("keydown", (event) => {
+    if (appState.currentView !== "calendar") return;
+    if (!["Enter", " "].includes(event.key)) return;
+    const eventCard = event.target.closest?.(".calendar-event");
+    if (!eventCard?.dataset.detail) return;
+    event.preventDefault();
+    navigate("order-detail", Number(eventCard.dataset.detail));
+  });
 
   if (document.getElementById("app")?.innerHTML) renderApp();
 })();
