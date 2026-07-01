@@ -1,6 +1,6 @@
 {
-  "version": "order-task-sync-2",
-  "label": "Task ordine sincronizzati v2",
-  "updated_at": "2026-07-01T07:50:00Z",
-  "purpose": "Mostra tutti i task nella modifica ordine e collega i task a personale, ore lavoro e calendario"
+  "version": "calendar-worklog-1",
+  "label": "Lavorazioni calendario v1",
+  "updated_at": "2026-07-01T08:20:00Z",
+  "purpose": "Aggiunge in calendario la gestione dipendenti con inizio, pausa e fine lavoro collegata ai task ordine"
 }
