@@ -1,6 +1,6 @@
 {
-  "version": "inventory-database-manager-1",
-  "label": "Magazzino materiali su database",
-  "updated_at": "2026-07-01T14:25:00Z",
-  "purpose": "Collega la sezione Magazzino a Supabase con salvataggio, modifica, origine MMS/fornitore, codici materiale, filtri per ricerca/fornitore/categoria e import/export CSV"
+  "version": "inventory-database-manager-2",
+  "label": "Magazzino materiali layout e salvataggio",
+  "updated_at": "2026-07-01T15:05:00Z",
+  "purpose": "Rende la schermata Magazzino piu' compatta, sposta caricamento/import sopra l'elenco, aggiunge pulsante Cerca, contiene la tabella nello schermo e aggiorna subito l'elenco dopo salvataggio/import"
 }
