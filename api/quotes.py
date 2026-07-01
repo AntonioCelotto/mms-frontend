@@ -3,8 +3,12 @@ from __future__ import annotations
 from http import HTTPStatus
 from http.server import BaseHTTPRequestHandler
 
-from _api import clean_text, read_json_body, write_json
-from _supabase import fetch_table, supabase_request
+try:
+    from _api import clean_text, read_json_body, write_json, write_options
+    from _supabase import fetch_table, supabase_request
+except ModuleNotFoundError:
+    from api._api import clean_text, read_json_body, write_json, write_options
+    from api._supabase import fetch_table, supabase_request
 
 
 QUOTE_SELECT = "id,quote_number,client_name,category,priority,quote_date,status,note,total,payload,created_at,updated_at"
@@ -73,8 +77,6 @@ def shape_quote(row):
 
 class handler(BaseHTTPRequestHandler):
     def do_OPTIONS(self):
-        from _api import write_options
-
         return write_options(self)
 
     def do_GET(self):
