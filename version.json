@@ -1,6 +1,6 @@
 {
-  "version": "quotes-api-import-hardening-1",
-  "label": "Preventivi API import stabile",
-  "updated_at": "2026-07-01T16:40:00Z",
-  "purpose": "Rende piu' robusto l'import degli helper Python su /api/quotes per evitare errori Vercel di Python import failure durante il caricamento dello storico preventivi"
+  "version": "inventory-database-manager-1",
+  "label": "Magazzino materiali su database",
+  "updated_at": "2026-07-01T14:25:00Z",
+  "purpose": "Collega la sezione Magazzino a Supabase con salvataggio, modifica, origine MMS/fornitore, codici materiale, filtri per ricerca/fornitore/categoria e import/export CSV"
 }
