@@ -38,6 +38,9 @@
     if (!appState.inventoryDraft) {
       appState.inventoryDraft = { ...DEFAULT_DRAFT };
     }
+    if (typeof appState.inventoryImportOpen !== "boolean") {
+      appState.inventoryImportOpen = false;
+    }
     if (!Array.isArray(appData.inventory)) {
       appData.inventory = [];
     }
@@ -320,6 +323,7 @@
           </div>
           <div class="screen-actions">
             <div class="ghost-pill">${appData.inventory.length} materiali</div>
+            <button class="action-pill" data-inventory-toggle-import type="button">${appState.inventoryImportOpen ? "Chiudi import" : "Importa CSV"}</button>
             <button class="action-pill" data-inventory-export type="button">Esporta CSV</button>
           </div>
         </div>
@@ -376,18 +380,24 @@
             </div>
           </div>
 
-          <div class="surface">
-            <div class="surface-inner">
-              <div class="section-title">
-                <div>
-                  <h3>Import prodotti</h3>
-                  <p>Formato: nome;origine;fornitore;codice_fornitore;codice_mms;categoria;quantita;unita;stato;note</p>
+          ${
+            appState.inventoryImportOpen
+              ? `
+                <div class="surface">
+                  <div class="surface-inner">
+                    <div class="section-title">
+                      <div>
+                        <h3>Import prodotti</h3>
+                        <p>Formato: nome;origine;fornitore;codice_fornitore;codice_mms;categoria;quantita;unita;stato;note</p>
+                      </div>
+                      <button class="mini-btn" data-inventory-import-action type="button">Importa righe</button>
+                    </div>
+                    <textarea class="field-value" data-inventory-import style="min-height:96px; align-items:flex-start; padding-top:12px;" placeholder="Tessuto cotone;mms;;;MMS-COT-001;Tessuti;20;m;Disponibile;Scorta iniziale"></textarea>
+                  </div>
                 </div>
-                <button class="mini-btn" data-inventory-import-action type="button">Importa righe</button>
-              </div>
-              <textarea class="field-value" data-inventory-import style="min-height:96px; align-items:flex-start; padding-top:12px;" placeholder="Tessuto cotone;mms;;;MMS-COT-001;Tessuti;20;m;Disponibile;Scorta iniziale"></textarea>
-            </div>
-          </div>
+              `
+              : ""
+          }
 
           <div class="surface">
             <div class="surface-inner">
@@ -465,6 +475,12 @@
     document.querySelectorAll("[data-inventory-save]").forEach((button) => {
       button.onclick = () => {
         if (!appState.busy) saveInventoryDraft();
+      };
+    });
+    document.querySelectorAll("[data-inventory-toggle-import]").forEach((button) => {
+      button.onclick = () => {
+        appState.inventoryImportOpen = !appState.inventoryImportOpen;
+        renderApp();
       };
     });
     document.querySelectorAll("[data-inventory-import-action]").forEach((button) => {
