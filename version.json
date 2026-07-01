@@ -1,6 +1,6 @@
 {
-  "version": "calendar-task-actions-cleanup-1",
-  "label": "Pulizia azioni task calendario",
-  "updated_at": "2026-07-01T12:05:00Z",
-  "purpose": "Rimuove Segna finito dai task calendario e sostituisce valori undefined con Da pianificare"
+  "version": "quotes-database-sync-1",
+  "label": "Preventivi su database",
+  "updated_at": "2026-07-01T12:12:00Z",
+  "purpose": "Salva e carica lo storico preventivi da Supabase mantenendo il recupero locale come fallback"
 }
