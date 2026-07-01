@@ -30,7 +30,10 @@
 
   function ensureInventoryState() {
     if (!appState.inventoryFilters) {
-      appState.inventoryFilters = { query: "", origin: "all", supplier: "all", category: "all" };
+      appState.inventoryFilters = { query: "", pendingQuery: "", origin: "all", supplier: "all", category: "all" };
+    }
+    if (appState.inventoryFilters.pendingQuery === undefined) {
+      appState.inventoryFilters.pendingQuery = appState.inventoryFilters.query || "";
     }
     if (!appState.inventoryDraft) {
       appState.inventoryDraft = { ...DEFAULT_DRAFT };
@@ -57,6 +60,7 @@
       supplier_material_code: item.supplier_material_code || "",
       mms_code: item.mms_code || "",
       unit: item.unit || "",
+      sku: item.sku || item.mms_code || item.supplier_material_code || "",
     };
   }
 
@@ -96,7 +100,7 @@
   }
 
   function uniqueValues(items, field) {
-    return [...new Set(items.map((item) => item[field]).filter(Boolean))]
+    return [...new Set(items.map((item) => normalizeItem(item)[field]).filter(Boolean))]
       .sort((a, b) => String(a).localeCompare(String(b), "it"));
   }
 
@@ -116,10 +120,9 @@
         item.mms_code,
         item.notes,
       ].join(" ").toLowerCase();
-      const origin = item.material_origin || "mms";
       return (
         (!query || haystack.includes(query)) &&
-        (filters.origin === "all" || origin === filters.origin) &&
+        (filters.origin === "all" || item.material_origin === filters.origin) &&
         (filters.supplier === "all" || item.supplier_name === filters.supplier) &&
         (filters.category === "all" || item.category === filters.category)
       );
@@ -127,20 +130,21 @@
   }
 
   function draftFromItem(item) {
+    const normalized = normalizeItem(item);
     return {
-      id: item.id || "",
-      name: item.name || item.product || "",
-      category: item.category || "",
-      material_origin: item.material_origin || "mms",
-      supplier_name: item.supplier_name || "",
-      supplier_material_code: item.supplier_material_code || "",
-      mms_code: item.mms_code || "",
-      unit: item.unit || "",
-      available_quantity: String(item.available_quantity ?? item.available ?? 0),
-      reserved_quantity: String(item.reserved_quantity ?? item.reserved ?? 0),
-      reorder_threshold: String(item.reorder_threshold ?? 0),
-      status: item.status || "Disponibile",
-      notes: item.notes || item.reorder || "",
+      id: normalized.id || "",
+      name: normalized.name || normalized.product || "",
+      category: normalized.category || "",
+      material_origin: normalized.material_origin || "mms",
+      supplier_name: normalized.supplier_name || "",
+      supplier_material_code: normalized.supplier_material_code || "",
+      mms_code: normalized.mms_code || "",
+      unit: normalized.unit || "",
+      available_quantity: String(normalized.available_quantity ?? 0),
+      reserved_quantity: String(normalized.reserved_quantity ?? 0),
+      reorder_threshold: String(normalized.reorder_threshold ?? 0),
+      status: normalized.status || "Disponibile",
+      notes: normalized.notes || "",
     };
   }
 
@@ -164,6 +168,21 @@
     };
   }
 
+  function mergeSavedItems(savedItems) {
+    const saved = (savedItems || []).map(normalizeItem);
+    if (!saved.length) return;
+    const savedIds = new Set(saved.map((item) => String(item.id)).filter(Boolean));
+    const savedSkus = new Set(saved.map((item) => item.sku).filter(Boolean));
+    appData.inventory = [
+      ...saved,
+      ...appData.inventory.map(normalizeItem).filter((item) => {
+        const sameId = item.id && savedIds.has(String(item.id));
+        const sameSku = item.sku && savedSkus.has(item.sku);
+        return !sameId && !sameSku;
+      }),
+    ];
+  }
+
   async function saveInventoryDraft() {
     ensureInventoryState();
     if (!appState.inventoryDraft.name.trim()) {
@@ -173,7 +192,8 @@
     setBusy(true);
     try {
       const isEdit = !!appState.inventoryDraft.id;
-      await inventoryApi(isEdit ? "PATCH" : "POST", draftPayload());
+      const response = await inventoryApi(isEdit ? "PATCH" : "POST", draftPayload());
+      mergeSavedItems(response.items || (response.item ? [response.item] : []));
       appState.inventoryDraft = { ...DEFAULT_DRAFT };
       inventoryLoaded = false;
       await loadInventory(true);
@@ -224,7 +244,8 @@
     }
     setBusy(true);
     try {
-      await inventoryApi("POST", { items });
+      const response = await inventoryApi("POST", { items });
+      mergeSavedItems(response.items || []);
       inventoryLoaded = false;
       await loadInventory(true);
       setFlashMessage(`${items.length} materiali importati in magazzino`);
@@ -262,6 +283,25 @@
     URL.revokeObjectURL(url);
   }
 
+  function inventoryRowsMarkup(items) {
+    if (!items.length) {
+      return `<tr><td colspan="9"><div class="empty-state">${inventoryLoading ? "Caricamento magazzino..." : "Nessun materiale trovato con questi filtri."}</div></td></tr>`;
+    }
+    return items.map((item) => `
+      <tr>
+        <td><span class="table-status ${item.material_origin === "fornitore" ? "hold" : "done"}">${item.material_origin === "fornitore" ? "Fornitore" : "MMS"}</span></td>
+        <td>${escapeHtml(itemMainCode(item) || item.sku || "-")}</td>
+        <td><strong>${escapeHtml(item.name || item.product)}</strong><div class="muted">${escapeHtml(item.notes || "")}</div></td>
+        <td>${escapeHtml(item.supplier_name || "-")}<div class="muted">${escapeHtml(item.supplier_material_code || "")}</div></td>
+        <td>${escapeHtml(item.category || "-")}</td>
+        <td>${escapeHtml(item.available_quantity ?? item.available ?? 0)}</td>
+        <td>${escapeHtml(item.unit || "-")}</td>
+        <td><span class="table-status ${getStatusClass(item.status || "Disponibile")}">${escapeHtml(item.status || "Disponibile")}</span></td>
+        <td><button class="mini-btn" data-inventory-edit="${escapeHtml(item.id)}" type="button">Modifica</button></td>
+      </tr>
+    `).join("");
+  }
+
   renderInventory = function renderInventoryDatabaseManager() {
     ensureInventoryState();
     const items = filteredInventoryItems();
@@ -276,7 +316,7 @@
         <div class="screen-header">
           <div>
             <h2>Magazzino materiali</h2>
-            <p>Archivio unico su database per materiali MMS e prodotti fornitore, con codici, ricerca e import/export.</p>
+            <p>Archivio unico su database per materiali MMS e prodotti fornitore, pronto per preventivi e ordini.</p>
           </div>
           <div class="screen-actions">
             <div class="ghost-pill">${appData.inventory.length} materiali</div>
@@ -286,8 +326,9 @@
 
         <div class="surface">
           <div class="surface-inner">
-            <div class="filter-row" style="grid-template-columns: 1.6fr 1fr 1fr 1fr;">
-              <input class="filter-chip" data-inventory-filter="query" value="${escapeHtml(filters.query)}" placeholder="Cerca materiale, codice o fornitore" />
+            <div class="filter-row" style="grid-template-columns:minmax(220px,1.5fr) auto minmax(150px,1fr) minmax(150px,1fr) minmax(150px,1fr);">
+              <input class="filter-chip" data-inventory-filter="pendingQuery" value="${escapeHtml(filters.pendingQuery)}" placeholder="Cerca materiale, codice o fornitore" />
+              <button class="action-pill" data-inventory-search type="button">Cerca</button>
               <select class="filter-chip" data-inventory-filter="origin">
                 <option value="all" ${filters.origin === "all" ? "selected" : ""}>Tutte le origini</option>
                 <option value="mms" ${filters.origin === "mms" ? "selected" : ""}>Solo MMS</option>
@@ -305,7 +346,49 @@
           </div>
         </div>
 
-        <div class="layout-2">
+        <div style="display:grid; gap:16px;">
+          <div class="surface">
+            <div class="surface-inner">
+              <div class="section-title">
+                <div>
+                  <h3>${editing ? "Modifica materiale" : "Carica materiale"}</h3>
+                  <p>Salva un prodotto MMS o fornitore. Dal prossimo step questi prodotti saranno selezionabili dentro preventivi e ordini.</p>
+                </div>
+                <div class="pill-row">
+                  <button class="mini-btn" data-inventory-new type="button">Nuovo</button>
+                  <button class="action-pill" data-inventory-save type="button">${appState.busy ? "Salvataggio..." : "Salva materiale"}</button>
+                </div>
+              </div>
+              <div class="form-grid">
+                <div class="field span-2"><label>Nome materiale</label><input class="field-value" data-inventory-draft="name" value="${escapeHtml(draft.name)}" placeholder="es. Tessuto lino nero" /></div>
+                <div class="field"><label>Origine</label><select class="filter-chip" data-inventory-draft="material_origin"><option value="mms" ${draft.material_origin !== "fornitore" ? "selected" : ""}>Materiale MMS</option><option value="fornitore" ${draft.material_origin === "fornitore" ? "selected" : ""}>Fornitore</option></select></div>
+                <div class="field"><label>Categoria</label><input class="field-value" data-inventory-draft="category" value="${escapeHtml(draft.category)}" /></div>
+                <div class="field"><label>Codice MMS</label><input class="field-value" data-inventory-draft="mms_code" value="${escapeHtml(draft.mms_code)}" placeholder="es. MMS-TESSUTO-001" /></div>
+                <div class="field"><label>Fornitore</label><input class="field-value" data-inventory-draft="supplier_name" value="${escapeHtml(draft.supplier_name)}" placeholder="Nome fornitore" /></div>
+                <div class="field"><label>Codice fornitore</label><input class="field-value" data-inventory-draft="supplier_material_code" value="${escapeHtml(draft.supplier_material_code)}" /></div>
+                <div class="field"><label>Unita'</label><input class="field-value" data-inventory-draft="unit" value="${escapeHtml(draft.unit)}" placeholder="m, pz, kg..." /></div>
+                <div class="field"><label>Disponibile</label><input class="field-value" data-inventory-draft="available_quantity" value="${escapeHtml(draft.available_quantity)}" /></div>
+                <div class="field"><label>Impegnato</label><input class="field-value" data-inventory-draft="reserved_quantity" value="${escapeHtml(draft.reserved_quantity)}" /></div>
+                <div class="field"><label>Soglia riordino</label><input class="field-value" data-inventory-draft="reorder_threshold" value="${escapeHtml(draft.reorder_threshold)}" /></div>
+                <div class="field"><label>Stato</label><input class="field-value" data-inventory-draft="status" value="${escapeHtml(draft.status)}" /></div>
+                <div class="field span-2"><label>Note</label><textarea class="field-value" data-inventory-draft="notes" style="min-height:82px; align-items:flex-start; padding-top:12px;">${escapeHtml(draft.notes)}</textarea></div>
+              </div>
+            </div>
+          </div>
+
+          <div class="surface">
+            <div class="surface-inner">
+              <div class="section-title">
+                <div>
+                  <h3>Import prodotti</h3>
+                  <p>Formato: nome;origine;fornitore;codice_fornitore;codice_mms;categoria;quantita;unita;stato;note</p>
+                </div>
+                <button class="mini-btn" data-inventory-import-action type="button">Importa righe</button>
+              </div>
+              <textarea class="field-value" data-inventory-import style="min-height:96px; align-items:flex-start; padding-top:12px;" placeholder="Tessuto cotone;mms;;;MMS-COT-001;Tessuti;20;m;Disponibile;Scorta iniziale"></textarea>
+            </div>
+          </div>
+
           <div class="surface">
             <div class="surface-inner">
               <div class="section-title">
@@ -313,82 +396,25 @@
                   <h3>Materiali salvati</h3>
                   <p>Filtra per fornitore per vedere tutti i suoi prodotti.</p>
                 </div>
-                <button class="mini-btn" data-inventory-new type="button">Nuovo materiale</button>
+                <div class="ghost-pill">${items.length} risultati</div>
               </div>
-              <table>
-                <thead>
-                  <tr>
-                    <th>Origine</th>
-                    <th>Codice</th>
-                    <th>Materiale</th>
-                    <th>Fornitore</th>
-                    <th>Categoria</th>
-                    <th>Disp.</th>
-                    <th>Unita'</th>
-                    <th>Stato</th>
-                    <th></th>
-                  </tr>
-                </thead>
-                <tbody>
-                  ${
-                    items.length
-                      ? items.map((item) => `
-                        <tr>
-                          <td><span class="table-status ${item.material_origin === "fornitore" ? "hold" : "done"}">${item.material_origin === "fornitore" ? "Fornitore" : "MMS"}</span></td>
-                          <td>${escapeHtml(itemMainCode(item) || item.sku || "-")}</td>
-                          <td><strong>${escapeHtml(item.name || item.product)}</strong><div class="muted">${escapeHtml(item.notes || "")}</div></td>
-                          <td>${escapeHtml(item.supplier_name || "-")}<div class="muted">${escapeHtml(item.supplier_material_code || "")}</div></td>
-                          <td>${escapeHtml(item.category || "-")}</td>
-                          <td>${escapeHtml(item.available_quantity ?? item.available ?? 0)}</td>
-                          <td>${escapeHtml(item.unit || "-")}</td>
-                          <td><span class="table-status ${getStatusClass(item.status || "Disponibile")}">${escapeHtml(item.status || "Disponibile")}</span></td>
-                          <td><button class="mini-btn" data-inventory-edit="${escapeHtml(item.id)}" type="button">Modifica</button></td>
-                        </tr>
-                      `).join("")
-                      : `<tr><td colspan="9"><div class="empty-state">${inventoryLoading ? "Caricamento magazzino..." : "Nessun materiale trovato con questi filtri."}</div></td></tr>`
-                  }
-                </tbody>
-              </table>
-            </div>
-          </div>
-
-          <div style="display:grid; gap:16px;">
-            <div class="surface">
-              <div class="surface-inner">
-                <div class="section-title">
-                  <div>
-                    <h3>${editing ? "Modifica materiale" : "Nuovo materiale"}</h3>
-                    <p>Per MMS il codice puo' essere generato; per fornitore salva anche nome fornitore e suo codice.</p>
-                  </div>
-                  <button class="action-pill" data-inventory-save type="button">${appState.busy ? "Salvataggio..." : "Salva materiale"}</button>
-                </div>
-                <div class="form-grid">
-                  <div class="field span-2"><label>Nome materiale</label><input class="field-value" data-inventory-draft="name" value="${escapeHtml(draft.name)}" placeholder="es. Tessuto lino nero" /></div>
-                  <div class="field"><label>Origine</label><select class="filter-chip" data-inventory-draft="material_origin"><option value="mms" ${draft.material_origin !== "fornitore" ? "selected" : ""}>Materiale MMS</option><option value="fornitore" ${draft.material_origin === "fornitore" ? "selected" : ""}>Fornitore</option></select></div>
-                  <div class="field"><label>Categoria</label><input class="field-value" data-inventory-draft="category" value="${escapeHtml(draft.category)}" /></div>
-                  <div class="field"><label>Codice MMS</label><input class="field-value" data-inventory-draft="mms_code" value="${escapeHtml(draft.mms_code)}" placeholder="es. MMS-TESSUTO-001" /></div>
-                  <div class="field"><label>Fornitore</label><input class="field-value" data-inventory-draft="supplier_name" value="${escapeHtml(draft.supplier_name)}" placeholder="Nome fornitore" /></div>
-                  <div class="field"><label>Codice fornitore</label><input class="field-value" data-inventory-draft="supplier_material_code" value="${escapeHtml(draft.supplier_material_code)}" /></div>
-                  <div class="field"><label>Unita'</label><input class="field-value" data-inventory-draft="unit" value="${escapeHtml(draft.unit)}" placeholder="m, pz, kg..." /></div>
-                  <div class="field"><label>Disponibile</label><input class="field-value" data-inventory-draft="available_quantity" value="${escapeHtml(draft.available_quantity)}" /></div>
-                  <div class="field"><label>Impegnato</label><input class="field-value" data-inventory-draft="reserved_quantity" value="${escapeHtml(draft.reserved_quantity)}" /></div>
-                  <div class="field"><label>Soglia riordino</label><input class="field-value" data-inventory-draft="reorder_threshold" value="${escapeHtml(draft.reorder_threshold)}" /></div>
-                  <div class="field"><label>Stato</label><input class="field-value" data-inventory-draft="status" value="${escapeHtml(draft.status)}" /></div>
-                  <div class="field span-2"><label>Note</label><textarea class="field-value" data-inventory-draft="notes" style="min-height:82px; align-items:flex-start; padding-top:12px;">${escapeHtml(draft.notes)}</textarea></div>
-                </div>
-              </div>
-            </div>
-
-            <div class="surface">
-              <div class="surface-inner">
-                <div class="section-title">
-                  <div>
-                    <h3>Import CSV</h3>
-                    <p>Formato: nome;origine;fornitore;codice_fornitore;codice_mms;categoria;quantita;unita;stato;note</p>
-                  </div>
-                  <button class="mini-btn" data-inventory-import-action type="button">Importa righe</button>
-                </div>
-                <textarea class="field-value" data-inventory-import style="min-height:126px; align-items:flex-start; padding-top:12px;" placeholder="Tessuto cotone;mms;;;MMS-COT-001;Tessuti;20;m;Disponibile;Scorta iniziale"></textarea>
+              <div style="overflow-x:auto; width:100%;">
+                <table style="min-width:980px;">
+                  <thead>
+                    <tr>
+                      <th>Origine</th>
+                      <th>Codice</th>
+                      <th>Materiale</th>
+                      <th>Fornitore</th>
+                      <th>Categoria</th>
+                      <th>Disp.</th>
+                      <th>Unita'</th>
+                      <th>Stato</th>
+                      <th></th>
+                    </tr>
+                  </thead>
+                  <tbody>${inventoryRowsMarkup(items)}</tbody>
+                </table>
               </div>
             </div>
           </div>
@@ -403,10 +429,16 @@
     document.querySelectorAll("[data-inventory-filter]").forEach((input) => {
       const handler = (event) => {
         appState.inventoryFilters[event.target.dataset.inventoryFilter] = event.target.value;
-        renderApp();
+        if (event.target.dataset.inventoryFilter !== "pendingQuery") renderApp();
       };
       input.oninput = handler;
       input.onchange = handler;
+    });
+    document.querySelectorAll("[data-inventory-search]").forEach((button) => {
+      button.onclick = () => {
+        appState.inventoryFilters.query = appState.inventoryFilters.pendingQuery || "";
+        renderApp();
+      };
     });
     document.querySelectorAll("[data-inventory-draft]").forEach((input) => {
       const handler = (event) => {
@@ -419,7 +451,7 @@
       button.onclick = () => {
         const item = appData.inventory.find((entry) => String(entry.id) === String(button.dataset.inventoryEdit));
         if (item) {
-          appState.inventoryDraft = draftFromItem(normalizeItem(item));
+          appState.inventoryDraft = draftFromItem(item);
           renderApp();
         }
       };
