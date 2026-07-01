@@ -234,7 +234,7 @@
       const planButton = event.target.closest?.("[data-calendar-plan-task]");
       if (planButton) {
         event.preventDefault();
-        event.stopPropagation();
+        event.stopImmediatePropagation();
         const slot = slotFromCard(planButton.closest(".calendar-event"), planButton.dataset.calendarPlanTask);
         if (!slot) {
           setFlashMessage("Lavorazione non trovata nel calendario");
@@ -246,7 +246,7 @@
       const closeButton = event.target.closest?.("[data-calendar-plan-close]");
       if (closeButton) {
         event.preventDefault();
-        event.stopPropagation();
+        event.stopImmediatePropagation();
         appState.calendarQuickPlan = null;
         renderApp();
         return;
@@ -254,7 +254,7 @@
       const saveButton = event.target.closest?.("[data-calendar-plan-save]");
       if (saveButton) {
         event.preventDefault();
-        event.stopPropagation();
+        event.stopImmediatePropagation();
         savePlan();
       }
     },
