@@ -1,6 +1,6 @@
 {
-  "version": "inventory-database-manager-2",
-  "label": "Magazzino materiali layout e salvataggio",
-  "updated_at": "2026-07-01T15:05:00Z",
-  "purpose": "Rende la schermata Magazzino piu' compatta, sposta caricamento/import sopra l'elenco, aggiunge pulsante Cerca, contiene la tabella nello schermo e aggiorna subito l'elenco dopo salvataggio/import"
+  "version": "search-filter-unification-1",
+  "label": "Ricerche uniformate con pulsante Cerca",
+  "updated_at": "2026-07-01T15:25:00Z",
+  "purpose": "Uniforma le ricerche principali: campo testo piu' pulsante Cerca su ricerca globale/Ordini, Calendario, Clienti, Preventivi, Pagamenti e Account; Magazzino resta gia' allineato"
 }
