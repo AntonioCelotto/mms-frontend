@@ -1,6 +1,6 @@
 {
-  "version": "order-tasks-1",
-  "label": "Task ordine completi v1",
-  "updated_at": "2026-07-01T00:00:00Z",
-  "purpose": "Garantisce che i tre task del piano ordine da preventivo siano visibili nella scheda ordine dopo il salvataggio"
+  "version": "order-task-sync-1",
+  "label": "Task ordine sincronizzati v1",
+  "updated_at": "2026-07-01T07:45:00Z",
+  "purpose": "Sincronizza i task della scheda ordine con modifica ordine, selezione personale e calendario"
 }
