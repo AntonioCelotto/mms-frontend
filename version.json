@@ -1,6 +1,6 @@
 {
-  "version": "calendar-weekly-view-1",
-  "label": "Calendario settimanale operativo",
-  "updated_at": "2026-07-01T12:35:00Z",
-  "purpose": "Restyling calendario con vista lunedi-domenica, filtri ordine/dipendente/lavorazione, colori dipendente e rimozione pannelli ridondanti"
+  "version": "calendar-weekly-view-2",
+  "label": "Calendario piena larghezza con azioni lavorazione",
+  "updated_at": "2026-07-01T12:52:00Z",
+  "purpose": "Rimuove assegnazione e task ordine dalla vista principale, lascia il calendario lunedi-domenica a piena larghezza e aggiunge Apri/Inizio/Pausa/Stop sulle card task"
 }
