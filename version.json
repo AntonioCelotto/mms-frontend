@@ -1,6 +1,6 @@
 {
-  "version": "quotes-history-recovery-1",
-  "label": "Recupero storico preventivi",
-  "updated_at": "2026-07-01T10:45:00Z",
-  "purpose": "Ripristina la visualizzazione dello storico Preventivi unendo archivi locali completi, leggeri e legacy"
+  "version": "order-task-flow-stabilization-1",
+  "label": "Stabilizzazione ordini e task",
+  "updated_at": "2026-07-01T11:20:00Z",
+  "purpose": "Stabilizza conversione Preventivo -> Ordine, consente task da assegnare dopo e abilita aggiornamento ore task"
 }
