@@ -1,6 +1,6 @@
 {
-  "version": "calendar-worklog-1",
-  "label": "Lavorazioni calendario v1",
-  "updated_at": "2026-07-01T08:20:00Z",
-  "purpose": "Aggiunge in calendario la gestione dipendenti con inizio, pausa e fine lavoro collegata ai task ordine"
+  "version": "task-actions-cleanup-1",
+  "label": "Pulizia azioni task ordine",
+  "updated_at": "2026-07-01T08:45:00Z",
+  "purpose": "Rimuove il pulsante di completamento dalla lista task ordine lasciando la gestione stato alle lavorazioni dipendenti"
 }
