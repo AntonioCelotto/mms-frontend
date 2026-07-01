@@ -33,6 +33,30 @@
     );
   }
 
+  function taskLabel(task) {
+    return String(task?.name || task?.task_name || task?.title || "").trim().toLowerCase();
+  }
+
+  function taskPhase(task) {
+    return String(task?.phase || task?.task_phase || "").trim().toLowerCase();
+  }
+
+  function findTaskForSlot(slot) {
+    const direct = findTask(slot?.taskId, slot?.orderId);
+    if (direct?.id) return direct;
+    const wantedOrderId = String(slot?.orderId || "");
+    const scoped = appData.orderTasks?.[wantedOrderId] || appData.orderTasks?.[Number(wantedOrderId)] || [];
+    const tasks = Array.isArray(scoped) ? scoped : [];
+    const wantedPhase = String(slot?.phase || "").trim().toLowerCase();
+    const wantedTitle = String(slot?.title || "").trim().toLowerCase();
+    return (
+      tasks.find((task) => task.id && taskPhase(task) === wantedPhase) ||
+      tasks.find((task) => task.id && taskLabel(task) === wantedTitle) ||
+      tasks.find((task) => task.id && taskLabel(task).includes(wantedPhase)) ||
+      null
+    );
+  }
+
   function allCalendarSlots() {
     if (typeof calendarOrderSyncEnsureOrderTasks === "function") calendarOrderSyncEnsureOrderTasks();
     if (typeof calendarOrderSyncBuildCalendarFromTasks === "function") calendarOrderSyncBuildCalendarFromTasks();
@@ -68,12 +92,13 @@
   }
 
   function openPlan(slot) {
-    const taskId = slot?.taskId || "";
+    const matchedTask = findTaskForSlot(slot);
+    const taskId = matchedTask?.id || slot?.taskId || "";
     if (!/^\d+$/.test(String(taskId))) {
       setFlashMessage("Questa lavorazione non ha ancora un task salvato su database. Apri l'ordine per completarla.");
       return;
     }
-    const task = findTask(taskId, slot.orderId);
+    const task = matchedTask || findTask(taskId, slot.orderId);
     const planned = planDate(task, slot);
     appState.calendarQuickPlan = {
       taskId: String(taskId),
