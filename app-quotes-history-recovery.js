@@ -59,6 +59,12 @@ function quoteHistoryRecoveryMerge(lists) {
   return Array.from(byId.values()).sort((a, b) => String(b.createdAt || "").localeCompare(String(a.createdAt || "")));
 }
 
+function quoteHistoryRecoveryMergeWithCurrent(current, storedLists) {
+  const stored = quoteHistoryRecoveryMerge(storedLists);
+  const currentQuotes = (Array.isArray(current) ? current : []).map(quoteHistoryRecoveryNormalize).filter(Boolean);
+  return quoteHistoryRecoveryMerge([stored, currentQuotes]);
+}
+
 function quoteHistoryRecoveryLightCopy(quote) {
   return {
     ...quote,
@@ -90,7 +96,7 @@ function quoteHistoryRecoveryHydrate() {
   if (typeof quoteListEnsureState !== "function") return false;
   quoteListEnsureState();
   const storedLists = quoteHistoryRecoveryCandidateKeys().map(quoteHistoryRecoveryReadKey);
-  const merged = quoteHistoryRecoveryMerge([appState.savedQuotes || [], ...storedLists]);
+  const merged = quoteHistoryRecoveryMergeWithCurrent(appState.savedQuotes || [], storedLists);
   if (!merged.length) return false;
   const before = (appState.savedQuotes || []).map((quote) => quote.id).join("|");
   appState.savedQuotes = merged;
