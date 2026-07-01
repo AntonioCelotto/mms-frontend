@@ -1,6 +1,6 @@
 {
-  "version": "calendar-final-polish-1",
-  "label": "Calendario operativo stabilizzato",
-  "updated_at": "2026-07-01T16:05:00Z",
-  "purpose": "Aggiunge badge stato sulle card calendario, refresh immediato dopo Inizio/Pausa/Stop, filtri robusti e rifiniture responsive della vista lunedi'-domenica"
+  "version": "order-summary-calendar-weeks-1",
+  "label": "Riepilogo ordine e settimane calendario",
+  "updated_at": "2026-07-01T16:30:00Z",
+  "purpose": "Mostra articoli e prodotti del preventivo nella scheda ordine riaperta, conserva nome/quantita' materiali e aggiunge al calendario date, settimana corrente e navigazione settimana prima/dopo"
 }
