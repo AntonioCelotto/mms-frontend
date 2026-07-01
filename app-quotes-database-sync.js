@@ -25,6 +25,23 @@
     return Date.parse(quote?.updatedAt || quote?.createdAt || quote?.quoteDate || "") || 0;
   }
 
+  function quoteDatabasePhotoScore(photos) {
+    return (Array.isArray(photos) ? photos : []).reduce((score, photo) => score + (photo?.dataUrl ? 2 : 1), 0);
+  }
+
+  function quoteDatabaseLightCopy(quote) {
+    return {
+      ...quote,
+      photos: Array.isArray(quote.photos)
+        ? quote.photos.map((photo) => ({
+            name: photo?.name || "Foto preventivo",
+            size: photo?.size || 0,
+            type: photo?.type || "",
+          }))
+        : [],
+    };
+  }
+
   function quoteDatabaseMerge(localQuotes, remoteQuotes) {
     const byId = new Map();
     [...(Array.isArray(localQuotes) ? localQuotes : []), ...(Array.isArray(remoteQuotes) ? remoteQuotes : [])].forEach((rawQuote) => {
@@ -36,7 +53,7 @@
           ...(current || {}),
           ...quote,
           articles: quote.articles?.length ? quote.articles : current?.articles || [],
-          photos: quote.photos?.length ? quote.photos : current?.photos || [],
+          photos: quoteDatabasePhotoScore(quote.photos) >= quoteDatabasePhotoScore(current?.photos) ? quote.photos : current?.photos || [],
         });
       }
     });
@@ -90,7 +107,7 @@
     if (!normalized || quoteDatabaseSaving) return;
     quoteDatabaseSaving = true;
     try {
-      const payload = await quoteDatabaseRequest("POST", { quote: normalized });
+      const payload = await quoteDatabaseRequest("POST", { quote: quoteDatabaseLightCopy(normalized) });
       if (payload.quote) {
         appState.savedQuotes = quoteDatabaseMerge(appState.savedQuotes || [], [payload.quote]);
         quoteDatabaseWriteLocal();
