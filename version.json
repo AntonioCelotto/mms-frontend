@@ -1,6 +1,6 @@
 {
-  "version": "quote-materials-bridge-1",
-  "label": "Materiali preventivo riportati in ordine",
-  "updated_at": "2026-07-01T15:45:00Z",
-  "purpose": "Normalizza articoli e materiali del preventivo prima della conversione in ordine, cosi' i materiali caricati nel preventivo restano disponibili anche nell'ordine operativo"
+  "version": "calendar-final-polish-1",
+  "label": "Calendario operativo stabilizzato",
+  "updated_at": "2026-07-01T16:05:00Z",
+  "purpose": "Aggiunge badge stato sulle card calendario, refresh immediato dopo Inizio/Pausa/Stop, filtri robusti e rifiniture responsive della vista lunedi'-domenica"
 }
