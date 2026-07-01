@@ -1,6 +1,6 @@
 {
-  "version": "quotes-database-sync-1",
+  "version": "quotes-database-sync-2",
   "label": "Preventivi su database",
-  "updated_at": "2026-07-01T12:12:00Z",
-  "purpose": "Salva e carica lo storico preventivi da Supabase mantenendo il recupero locale come fallback"
+  "updated_at": "2026-07-01T12:18:00Z",
+  "purpose": "Salva e carica lo storico preventivi da Supabase con payload leggero per evitare errori sulle foto"
 }
