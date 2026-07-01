@@ -1,6 +1,6 @@
 {
-  "version": "search-filter-unification-1",
-  "label": "Ricerche uniformate con pulsante Cerca",
-  "updated_at": "2026-07-01T15:25:00Z",
-  "purpose": "Uniforma le ricerche principali: campo testo piu' pulsante Cerca su ricerca globale/Ordini, Calendario, Clienti, Preventivi, Pagamenti e Account; Magazzino resta gia' allineato"
+  "version": "inventory-import-toolbar-1",
+  "label": "Import magazzino vicino a export",
+  "updated_at": "2026-07-01T15:40:00Z",
+  "purpose": "Sposta l'import CSV del Magazzino vicino a Esporta CSV e mostra il pannello Import prodotti solo quando richiesto"
 }
