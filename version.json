@@ -1,6 +1,6 @@
 {
-  "version": "order-detail-edit-1",
-  "label": "Scheda ordine modificabile v1",
-  "updated_at": "2026-06-30T09:22:00Z",
-  "purpose": "Rende modificabile la scheda ordine riaperta e conserva le foto del preventivo negli allegati ordine"
+  "version": "order-tasks-1",
+  "label": "Task ordine completi v1",
+  "updated_at": "2026-07-01T00:00:00Z",
+  "purpose": "Garantisce che i tre task del piano ordine da preventivo siano visibili nella scheda ordine dopo il salvataggio"
 }
