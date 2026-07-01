@@ -1,6 +1,6 @@
 {
-  "version": "quotes-database-sync-2",
-  "label": "Preventivi su database",
-  "updated_at": "2026-07-01T12:18:00Z",
-  "purpose": "Salva e carica lo storico preventivi da Supabase con payload leggero per evitare errori sulle foto"
+  "version": "calendar-weekly-view-1",
+  "label": "Calendario settimanale operativo",
+  "updated_at": "2026-07-01T12:35:00Z",
+  "purpose": "Restyling calendario con vista lunedi-domenica, filtri ordine/dipendente/lavorazione, colori dipendente e rimozione pannelli ridondanti"
 }
