@@ -1,6 +1,6 @@
 {
-  "version": "calendar-weekly-view-2",
-  "label": "Calendario piena larghezza con azioni lavorazione",
-  "updated_at": "2026-07-01T12:52:00Z",
-  "purpose": "Rimuove assegnazione e task ordine dalla vista principale, lascia il calendario lunedi-domenica a piena larghezza e aggiunge Apri/Inizio/Pausa/Stop sulle card task"
+  "version": "calendar-worklog-database-1",
+  "label": "Lavorazioni calendario su database",
+  "updated_at": "2026-07-01T13:12:00Z",
+  "purpose": "Salva e carica Inizio/Pausa/Stop delle lavorazioni calendario su Supabase mantenendo il registro locale come fallback"
 }
