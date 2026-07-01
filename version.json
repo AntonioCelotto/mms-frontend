@@ -1,6 +1,6 @@
 {
-  "version": "order-materials-atomic-1",
-  "label": "Salvataggio materiali ordine atomico",
-  "updated_at": "2026-07-01T15:20:00Z",
-  "purpose": "Salva i materiali ordine tramite funzione Supabase atomica e usa order_db_id quando disponibile per evitare confusione tra id database e numero ordine"
+  "version": "quote-materials-bridge-1",
+  "label": "Materiali preventivo riportati in ordine",
+  "updated_at": "2026-07-01T15:45:00Z",
+  "purpose": "Normalizza articoli e materiali del preventivo prima della conversione in ordine, cosi' i materiali caricati nel preventivo restano disponibili anche nell'ordine operativo"
 }
