@@ -1,6 +1,6 @@
 {
-  "version": "clients-stacked-detail-1",
-  "label": "Clienti con scheda sotto elenco",
-  "updated_at": "2026-07-02T12:35:00Z",
-  "purpose": "Riorganizza la pagina Clienti in verticale: Nuovo cliente sopra, elenco clienti a larghezza piena e scheda cliente sotto, evitando la visualizzazione schiacciata a destra"
+  "version": "clients-inline-edit-1",
+  "label": "Modifica cliente dalla scheda",
+  "updated_at": "2026-07-02T12:50:00Z",
+  "purpose": "Aggiunge nella scheda cliente un pulsante Modifica cliente che apre solo quando serve un pannello con contatti, dati fiscali e note, mantenendo pulita la vista principale"
 }
