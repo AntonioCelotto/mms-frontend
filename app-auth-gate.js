@@ -253,6 +253,7 @@
           email,
           password,
           options: {
+            emailRedirectTo: window.location.origin,
             data: {
               first_name: String(form.get("first_name") || "").trim(),
               last_name: String(form.get("last_name") || "").trim(),
