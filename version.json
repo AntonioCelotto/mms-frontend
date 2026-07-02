@@ -1,6 +1,6 @@
 {
-  "version": "clients-list-cleanup-2",
-  "label": "Clienti con nuovo cliente sopra",
-  "updated_at": "2026-07-02T12:20:00Z",
-  "purpose": "Sposta Nuovo cliente sopra la pagina Clienti e rimuove in modo piu' forte il pannello Modifica cliente selezionato, lasciando sotto elenco clienti e scheda cliente"
+  "version": "clients-stacked-detail-1",
+  "label": "Clienti con scheda sotto elenco",
+  "updated_at": "2026-07-02T12:35:00Z",
+  "purpose": "Riorganizza la pagina Clienti in verticale: Nuovo cliente sopra, elenco clienti a larghezza piena e scheda cliente sotto, evitando la visualizzazione schiacciata a destra"
 }
