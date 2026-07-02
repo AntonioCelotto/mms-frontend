@@ -1,6 +1,6 @@
 {
-  "version": "quote-task-render-loop-fix-1",
-  "label": "Blocco conferma preventivo corretto",
-  "updated_at": "2026-07-02T11:10:00Z",
-  "purpose": "Evita il render continuo nella schermata Ordine da preventivo durante il caricamento operatori, cosi' la conferma preventivo non blocca piu' la pagina"
+  "version": "order-quote-photos-bridge-1",
+  "label": "Foto preventivo visibili nell'ordine",
+  "updated_at": "2026-07-02T11:30:00Z",
+  "purpose": "Mantiene le foto caricate nel preventivo quando il preventivo viene trasformato e salvato come ordine, mostrandole nella sezione Foto e allegati ordine"
 }
