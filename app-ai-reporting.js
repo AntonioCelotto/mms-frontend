@@ -335,12 +335,12 @@
     const lowMargin = orders.filter((row) => row.revenue && row.margin >= 0 && row.marginRate < 20);
     const criticalPeople = employees.filter((row) => row.score < 60);
     const suggestions = [];
-    if (negative.length) suggestions.push(`${negative.length} ordini risultano in perdita sui dati disponibili: controllare prezzo preventivo, ore e materiali.`);
+    if (negative.length) suggestions.push(`${negative.length} ordini risultano in perdita sui dati registrati: controllare prezzo preventivo, ore e materiali.`);
     if (lowMargin.length) suggestions.push(`${lowMargin.length} ordini sono positivi ma con margine basso: suggerito aumentare preventivo o ridurre ore previste.`);
     if (criticalPeople.length) suggestions.push(`${criticalPeople.length} operatrici sono da monitorare per ore, completamento o ritardi.`);
     const noRevenue = orders.filter((row) => !row.revenue).length;
     if (noRevenue) suggestions.push(`${noRevenue} ordini non hanno ancora ricavo numerico: per un report economico preciso serve importo preventivo o pagamento registrato.`);
-    if (!suggestions.length) suggestions.push("Il periodo selezionato non mostra criticita' economiche evidenti sui dati disponibili.");
+    if (!suggestions.length) suggestions.push("Il periodo selezionato non mostra criticita' economiche evidenti sui dati registrati.");
     suggestions.push("Usare questo report come controllo direzionale: l'AI segnala priorita', ma la decisione resta alla direzione.");
     return suggestions;
   }
@@ -397,10 +397,10 @@
         <div class="screen-header">
           <div>
             <h2>Assistente AI - Report direzione</h2>
-            <p>Controllo lavoro, ore, operatrici, ordini e margini. Questa prima versione legge i dati del gestionale e non modifica nulla.</p>
+            <p>Controllo lavoro, ore, operatrici, ordini e margini per la direzione.</p>
           </div>
           <div class="screen-actions">
-            <div class="ghost-pill">Solo lettura</div>
+            <div class="ghost-pill">Report direzione</div>
             <div class="ghost-pill">Periodo: ${periodLabel(appState.aiReport.period)}</div>
           </div>
         </div>
@@ -454,7 +454,7 @@
           <div class="surface">
             <div class="surface-inner">
               <div class="section-title">
-                <div><h3>Suggerimenti AI</h3><p>Priorita' operative calcolate sui dati disponibili.</p></div>
+                <div><h3>Suggerimenti AI</h3><p>Priorita' operative calcolate sui dati registrati.</p></div>
               </div>
               <div class="alert-list">
                 ${suggestions.map((item) => `<div class="alert-item"><strong>Controllo</strong><span>${html(item)}</span></div>`).join("")}
