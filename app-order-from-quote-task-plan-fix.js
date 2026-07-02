@@ -1,4 +1,7 @@
 (function () {
+  let orderCreateAccountsRefreshDone = false;
+  let orderCreateAccountsRefreshPending = false;
+
   function isOrderFromQuoteView() {
     return appState.currentView === "order-create" || !!appState.orderFromQuoteDraft;
   }
@@ -25,14 +28,20 @@
     });
   }
 
-  function refreshOrderCreateWhenAccountsLoad() {
+  function refreshOrderCreateWhenAccountsLoad({ force = false } = {}) {
     if (!isOrderFromQuoteView()) return;
+    if (orderCreateAccountsRefreshDone || orderCreateAccountsRefreshPending) return;
     if (typeof taskAssignmentLoadSupabaseAccounts !== "function") return;
-    taskAssignmentLoadSupabaseAccounts(true)
+    orderCreateAccountsRefreshPending = true;
+    taskAssignmentLoadSupabaseAccounts(force)
       .then(() => {
+        orderCreateAccountsRefreshDone = true;
         if (isOrderFromQuoteView()) renderApp();
       })
-      .catch(() => {});
+      .catch(() => {})
+      .finally(() => {
+        orderCreateAccountsRefreshPending = false;
+      });
   }
 
   const baseTaskAssignmentRawAccountsOrderCreate =
@@ -40,10 +49,8 @@
   if (baseTaskAssignmentRawAccountsOrderCreate) {
     taskAssignmentRawAccounts = function taskAssignmentRawAccountsWithOrderCreate() {
       const accounts = baseTaskAssignmentRawAccountsOrderCreate();
-      if (isOrderFromQuoteView() && typeof taskAssignmentLoadSupabaseAccounts === "function") {
-        taskAssignmentLoadSupabaseAccounts().then(() => {
-          if (isOrderFromQuoteView()) renderApp();
-        }).catch(() => {});
+      if (isOrderFromQuoteView() && (!Array.isArray(accounts) || !accounts.length)) {
+        refreshOrderCreateWhenAccountsLoad();
       }
       return accounts;
     };
@@ -64,6 +71,6 @@
     attachOrderFromQuoteTaskPlanFix();
   };
 
-  refreshOrderCreateWhenAccountsLoad();
+  refreshOrderCreateWhenAccountsLoad({ force: true });
   if (document.getElementById("app")?.innerHTML) renderApp();
 })();
