@@ -3,11 +3,12 @@
 
   function ensureAIReportState() {
     if (!appState.aiReport || typeof appState.aiReport !== "object") {
-      appState.aiReport = { period: "month", hourlyCost: String(AI_REPORT_DEFAULT_WAGE), employeeCosts: {}, focus: "all" };
+      appState.aiReport = { period: "month", hourlyCost: String(AI_REPORT_DEFAULT_WAGE), employeeCosts: {}, employee: "all", untilDate: "", lastCalculatedAt: "", focus: "all" };
     }
     if (!appState.aiReport.period) appState.aiReport.period = "month";
     if (!appState.aiReport.hourlyCost) appState.aiReport.hourlyCost = String(AI_REPORT_DEFAULT_WAGE);
     if (!appState.aiReport.employeeCosts || typeof appState.aiReport.employeeCosts !== "object") appState.aiReport.employeeCosts = {};
+    if (!appState.aiReport.employee) appState.aiReport.employee = "all";
     if (!appState.aiReport.focus) appState.aiReport.focus = "all";
   }
 
@@ -192,6 +193,12 @@
     return candidates.length ? Math.max(...candidates) : Date.now();
   }
 
+  function dateInputValue(time) {
+    const date = new Date(time || Date.now());
+    if (!Number.isFinite(date.getTime())) return "";
+    return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`;
+  }
+
   function periodStart(anchor, period) {
     const date = new Date(anchor);
     if (period === "quarter") date.setMonth(date.getMonth() - 3);
@@ -217,7 +224,10 @@
   function reportRows() {
     ensureAIReportState();
     const tasks = allTasks();
-    const anchor = latestDataDate(tasks);
+    const detectedAnchor = latestDataDate(tasks);
+    if (!appState.aiReport.untilDate) appState.aiReport.untilDate = dateInputValue(detectedAnchor);
+    const customAnchor = dateTime(appState.aiReport.untilDate);
+    const anchor = customAnchor || detectedAnchor;
     const start = periodStart(anchor, appState.aiReport.period);
     const orderRows = allOrders().filter((order) => {
       const when = dateTime(order.orderDate || order.order_date || order.estimatedDelivery || order.estimated_delivery_date || order.eta);
@@ -226,7 +236,8 @@
     const orderIds = new Set(orderRows.map((order) => Number(order.id)));
     const taskRows = tasks.filter((row) => {
       const when = taskDate(row);
-      return orderIds.has(Number(row.orderId)) && (when === null || when >= start);
+      const byEmployee = appState.aiReport.employee === "all" || taskOwner(row.task) === appState.aiReport.employee;
+      return byEmployee && orderIds.has(Number(row.orderId)) && (when === null || when >= start);
     });
     return { anchor, start, orders: orderRows, tasks: taskRows, wage: numberValue(appState.aiReport.hourlyCost) || AI_REPORT_DEFAULT_WAGE };
   }
@@ -353,6 +364,7 @@
 
   function renderAIReport() {
     ensureAIReportState();
+    const allEmployees = Array.from(new Set(allTasks().map((row) => taskOwner(row.task)).filter(Boolean))).sort((a, b) => a.localeCompare(b));
     const report = reportRows();
     const employees = employeeReport();
     const orders = orderReport();
@@ -389,9 +401,16 @@
                 ].map(([value, label]) => `<option value="${value}" ${appState.aiReport.period === value ? "selected" : ""}>${label}</option>`).join("")}
               </select>
               <label class="filter-chip ai-report-cost">Costo ora <input data-ai-report-field="hourlyCost" inputmode="decimal" value="${html(appState.aiReport.hourlyCost)}" /></label>
-              <div class="filter-chip">Base dati fino al ${anchorLabel}</div>
+              <label class="filter-chip ai-report-cost">Fino al <input type="date" data-ai-report-field="untilDate" value="${html(appState.aiReport.untilDate || dateInputValue(report.anchor))}" /></label>
+              <select class="filter-chip" data-ai-report-field="employee">
+                <option value="all" ${appState.aiReport.employee === "all" ? "selected" : ""}>Tutte le operatrici</option>
+                ${allEmployees.map((employee) => `<option value="${html(employee)}" ${appState.aiReport.employee === employee ? "selected" : ""}>${html(employee)}</option>`).join("")}
+              </select>
               <div class="filter-chip">Costo standard: ${money(report.wage)} / ora</div>
               <button class="action-pill" data-ai-report-calculate type="button">Calcola report</button>
+            </div>
+            <div class="muted ai-report-feedback">
+              ${appState.aiReport.lastCalculatedAt ? `Ultimo calcolo: ${html(appState.aiReport.lastCalculatedAt)}. Periodo fino al ${anchorLabel}.` : `Imposta periodo, data, costo o operatrice e premi Calcola report.`}
             </div>
           </div>
         </div>
@@ -448,10 +467,12 @@
     const style = document.createElement("style");
     style.id = "ai-report-styles";
     style.textContent = `
-      .ai-report-filters { grid-template-columns: minmax(160px,.8fr) minmax(180px,.8fr) minmax(200px,1fr) minmax(200px,1fr) auto; }
+      .ai-report-filters { grid-template-columns: minmax(140px,.7fr) minmax(150px,.7fr) minmax(170px,.75fr) minmax(190px,.9fr) minmax(190px,1fr) auto; }
       .ai-report-cost { gap: 8px; }
       .ai-report-cost input { width: 90px; border: 0; background: transparent; outline: none; color: var(--text); }
+      .ai-report-cost input[type="date"] { width: 132px; }
       .ai-report-employee-cost { max-width: 92px; min-height: 34px; padding: 8px 10px; }
+      .ai-report-feedback { margin-top: 10px; }
       .ai-report-layout { grid-template-columns: minmax(0,1.35fr) minmax(320px,.75fr); }
       @media (max-width: 1180px) {
         .ai-report-filters, .ai-report-layout { grid-template-columns: 1fr; }
@@ -489,6 +510,8 @@
     const button = event.target?.closest?.("[data-ai-report-calculate]");
     if (!button) return;
     event.preventDefault();
+    ensureAIReportState();
+    appState.aiReport.lastCalculatedAt = new Date().toLocaleString("it-IT", { dateStyle: "short", timeStyle: "short" });
     renderApp();
   }, true);
 
