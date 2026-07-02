@@ -1,0 +1,223 @@
+@media (max-width: 1100px) {
+  body {
+    background: var(--bg);
+  }
+
+  .app-shell {
+    display: block;
+    min-height: 100vh;
+  }
+
+  .sidebar {
+    position: sticky;
+    top: 0;
+    z-index: 30;
+    padding: 14px 16px;
+    gap: 12px;
+    box-shadow: 0 10px 24px rgba(0, 0, 0, 0.18);
+  }
+
+  .brand {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 14px;
+  }
+
+  .brand-logo {
+    width: 128px;
+  }
+
+  .brand small,
+  .brand p,
+  .sidebar-footer,
+  .nav button span {
+    display: none;
+  }
+
+  .brand h1 {
+    font-size: 18px;
+    line-height: 1.15;
+    text-align: right;
+  }
+
+  .nav {
+    display: flex;
+    gap: 8px;
+    overflow-x: auto;
+    padding-bottom: 4px;
+    scrollbar-width: thin;
+  }
+
+  .nav button {
+    flex: 0 0 auto;
+    min-width: 132px;
+    padding: 11px 12px;
+    text-align: center;
+  }
+
+  .nav button:hover,
+  .nav button.active {
+    transform: none;
+  }
+
+  .main {
+    width: 100%;
+  }
+
+  .topbar {
+    grid-template-columns: minmax(0, 1fr) auto;
+    padding: 16px 18px 8px;
+  }
+
+  .workspace {
+    padding: 8px 18px 22px;
+  }
+
+  .screen-header {
+    align-items: flex-start;
+  }
+
+  .screen-header h2 {
+    font-size: 28px;
+  }
+
+  .hero-band,
+  .layout-2,
+  .metric-band,
+  .client-hero,
+  .ai-report-layout {
+    grid-template-columns: 1fr !important;
+  }
+
+  .kpi-row,
+  .metric-boxes,
+  .steps {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .filter-row,
+  .ai-report-filters {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  }
+
+  .calendar-board {
+    grid-template-columns: repeat(2, minmax(280px, 1fr));
+  }
+
+  .calendar-col {
+    min-height: 300px;
+  }
+
+  .surface-inner {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  table {
+    min-width: 760px;
+  }
+
+  .dept-row,
+  .task-item,
+  .ledger-row,
+  .feed-row {
+    grid-template-columns: 1fr 1fr;
+    align-items: start;
+  }
+}
+
+@media (max-width: 760px) {
+  .sidebar {
+    padding: 12px;
+  }
+
+  .brand h1 {
+    display: none;
+  }
+
+  .nav button {
+    min-width: 118px;
+    padding: 10px;
+  }
+
+  .nav button strong {
+    font-size: 13px;
+  }
+
+  .topbar,
+  .screen-header,
+  .section-title {
+    display: grid;
+    grid-template-columns: 1fr;
+  }
+
+  .screen-actions,
+  .section-title .screen-actions {
+    flex-wrap: wrap;
+    justify-content: flex-start;
+  }
+
+  .workspace {
+    padding: 8px 12px 18px;
+  }
+
+  .surface-inner {
+    padding: 16px;
+  }
+
+  .screen-header h2 {
+    font-size: 24px;
+  }
+
+  .hero-panel strong {
+    font-size: 24px;
+  }
+
+  .kpi-row,
+  .metric-boxes,
+  .steps,
+  .grid-2,
+  .form-grid,
+  .filter-row,
+  .ai-report-filters,
+  .calendar-board,
+  .dept-row,
+  .task-item,
+  .ledger-row,
+  .feed-row,
+  .profile-lines .line {
+    grid-template-columns: 1fr !important;
+  }
+
+  .span-2 {
+    grid-column: auto;
+  }
+
+  .filter-chip,
+  .mini-btn {
+    width: 100%;
+  }
+
+  .screen-actions .ghost-pill,
+  .screen-actions .action-pill,
+  .screen-actions .soft-pill,
+  .section-title .ghost-pill,
+  .section-title .action-pill,
+  .section-title .soft-pill {
+    width: auto;
+  }
+
+  .calendar-col {
+    min-height: auto;
+  }
+
+  table {
+    min-width: 680px;
+  }
+
+  th,
+  td {
+    padding: 10px 6px;
+  }
+}
