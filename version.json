@@ -1,6 +1,6 @@
 {
-  "version": "order-quote-photos-bridge-1",
-  "label": "Foto preventivo visibili nell'ordine",
-  "updated_at": "2026-07-02T11:30:00Z",
-  "purpose": "Mantiene le foto caricate nel preventivo quando il preventivo viene trasformato e salvato come ordine, mostrandole nella sezione Foto e allegati ordine"
+  "version": "clients-list-cleanup-1",
+  "label": "Clienti pulito con lista e apri scheda",
+  "updated_at": "2026-07-02T12:05:00Z",
+  "purpose": "Rimuove dalla pagina Clienti i pannelli Modifica cliente selezionato e Modifica scheda cliente, lasciando la lista clienti e l'accesso tramite Apri scheda"
 }
