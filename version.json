@@ -1,6 +1,6 @@
 {
-  "version": "quote-inventory-picker-1",
-  "label": "Magazzino selezionabile nei preventivi",
-  "updated_at": "2026-07-02T10:20:00Z",
-  "purpose": "Aggiunge nei materiali del preventivo un selettore dal Magazzino; la scelta compila materiale, SKU/codice, origine e mantiene il collegamento quando il preventivo diventa ordine"
+  "version": "quote-task-plan-fix-1",
+  "label": "Task ordine da preventivo selezionabili",
+  "updated_at": "2026-07-02T10:35:00Z",
+  "purpose": "Corregge la selezione di operatore, data e ore nei task quando un preventivo viene trasformato in ordine; ricarica gli operatori anche nella vista ordine da preventivo"
 }
