@@ -1,8 +1,31 @@
 (function () {
+  const CLIENTS_INLINE_EDIT_FIELDS = [
+    ["name", "Nome / brand"],
+    ["email", "Email"],
+    ["phone", "Telefono"],
+    ["payment_terms", "Condizioni pagamento"],
+    ["billing_company_name", "Ragione sociale"],
+    ["billing_vat_number", "Partita IVA"],
+    ["billing_tax_code", "Codice fiscale"],
+    ["billing_address", "Indirizzo fatturazione"],
+    ["billing_city", "Citta'"],
+    ["billing_zip", "CAP"],
+    ["billing_country", "Paese"],
+    ["billing_sdi", "Codice SDI"],
+    ["billing_pec", "PEC"],
+    ["notes", "Note cliente"],
+  ];
+
   function isClientsView() {
     const active = document.querySelector("section.view.active");
     const title = active?.querySelector(".screen-header h2")?.textContent.trim().toLowerCase();
     return appState.currentView === "clients" || title === "clienti";
+  }
+
+  function ensureClientsInlineEditState() {
+    if (!appState.clientInlineEdit || typeof appState.clientInlineEdit !== "object") {
+      appState.clientInlineEdit = { open: false, clientId: null };
+    }
   }
 
   function shouldRemovePanel(panel) {
@@ -80,6 +103,36 @@
     `;
   }
 
+  function renderClientsEditPanel(selected) {
+    ensureClientsInlineEditState();
+    const isOpen = !!selected && appState.clientInlineEdit.open && Number(appState.clientInlineEdit.clientId) === Number(selected.id);
+    if (!isOpen) return "";
+    return `
+      <div class="surface" data-client-inline-edit-panel="true" style="margin-top:16px;">
+        <div class="surface-inner">
+          <div class="section-title">
+            <div>
+              <h3>Modifica cliente</h3>
+              <p>${escapeClientHtml(selected.name)} - aggiorna contatti, dati fiscali e note.</p>
+            </div>
+            <div class="pill-row">
+              <button class="mini-btn" data-client-inline-edit-close type="button">Annulla</button>
+              <button class="action-pill" data-client-overlay-save type="button">${appState.busy ? "Salvataggio..." : "Salva modifiche"}</button>
+            </div>
+          </div>
+          <div class="form-grid">
+            ${CLIENTS_INLINE_EDIT_FIELDS.map(([field, label]) => `
+              <div class="field ${field === "notes" || field === "billing_address" ? "span-2" : ""}">
+                <label>${label}</label>
+                ${field === "notes" ? `<textarea class="field-value" data-client-overlay-field="${field}" style="min-height:84px; align-items:flex-start; padding-top:12px;">${escapeClientHtml(selected[field] || "")}</textarea>` : `<input class="field-value" data-client-overlay-field="${field}" value="${escapeClientHtml(selected[field] || "")}" />`}
+              </div>
+            `).join("")}
+          </div>
+        </div>
+      </div>
+    `;
+  }
+
   function renderClientsDetailPanel(selected, orders, payments) {
     return `
       <div class="surface">
@@ -89,9 +142,10 @@
               <h3>Scheda cliente${selected ? ` - ${escapeClientHtml(selected.name)}` : ""}</h3>
               <p>Dati fiscali, ordini e movimenti amministrativi collegati.</p>
             </div>
-            ${selected ? `<button class="action-pill" data-client-new-order="${escapeClientHtml(selected.name)}">Nuovo ordine cliente</button>` : ""}
+            ${selected ? `<div class="pill-row"><button class="mini-btn" data-client-inline-edit-open="${selected.id}" type="button">Modifica cliente</button><button class="action-pill" data-client-new-order="${escapeClientHtml(selected.name)}">Nuovo ordine cliente</button></div>` : ""}
           </div>
           ${selected ? renderSelectedClientDetail(selected, orders, payments) : `<div class="empty-state">Seleziona un cliente per aprire la scheda.</div>`}
+          ${selected ? renderClientsEditPanel(selected) : ""}
         </div>
       </div>
     `;
@@ -100,6 +154,7 @@
   if (typeof renderClientsRegistry === "function") {
     renderClientsRegistry = function renderClientsRegistryCleanLayout() {
       ensureClientsState();
+      ensureClientsInlineEditState();
       const query = appState.clientsSearch.trim().toLowerCase();
       const clients = appState.realClients.filter((client) => {
         const haystack = `${client.name || ""} ${client.email || ""} ${client.phone || ""} ${client.billing_vat_number || ""}`.toLowerCase();
@@ -158,8 +213,32 @@
 
   document.addEventListener("click", (event) => {
     const openClient = event.target.closest("[data-select-client], [data-clients-fallback-select]");
-    if (!openClient || !isClientsView()) return;
-    window.setTimeout(removeClientsEditPanels, 0);
+    if (openClient && isClientsView()) {
+      ensureClientsInlineEditState();
+      appState.clientInlineEdit.open = false;
+      appState.clientInlineEdit.clientId = Number(openClient.dataset.selectClient || openClient.dataset.clientsFallbackSelect || 0) || null;
+      window.setTimeout(removeClientsEditPanels, 0);
+      return;
+    }
+
+    const editOpen = event.target.closest("[data-client-inline-edit-open]");
+    if (editOpen && isClientsView()) {
+      event.preventDefault();
+      event.stopPropagation();
+      ensureClientsInlineEditState();
+      appState.clientInlineEdit = { open: true, clientId: Number(editOpen.dataset.clientInlineEditOpen) };
+      renderApp();
+      return;
+    }
+
+    const editClose = event.target.closest("[data-client-inline-edit-close]");
+    if (editClose && isClientsView()) {
+      event.preventDefault();
+      event.stopPropagation();
+      ensureClientsInlineEditState();
+      appState.clientInlineEdit.open = false;
+      renderApp();
+    }
   }, true);
 
   removeClientsEditPanels();
