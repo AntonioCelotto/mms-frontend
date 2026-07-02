@@ -149,10 +149,12 @@
 
   const baseQuoteListConvertToOrderDatabase = typeof quoteListConvertToOrder === "function" ? quoteListConvertToOrder : null;
   if (baseQuoteListConvertToOrderDatabase) {
-    quoteListConvertToOrder = function quoteListConvertToOrderWithDatabase(quoteId) {
-      baseQuoteListConvertToOrderDatabase(quoteId);
+    quoteListConvertToOrder = async function quoteListConvertToOrderWithDatabase(quoteId) {
+      const result = baseQuoteListConvertToOrderDatabase(quoteId);
+      if (result && typeof result.then === "function") await result;
       const quote = typeof quoteListFind === "function" ? quoteListFind(quoteId) : null;
-      quoteDatabaseSave(quote);
+      await quoteDatabaseSave(quote);
+      return result;
     };
   }
 
