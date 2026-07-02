@@ -1,5 +1,10 @@
 (function () {
   const AI_REPORT_DEFAULT_WAGE = 10;
+  const AI_REPORT_DEFAULT_EMPLOYEE_COSTS = {
+    olga: "10",
+    roberta: "12",
+    eleonora: "15",
+  };
 
   function ensureAIReportState() {
     if (!appState.aiReport || typeof appState.aiReport !== "object") {
@@ -12,12 +17,18 @@
     if (!appState.aiReport.focus) appState.aiReport.focus = "all";
   }
 
+  function defaultEmployeeCost(owner) {
+    const name = String(owner || "").toLowerCase();
+    const match = Object.entries(AI_REPORT_DEFAULT_EMPLOYEE_COSTS).find(([key]) => name.includes(key));
+    return match?.[1] || "";
+  }
+
   function html(value) {
     return String(value ?? "")
       .replace(/&/g, "&amp;")
       .replace(/</g, "&lt;")
       .replace(/>/g, "&gt;")
-      .replace(/"/g, "&quot;")
+      .replace(/\"/g, "&quot;")
       .replace(/'/g, "&#39;");
   }
 
@@ -126,6 +137,10 @@
 
   function taskPhase(task) {
     return task?.phase || task?.task_phase || task?.name || task?.task_name || "Lavorazione";
+  }
+
+  function taskName(task) {
+    return task?.name || task?.task_name || taskPhase(task);
   }
 
   function taskStatus(task, worklog) {
@@ -245,7 +260,8 @@
   function employeeHourlyCost(owner, fallbackWage) {
     ensureAIReportState();
     const custom = numberValue(appState.aiReport.employeeCosts[owner]);
-    return custom || fallbackWage || AI_REPORT_DEFAULT_WAGE;
+    const preset = numberValue(defaultEmployeeCost(owner));
+    return custom || preset || fallbackWage || AI_REPORT_DEFAULT_WAGE;
   }
 
   function employeeReport() {
@@ -334,7 +350,7 @@
     return rows.map((row) => `
       <tr>
         <td><strong>${html(row.owner)}</strong><div class="muted">${html(row.mainPhase)}</div></td>
-        <td><input class="field-value ai-report-employee-cost" data-ai-report-employee-cost="${encodeURIComponent(row.owner)}" inputmode="decimal" value="${html(appState.aiReport.employeeCosts[row.owner] || row.hourlyCost || "")}" /></td>
+        <td><input class="field-value ai-report-employee-cost" data-ai-report-employee-cost="${encodeURIComponent(row.owner)}" inputmode="decimal" value="${html(appState.aiReport.employeeCosts[row.owner] || defaultEmployeeCost(row.owner) || row.hourlyCost || "")}" /></td>
         <td>${row.tasks}</td>
         <td>${row.completed}</td>
         <td>${row.late}</td>
@@ -481,6 +497,16 @@
     document.head.appendChild(style);
   }
 
+  function collectAIReportFormValues() {
+    ensureAIReportState();
+    document.querySelectorAll("[data-ai-report-field]").forEach((input) => {
+      appState.aiReport[input.dataset.aiReportField] = input.value;
+    });
+    document.querySelectorAll("[data-ai-report-employee-cost]").forEach((input) => {
+      appState.aiReport.employeeCosts[decodeURIComponent(input.dataset.aiReportEmployeeCost)] = input.value;
+    });
+  }
+
   const baseRenderAIReport = typeof renderAI === "function" ? renderAI : null;
   if (baseRenderAIReport) {
     renderAI = function renderAIReportingDashboard() {
@@ -503,7 +529,10 @@
     if (!field && !employee) return;
     ensureAIReportState();
     if (employee) appState.aiReport.employeeCosts[decodeURIComponent(employee)] = event.target.value;
-    else appState.aiReport[field] = event.target.value;
+    else {
+      appState.aiReport[field] = event.target.value;
+      if (["period", "employee", "untilDate"].includes(field)) renderApp();
+    }
   }, true);
 
   document.addEventListener("click", (event) => {
@@ -511,6 +540,7 @@
     if (!button) return;
     event.preventDefault();
     ensureAIReportState();
+    collectAIReportFormValues();
     appState.aiReport.lastCalculatedAt = new Date().toLocaleString("it-IT", { dateStyle: "short", timeStyle: "short" });
     renderApp();
   }, true);
