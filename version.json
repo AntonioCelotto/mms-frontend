@@ -1,6 +1,6 @@
 {
-  "version": "quote-convert-db-await-1",
-  "label": "Conversione preventivo ordine sbloccata",
-  "updated_at": "2026-07-02T10:55:00Z",
-  "purpose": "Stabilizza il passaggio da preventivo a ordine aspettando la conversione completa prima della sincronizzazione database, mantenendo i materiali manuali e di Magazzino"
+  "version": "quote-task-render-loop-fix-1",
+  "label": "Blocco conferma preventivo corretto",
+  "updated_at": "2026-07-02T11:10:00Z",
+  "purpose": "Evita il render continuo nella schermata Ordine da preventivo durante il caricamento operatori, cosi' la conferma preventivo non blocca piu' la pagina"
 }
