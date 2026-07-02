@@ -1,6 +1,6 @@
 {
-  "version": "auth-email-password-1",
-  "label": "Accesso dipendenti con email e password",
-  "updated_at": "2026-07-02T09:30:00Z",
-  "purpose": "Aggiunge login e registrazione dipendenti con Supabase Auth, collega l'utente Auth al profilo dipendente e nasconde il gestionale finche' non esiste una sessione valida"
+  "version": "quote-inventory-picker-1",
+  "label": "Magazzino selezionabile nei preventivi",
+  "updated_at": "2026-07-02T10:20:00Z",
+  "purpose": "Aggiunge nei materiali del preventivo un selettore dal Magazzino; la scelta compila materiale, SKU/codice, origine e mantiene il collegamento quando il preventivo diventa ordine"
 }
