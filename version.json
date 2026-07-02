@@ -1,6 +1,6 @@
 {
-  "version": "quote-task-plan-fix-1",
-  "label": "Task ordine da preventivo selezionabili",
-  "updated_at": "2026-07-02T10:35:00Z",
-  "purpose": "Corregge la selezione di operatore, data e ore nei task quando un preventivo viene trasformato in ordine; ricarica gli operatori anche nella vista ordine da preventivo"
+  "version": "quote-convert-db-await-1",
+  "label": "Conversione preventivo ordine sbloccata",
+  "updated_at": "2026-07-02T10:55:00Z",
+  "purpose": "Stabilizza il passaggio da preventivo a ordine aspettando la conversione completa prima della sincronizzazione database, mantenendo i materiali manuali e di Magazzino"
 }
