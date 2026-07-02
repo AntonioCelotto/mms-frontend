@@ -1,6 +1,6 @@
 {
-  "version": "inventory-import-toolbar-1",
-  "label": "Import magazzino vicino a export",
-  "updated_at": "2026-07-01T15:40:00Z",
-  "purpose": "Sposta l'import CSV del Magazzino vicino a Esporta CSV e mostra il pannello Import prodotti solo quando richiesto"
+  "version": "auth-email-password-1",
+  "label": "Accesso dipendenti con email e password",
+  "updated_at": "2026-07-02T09:30:00Z",
+  "purpose": "Aggiunge login e registrazione dipendenti con Supabase Auth, collega l'utente Auth al profilo dipendente e nasconde il gestionale finche' non esiste una sessione valida"
 }
