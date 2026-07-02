@@ -1,5 +1,8 @@
 (function () {
   const WORKLOG_DATABASE_API = "/api/calendar-worklog";
+  const WORKLOG_SUPABASE_URL = "https://fzdqemzowxjuotqalaol.supabase.co";
+  const WORKLOG_SUPABASE_ANON_KEY =
+    "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZ6ZHFlbXpvd3hqdW90cWFsYW9sIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzk5Njg3NzYsImV4cCI6MjA5NTU0NDc3Nn0.fmZ9RThFxnaJGQsOYeu_ZjjUNHThlRX87qz9sX4N6Mk";
   let worklogDatabaseLoaded = false;
   let worklogDatabaseLoading = false;
 
@@ -61,6 +64,32 @@
     return payload;
   }
 
+  async function worklogDatabaseDirectSave(worklog) {
+    const response = await fetch(`${WORKLOG_SUPABASE_URL}/rest/v1/calendar_worklogs?on_conflict=task_id`, {
+      method: "POST",
+      headers: {
+        apikey: WORKLOG_SUPABASE_ANON_KEY,
+        Authorization: `Bearer ${WORKLOG_SUPABASE_ANON_KEY}`,
+        "Content-Type": "application/json",
+        Prefer: "resolution=merge-duplicates,return=minimal",
+      },
+      body: JSON.stringify({
+        task_id: worklog.taskId,
+        order_id: worklog.orderId || null,
+        status: worklog.status,
+        elapsed_ms: worklog.elapsedMs,
+        started_at: worklog.startedAt || null,
+        finished_at: worklog.finishedAt || null,
+        pauses: worklog.pauses || 0,
+        payload: worklog.payload || {},
+      }),
+    });
+    if (!response.ok) {
+      const detail = await response.text().catch(() => "");
+      throw new Error(detail || "Salvataggio diretto lavorazione non riuscito");
+    }
+  }
+
   async function worklogDatabaseLoad({ rerender = false } = {}) {
     if (worklogDatabaseLoaded || worklogDatabaseLoading) return;
     worklogDatabaseLoading = true;
@@ -83,22 +112,27 @@
     const normalized = worklogDatabaseNormalize({ taskId, ...(session || {}) });
     if (!normalized) return;
     const meta = worklogDatabaseTaskMeta(taskId);
+    const worklog = {
+      taskId: normalized.taskId,
+      orderId: meta.orderId || normalized.orderId || null,
+      status: normalized.status,
+      elapsedMs: normalized.elapsedMs,
+      startedAt: normalized.startedAt || null,
+      finishedAt: normalized.finishedAt || null,
+      pauses: normalized.pauses,
+      payload: meta.payload || {},
+    };
     try {
       await worklogDatabaseRequest("POST", {
-        worklog: {
-          taskId: normalized.taskId,
-          orderId: meta.orderId || normalized.orderId || null,
-          status: normalized.status,
-          elapsedMs: normalized.elapsedMs,
-          startedAt: normalized.startedAt || null,
-          finishedAt: normalized.finishedAt || null,
-          pauses: normalized.pauses,
-          payload: meta.payload || {},
-        },
+        worklog,
       });
     } catch (error) {
-      console.warn("Lavorazione non sincronizzata su database", error);
-      setFlashMessage("Lavorazione aggiornata localmente. Salvataggio database non riuscito, riprova tra poco.");
+      console.warn("Lavorazione non sincronizzata via API, provo salvataggio diretto", error);
+      try {
+        await worklogDatabaseDirectSave(worklog);
+      } catch (fallbackError) {
+        console.warn("Lavorazione aggiornata solo localmente", fallbackError);
+      }
     }
   }
 
