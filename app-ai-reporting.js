@@ -3,10 +3,11 @@
 
   function ensureAIReportState() {
     if (!appState.aiReport || typeof appState.aiReport !== "object") {
-      appState.aiReport = { period: "month", hourlyCost: String(AI_REPORT_DEFAULT_WAGE), focus: "all" };
+      appState.aiReport = { period: "month", hourlyCost: String(AI_REPORT_DEFAULT_WAGE), employeeCosts: {}, focus: "all" };
     }
     if (!appState.aiReport.period) appState.aiReport.period = "month";
     if (!appState.aiReport.hourlyCost) appState.aiReport.hourlyCost = String(AI_REPORT_DEFAULT_WAGE);
+    if (!appState.aiReport.employeeCosts || typeof appState.aiReport.employeeCosts !== "object") appState.aiReport.employeeCosts = {};
     if (!appState.aiReport.focus) appState.aiReport.focus = "all";
   }
 
@@ -209,6 +210,10 @@
     }[period] || "Mensile";
   }
 
+  function stateClass(status) {
+    return typeof getStatusClass === "function" ? getStatusClass(String(status || "")) : "progress";
+  }
+
   function reportRows() {
     ensureAIReportState();
     const tasks = allTasks();
@@ -226,6 +231,12 @@
     return { anchor, start, orders: orderRows, tasks: taskRows, wage: numberValue(appState.aiReport.hourlyCost) || AI_REPORT_DEFAULT_WAGE };
   }
 
+  function employeeHourlyCost(owner, fallbackWage) {
+    ensureAIReportState();
+    const custom = numberValue(appState.aiReport.employeeCosts[owner]);
+    return custom || fallbackWage || AI_REPORT_DEFAULT_WAGE;
+  }
+
   function employeeReport() {
     const { tasks, wage, anchor } = reportRows();
     const byEmployee = new Map();
@@ -239,12 +250,12 @@
       const due = taskDate(row);
       const late = !String(status).toLowerCase().includes("complet") && due !== null && due < anchor;
       if (!byEmployee.has(owner)) {
-        byEmployee.set(owner, { owner, planned: 0, worked: 0, cost: 0, completed: 0, late: 0, tasks: 0, phases: new Map() });
+        byEmployee.set(owner, { owner, hourlyCost: employeeHourlyCost(owner, wage), planned: 0, worked: 0, cost: 0, completed: 0, late: 0, tasks: 0, phases: new Map() });
       }
       const rowData = byEmployee.get(owner);
       rowData.planned += planned;
       rowData.worked += effective;
-      rowData.cost += effective * wage;
+      rowData.cost += effective * rowData.hourlyCost;
       rowData.tasks += 1;
       if (String(status).toLowerCase().includes("complet")) rowData.completed += 1;
       if (late) rowData.late += 1;
@@ -269,11 +280,13 @@
     const { orders, tasks, wage } = reportRows();
     return orders.map((order) => {
       const relatedTasks = tasks.filter((row) => Number(row.orderId) === Number(order.id));
+      let laborCost = 0;
       const hours = relatedTasks.reduce((sum, row) => {
         const worked = worklogHours(row.taskId);
-        return sum + (worked || taskPlannedHours(row.task));
+        const effective = worked || taskPlannedHours(row.task);
+        laborCost += effective * employeeHourlyCost(taskOwner(row.task), wage);
+        return sum + effective;
       }, 0);
-      const laborCost = hours * wage;
       const materialCost = materialCostForOrder(order);
       const revenue = orderRevenue(order);
       const margin = revenue - laborCost - materialCost;
@@ -306,10 +319,11 @@
   }
 
   function renderAIEmployeeRows(rows) {
-    if (!rows.length) return `<tr><td colspan="8"><div class="empty-state">Nessuna lavorazione nel periodo selezionato.</div></td></tr>`;
+    if (!rows.length) return `<tr><td colspan="9"><div class="empty-state">Nessuna lavorazione nel periodo selezionato.</div></td></tr>`;
     return rows.map((row) => `
       <tr>
         <td><strong>${html(row.owner)}</strong><div class="muted">${html(row.mainPhase)}</div></td>
+        <td><input class="field-value ai-report-employee-cost" data-ai-report-employee-cost="${encodeURIComponent(row.owner)}" inputmode="decimal" value="${html(appState.aiReport.employeeCosts[row.owner] || row.hourlyCost || "")}" /></td>
         <td>${row.tasks}</td>
         <td>${row.completed}</td>
         <td>${row.late}</td>
@@ -377,6 +391,7 @@
               <label class="filter-chip ai-report-cost">Costo ora <input data-ai-report-field="hourlyCost" inputmode="decimal" value="${html(appState.aiReport.hourlyCost)}" /></label>
               <div class="filter-chip">Base dati fino al ${anchorLabel}</div>
               <div class="filter-chip">Costo standard: ${money(report.wage)} / ora</div>
+              <button class="action-pill" data-ai-report-calculate type="button">Calcola report</button>
             </div>
           </div>
         </div>
@@ -395,7 +410,7 @@
                 <div><h3>Valutazione operatrici</h3><p>Ore previste, ore lavorate, task e grado di valutazione.</p></div>
               </div>
               <table>
-                <thead><tr><th>Operatrice</th><th>Task</th><th>Completati</th><th>Ritardi</th><th>Ore previste</th><th>Ore lavoro</th><th>Costo</th><th>Valutazione</th></tr></thead>
+                <thead><tr><th>Operatrice</th><th>Costo ora</th><th>Task</th><th>Completati</th><th>Ritardi</th><th>Ore previste</th><th>Ore lavoro</th><th>Costo</th><th>Valutazione</th></tr></thead>
                 <tbody>${renderAIEmployeeRows(employees)}</tbody>
               </table>
             </div>
@@ -433,9 +448,10 @@
     const style = document.createElement("style");
     style.id = "ai-report-styles";
     style.textContent = `
-      .ai-report-filters { grid-template-columns: minmax(160px,.8fr) minmax(180px,.8fr) minmax(200px,1fr) minmax(200px,1fr); }
+      .ai-report-filters { grid-template-columns: minmax(160px,.8fr) minmax(180px,.8fr) minmax(200px,1fr) minmax(200px,1fr) auto; }
       .ai-report-cost { gap: 8px; }
       .ai-report-cost input { width: 90px; border: 0; background: transparent; outline: none; color: var(--text); }
+      .ai-report-employee-cost { max-width: 92px; min-height: 34px; padding: 8px 10px; }
       .ai-report-layout { grid-template-columns: minmax(0,1.35fr) minmax(320px,.75fr); }
       @media (max-width: 1180px) {
         .ai-report-filters, .ai-report-layout { grid-template-columns: 1fr; }
@@ -453,16 +469,26 @@
 
   document.addEventListener("input", (event) => {
     const field = event.target?.dataset?.aiReportField;
-    if (!field) return;
+    const employee = event.target?.dataset?.aiReportEmployeeCost;
+    if (!field && !employee) return;
     ensureAIReportState();
-    appState.aiReport[field] = event.target.value;
+    if (employee) appState.aiReport.employeeCosts[decodeURIComponent(employee)] = event.target.value;
+    else appState.aiReport[field] = event.target.value;
   }, true);
 
   document.addEventListener("change", (event) => {
     const field = event.target?.dataset?.aiReportField;
-    if (!field) return;
+    const employee = event.target?.dataset?.aiReportEmployeeCost;
+    if (!field && !employee) return;
     ensureAIReportState();
-    appState.aiReport[field] = event.target.value;
+    if (employee) appState.aiReport.employeeCosts[decodeURIComponent(employee)] = event.target.value;
+    else appState.aiReport[field] = event.target.value;
+  }, true);
+
+  document.addEventListener("click", (event) => {
+    const button = event.target?.closest?.("[data-ai-report-calculate]");
+    if (!button) return;
+    event.preventDefault();
     renderApp();
   }, true);
 
