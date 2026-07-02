@@ -1,6 +1,6 @@
 {
-  "version": "clients-list-cleanup-1",
-  "label": "Clienti pulito con lista e apri scheda",
-  "updated_at": "2026-07-02T12:05:00Z",
-  "purpose": "Rimuove dalla pagina Clienti i pannelli Modifica cliente selezionato e Modifica scheda cliente, lasciando la lista clienti e l'accesso tramite Apri scheda"
+  "version": "clients-list-cleanup-2",
+  "label": "Clienti con nuovo cliente sopra",
+  "updated_at": "2026-07-02T12:20:00Z",
+  "purpose": "Sposta Nuovo cliente sopra la pagina Clienti e rimuove in modo piu' forte il pannello Modifica cliente selezionato, lasciando sotto elenco clienti e scheda cliente"
 }
