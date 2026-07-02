@@ -20,6 +20,9 @@
     document.querySelectorAll(".client-edit-overlay-module, .clients-edit-panel, section.view.active .surface").forEach((panel) => {
       if (shouldRemovePanel(panel)) panel.remove();
     });
+    document.querySelectorAll("section.view.active [data-quick-client-edit], section.view.active [data-quick-client-save], section.view.active [data-quick-client-cancel]").forEach((button) => {
+      button.remove();
+    });
   }
 
   function renderClientsNewClientPanel() {
@@ -119,11 +122,8 @@
           </div>
 
           ${renderClientsNewClientPanel()}
-
-          <div class="layout-2">
-            ${renderClientsListPanel(clients, selected)}
-            ${renderClientsDetailPanel(selected, selectedOrders, selectedPayments)}
-          </div>
+          ${renderClientsListPanel(clients, selected)}
+          ${renderClientsDetailPanel(selected, selectedOrders, selectedPayments)}
         </section>
       `;
     };
