@@ -12,7 +12,7 @@ ALLOWED_DELIVERY_STATUSES = {"consegnato", "non_consegnato"}
 
 
 def normalize_material(item):
-    product_name = clean_text(item.get("product_name") or item.get("material"))
+    product_name = clean_text(item.get("product_name") or item.get("material") or item.get("name"))
     if not product_name:
         return None
 
@@ -22,6 +22,10 @@ def normalize_material(item):
         ALLOWED_DELIVERY_STATUSES,
         "non_consegnato",
     )
+    quantity_required = clean_text(item.get("quantity_required") or item.get("quantity") or item.get("qty")) or "1"
+    inventory_sku = clean_text(item.get("inventory_sku") or item.get("sku")) or None
+    inventory_item_id = parse_positive_int(item.get("inventory_item_id") or item.get("inventoryItemId"))
+
     return {
         "product_name": product_name,
         "material": product_name,
@@ -33,8 +37,13 @@ def normalize_material(item):
         "warehouse": clean_text(item.get("warehouse_status_note") or item.get("warehouse")) or None,
         "preorder_note": clean_text(item.get("preorder_note") or item.get("preorder")) or None,
         "preorder": clean_text(item.get("preorder_note") or item.get("preorder")) or None,
-        "quantity_required": clean_text(item.get("quantity_required")) or "1",
-        "inventory_sku": clean_text(item.get("inventory_sku")) or None,
+        "quantity_required": quantity_required,
+        "quantity": quantity_required,
+        "inventory_item_id": inventory_item_id,
+        "inventoryItemId": inventory_item_id,
+        "inventory_sku": inventory_sku,
+        "sku": inventory_sku,
+        "unit": clean_text(item.get("unit")) or None,
         "notes": clean_text(item.get("notes")) or None,
     }
 
