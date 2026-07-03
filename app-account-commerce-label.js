@@ -46,7 +46,9 @@
   function normalizeAccountProfileSelects() {
     if (appState.currentView !== "accounts") return;
     document.querySelectorAll("[data-account-profile], [data-account-edit-profile]").forEach((select) => {
-      const value = select.value === "coordinamento" || select.value === "amministrazione" ? "amministratore" : select.value;
+      const draft = select.matches("[data-account-edit-profile]") ? appState.accountEditDraft : appState.accountDraft;
+      const currentProfile = String(draft?.profile || "").toLowerCase();
+      const value = currentProfile || (select.value === "coordinamento" || select.value === "amministrazione" ? "amministratore" : select.value);
       select.innerHTML = [
         `<option value="amministratore">Amministratore</option>`,
         `<option value="commercio">Commercio</option>`,
