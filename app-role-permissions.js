@@ -8,14 +8,15 @@
     inventory: "Magazzino",
     payments: "Pagamenti",
     calendar: "Calendario",
+    "operator-order": "Scheda lavorazione",
     accounts: "Account",
     "ai-assistant": "Assistente AI",
   };
 
   const ALLOWED_VIEWS = {
     admin: "all",
-    commerce: new Set(["dashboard", "new-order", "quotes", "orders", "clients", "inventory", "payments", "calendar"]),
-    operator: new Set(["calendar"]),
+    commerce: new Set(["dashboard", "new-order", "quotes", "orders", "clients", "inventory", "payments", "calendar", "operator-order"]),
+    operator: new Set(["calendar", "operator-order"]),
   };
 
   const COMMERCE_SKILLS = ["clienti", "preventivi", "ordini", "pagamenti", "magazzino"];
