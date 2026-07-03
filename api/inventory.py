@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from collections import defaultdict
 from http import HTTPStatus
 from http.server import BaseHTTPRequestHandler
 from time import time
@@ -17,6 +18,8 @@ INVENTORY_SELECT = (
     "material_origin,supplier_name,supplier_material_code,mms_code,unit,color,description,unit_cost,retail_price,"
     "import_source,created_at,updated_at"
 )
+SHORTAGE_SELECT = "id,order_id,inventory_item_id,product_name,quantity_required,quantity_reserved,quantity_missing,unit,status"
+ORDER_SELECT = "id,order_number"
 
 
 def normalize_origin(value):
@@ -92,7 +95,49 @@ def normalize_inventory_item(raw):
     }
 
 
-def shape_inventory_item(row):
+def active_shortage_maps():
+    try:
+        shortages = fetch_table("inventory_shortages", select=SHORTAGE_SELECT, order="id.desc")
+        orders = fetch_table("orders", select=ORDER_SELECT)
+    except RuntimeError:
+        return {}, {}
+
+    order_numbers = {row.get("id"): row.get("order_number") for row in orders if row.get("id")}
+    totals = defaultdict(float)
+    details = defaultdict(list)
+    closed_statuses = {"arrivato", "chiuso", "ordinato_completo", "annullato"}
+
+    for row in shortages:
+        if clean_text(row.get("status")).lower() in closed_statuses:
+            continue
+        item_id = parse_positive_int(row.get("inventory_item_id"))
+        if not item_id:
+            continue
+        missing = numeric(row.get("quantity_missing"), 0)
+        if missing <= 0:
+            continue
+        totals[item_id] += missing
+        unit = clean_text(row.get("unit"))
+        order_id = row.get("order_id")
+        order_number = order_numbers.get(order_id) or order_id
+        details[item_id].append(
+            {
+                "order_id": order_id,
+                "order_number": order_number,
+                "product_name": row.get("product_name") or "",
+                "quantity_required": row.get("quantity_required") or 0,
+                "quantity_reserved": row.get("quantity_reserved") or 0,
+                "quantity_missing": missing,
+                "unit": unit,
+                "status": row.get("status") or "da_ordinare",
+            }
+        )
+    return dict(totals), dict(details)
+
+
+def shape_inventory_item(row, shortage_totals=None, shortage_details=None):
+    item_id = row.get("id")
+    shortage_quantity = (shortage_totals or {}).get(item_id, 0)
     return {
         "id": row.get("id"),
         "sku": row.get("sku") or "",
@@ -103,6 +148,8 @@ def shape_inventory_item(row):
         "available_quantity": row.get("available_quantity") or 0,
         "reserved": row.get("reserved_quantity") or 0,
         "reserved_quantity": row.get("reserved_quantity") or 0,
+        "shortage_quantity": shortage_quantity,
+        "shortage_details": (shortage_details or {}).get(item_id, []),
         "reorder_threshold": row.get("reorder_threshold") or 0,
         "status": row.get("status") or "",
         "reorder": row.get("notes") or "",
@@ -129,9 +176,10 @@ class handler(BaseHTTPRequestHandler):
     def do_GET(self):
         try:
             rows = fetch_table("inventory_items", select=INVENTORY_SELECT, order="name.asc")
+            shortage_totals, shortage_details = active_shortage_maps()
         except RuntimeError as error:
             return write_json(self, {"error": "Magazzino non disponibile", "detail": str(error)}, HTTPStatus.SERVICE_UNAVAILABLE)
-        return write_json(self, {"items": [shape_inventory_item(row) for row in rows]})
+        return write_json(self, {"items": [shape_inventory_item(row, shortage_totals, shortage_details) for row in rows]})
 
     def do_POST(self):
         body = read_json_body(self)
@@ -157,7 +205,8 @@ class handler(BaseHTTPRequestHandler):
         except RuntimeError as error:
             return write_json(self, {"error": "Materiale non salvato", "detail": str(error)}, HTTPStatus.INTERNAL_SERVER_ERROR)
 
-        shaped = [shape_inventory_item(row) for row in (rows if isinstance(rows, list) else [])]
+        shortage_totals, shortage_details = active_shortage_maps()
+        shaped = [shape_inventory_item(row, shortage_totals, shortage_details) for row in (rows if isinstance(rows, list) else [])]
         return write_json(self, {"items": shaped, "item": shaped[0] if shaped else None}, HTTPStatus.CREATED)
 
     def do_PATCH(self):
@@ -185,7 +234,8 @@ class handler(BaseHTTPRequestHandler):
 
         if not rows:
             return write_json(self, {"error": "Materiale non trovato"}, HTTPStatus.NOT_FOUND)
-        return write_json(self, {"item": shape_inventory_item(rows[0])})
+        shortage_totals, shortage_details = active_shortage_maps()
+        return write_json(self, {"item": shape_inventory_item(rows[0], shortage_totals, shortage_details)})
 
     def log_message(self, format, *args):
         return
