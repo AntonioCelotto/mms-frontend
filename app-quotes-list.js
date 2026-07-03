@@ -28,9 +28,11 @@ function quoteListSnapshot() {
   ensureQuoteState();
   const client = quoteText(appState.draftOrder.client);
   const articles = quoteListClone(appState.quoteArticles);
+  const clientInfo = typeof ensureQuoteClientDraft === "function" ? quoteListClone(ensureQuoteClientDraft()) : quoteListClone(appState.quoteClientDraft || {});
   return {
     id: quoteListNextId(),
     client,
+    clientInfo,
     category: appState.draftOrder.category,
     priority: appState.draftOrder.priority,
     quoteDate: appState.draftOrder.orderDate || new Date().toISOString().slice(0, 10),
@@ -48,6 +50,42 @@ function quoteListArticleCount(quote) {
 
 function quoteListMaterialCount(quote) {
   return (quote.articles || []).reduce((sum, article) => sum + (article.materials || []).length, 0);
+}
+
+function quoteListClientInfo(quote) {
+  return quote?.clientInfo && typeof quote.clientInfo === "object" ? quote.clientInfo : {};
+}
+
+function quoteListHasClientInfo(quote) {
+  const info = quoteListClientInfo(quote);
+  return [info.email, info.phone, info.vat, info.pec, info.address, info.paymentTerms, info.note].some((value) => quoteText(value));
+}
+
+function quoteListClientInfoHtml(quote) {
+  const info = quoteListClientInfo(quote);
+  if (!quoteListHasClientInfo(quote)) return "";
+  const rows = [
+    ["Email", info.email],
+    ["Telefono", info.phone],
+    ["P.IVA / CF", info.vat],
+    ["PEC / SDI", info.pec],
+    ["Indirizzo", info.address],
+    ["Pagamento", info.paymentTerms],
+    ["Note cliente", info.note],
+  ]
+    .filter(([, value]) => quoteText(value))
+    .map(([label, value]) => `<div class="alert-item"><strong>${quoteHtml(label)}</strong><span>${quoteHtml(value)}</span></div>`)
+    .join("");
+  return `
+    <div style="height:16px;"></div>
+    <div class="section-title">
+      <div>
+        <h3>Scheda cliente preventivo</h3>
+        <p>Dati raccolti durante la compilazione del preventivo.</p>
+      </div>
+    </div>
+    <div class="alert-list">${rows}</div>
+  `;
 }
 
 function quoteListFind(id = appState.selectedQuoteId) {
@@ -68,6 +106,20 @@ function quoteListEmailText(quote) {
 }
 
 function quoteListPdfHtml(quote) {
+  const clientInfo = quoteListClientInfo(quote);
+  const clientDetails = quoteListHasClientInfo(quote)
+    ? `
+      <section style="margin-top:18px; padding:14px; background:#f7f7f7;">
+        <strong>Dati cliente</strong><br />
+        ${clientInfo.email ? `Email: ${quoteHtml(clientInfo.email)}<br />` : ""}
+        ${clientInfo.phone ? `Telefono: ${quoteHtml(clientInfo.phone)}<br />` : ""}
+        ${clientInfo.vat ? `P.IVA / CF: ${quoteHtml(clientInfo.vat)}<br />` : ""}
+        ${clientInfo.pec ? `PEC / SDI: ${quoteHtml(clientInfo.pec)}<br />` : ""}
+        ${clientInfo.address ? `Indirizzo: ${quoteHtml(clientInfo.address)}<br />` : ""}
+        ${clientInfo.paymentTerms ? `Pagamento: ${quoteHtml(clientInfo.paymentTerms)}<br />` : ""}
+      </section>
+    `
+    : "";
   const rows = (quote.articles || [])
     .map((article, index) => {
       const materialRows = (article.materials || [])
@@ -129,6 +181,7 @@ function quoteListPdfHtml(quote) {
           <p><strong>Categoria:</strong> ${quoteHtml(quote.category)}<br />
           <strong>Priorita':</strong> ${quoteHtml(quote.priority)}</p>
         </section>
+        ${clientDetails}
         <table>
           <thead>
             <tr>
@@ -167,7 +220,8 @@ function quoteListMailto(quoteId) {
   if (!quote) return;
   const subject = encodeURIComponent(`Preventivo ${quote.id} - MMS Studio`);
   const body = encodeURIComponent(quoteListEmailText(quote));
-  window.location.href = `mailto:?subject=${subject}&body=${body}`;
+  const to = encodeURIComponent(quoteListClientInfo(quote).email || "");
+  window.location.href = `mailto:${to}?subject=${subject}&body=${body}`;
 }
 
 function quoteListSaveCurrent() {
@@ -198,6 +252,7 @@ function quoteListConvertToOrder(quoteId) {
   const quote = quoteListFind(quoteId);
   if (!quote) return;
   quote.status = "Trasformato in ordine";
+  const clientInfo = quoteListClientInfo(quote);
   appState.draftOrder = {
     ...(appState.draftOrder || {}),
     client: quote.client,
@@ -205,6 +260,13 @@ function quoteListConvertToOrder(quoteId) {
     priority: quote.priority,
     orderDate: quote.quoteDate,
     note: quote.note,
+  };
+  appState.clientDraft = {
+    ...(appState.clientDraft || {}),
+    email: clientInfo.email || appState.clientDraft?.email || "",
+    phone: clientInfo.phone || appState.clientDraft?.phone || "",
+    paymentRule: clientInfo.paymentTerms || appState.clientDraft?.paymentRule || "",
+    note: clientInfo.note || appState.clientDraft?.note || "",
   };
   appState.currentView = "orders";
   setFlashMessage(`Preventivo ${quote.id} confermato. Ora va creato l'ordine operativo con task, calendario e pagamento.`);
@@ -291,6 +353,7 @@ function renderQuotes() {
                     <div class="alert-item"><strong>Data preventivo</strong><span>${quoteHtml(selected.quoteDate || "Da definire")}</span></div>
                     <div class="alert-item"><strong>Note</strong><span>${quoteHtml(selected.note || "Nessuna nota")}</span></div>
                   </div>
+                  ${quoteListClientInfoHtml(selected)}
                   <div style="height:16px;"></div>
                   <div class="pill-row">
                     <button class="mini-btn" data-quote-pdf="${selected.id}" type="button">Scarica PDF</button>
