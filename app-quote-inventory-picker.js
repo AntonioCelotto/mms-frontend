@@ -35,8 +35,32 @@
       unit_cost: raw.unit_cost ?? "",
       retail_price: raw.retail_price ?? "",
       available_quantity: raw.available_quantity ?? raw.available ?? "",
+      reserved_quantity: raw.reserved_quantity ?? raw.reserved ?? "",
       status: raw.status || "Disponibile",
     };
+  }
+
+  function numberValue(value) {
+    const parsed = Number(String(value ?? "").replace(",", "."));
+    return Number.isFinite(parsed) ? parsed : 0;
+  }
+
+  function freeQuantity(item) {
+    return Math.max(0, numberValue(item?.available_quantity ?? item?.available) - numberValue(item?.reserved_quantity ?? item?.reserved));
+  }
+
+  function quantityWarning(material, item) {
+    if (!item) return "";
+    const requested = numberValue(material?.quantity);
+    if (!requested) return "";
+    const free = freeQuantity(item);
+    if (requested <= free) {
+      return `<div class="quote-stock-ok">Disponibilita' ok: libero ${html(free)} ${html(item.unit || "")}</div>`;
+    }
+    const missing = requested - free;
+    return `<div class="quote-stock-warning"><strong>Materiale insufficiente</strong>: richiesto ${html(requested)} ${html(
+      item.unit || ""
+    )}, libero ${html(free)}. Da comprare ${html(missing)} ${html(item.unit || "")}.</div>`;
   }
 
   function ensureInventoryList() {
@@ -112,10 +136,13 @@
               <div class="muted" style="margin-top:6px;">
                 ${
                   selected
-                    ? `${html(selected.material_origin === "fornitore" ? "Fornitore" : "MMS")}${selected.available_quantity !== "" ? ` - disp. ${html(selected.available_quantity)} ${html(selected.unit)}` : ""}`
+                    ? `${html(selected.material_origin === "fornitore" ? "Fornitore" : "MMS")} - disp. ${html(
+                        selected.available_quantity || 0
+                      )} ${html(selected.unit)} - impegnato ${html(selected.reserved_quantity || 0)} - libero ${html(freeQuantity(selected))}`
                     : "Puoi scegliere un materiale salvato o scriverlo manualmente."
                 }
               </div>
+              ${quantityWarning(material, selected)}
             </td>
             <td><input class="field-value" data-quote-material="${articleIndex}" data-quote-material-index="${materialIndex}" data-quote-material-field="material" value="${html(material.material)}" placeholder="es. stoffa, bottoni, filo" /></td>
             <td><input class="field-value" data-quote-material="${articleIndex}" data-quote-material-index="${materialIndex}" data-quote-material-field="quantity" value="${html(material.quantity)}" placeholder="q.ta" /></td>
@@ -177,11 +204,29 @@
           );
         });
       });
+      document.querySelectorAll("[data-quote-material-field='quantity']").forEach((input) => {
+        input.addEventListener("change", () => {
+          if (appState.currentView === "new-order") renderApp();
+        });
+      });
     };
+  }
+
+  function ensureQuoteInventoryStyles() {
+    if (document.getElementById("quote-inventory-stock-styles")) return;
+    const style = document.createElement("style");
+    style.id = "quote-inventory-stock-styles";
+    style.textContent = `
+      .quote-stock-warning,.quote-stock-ok{margin-top:7px;border-radius:8px;padding:8px 10px;font-size:12px;line-height:1.35}
+      .quote-stock-warning{border:1px solid rgba(180,83,9,.32);background:rgba(245,158,11,.13);color:#7c2d12}
+      .quote-stock-ok{border:1px solid rgba(15,118,110,.22);background:rgba(20,184,166,.10);color:#115e59}
+    `;
+    document.head.appendChild(style);
   }
 
   const baseRenderAppQuoteInventory = renderApp;
   renderApp = function renderAppQuoteInventory() {
+    ensureQuoteInventoryStyles();
     baseRenderAppQuoteInventory();
     if (appState.currentView === "new-order") {
       loadQuoteInventory({ rerender: true });
