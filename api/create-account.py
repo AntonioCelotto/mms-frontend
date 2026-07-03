@@ -4,11 +4,13 @@ from collections import defaultdict
 from http import HTTPStatus
 from http.server import BaseHTTPRequestHandler
 
-from _api import clean_text, normalize_choice, parse_positive_int, read_json_body, write_json, write_options
+from _api import clean_text, normalize_choice, parse_optional_number, parse_positive_int, read_json_body, write_json, write_options
 from _supabase import delete_rows, fetch_table, insert_rows, patch_rows
 
 
 ALLOWED_ROLES = {"admin", "viewer"}
+ALLOWED_WORKING_DAYS = ["lunedi", "martedi", "mercoledi", "giovedi", "venerdi", "sabato", "domenica"]
+DEFAULT_WORKING_DAYS = ["lunedi", "martedi", "mercoledi", "giovedi", "venerdi"]
 
 
 def clean_skills(raw_skills):
@@ -25,6 +27,30 @@ def clean_skills(raw_skills):
     return cleaned
 
 
+def clean_working_days(raw_days):
+    if raw_days in (None, ""):
+        return DEFAULT_WORKING_DAYS[:]
+    if isinstance(raw_days, str):
+        raw_days = [item.strip() for item in raw_days.split(",")]
+    if not isinstance(raw_days, list):
+        return None
+    normalized = []
+    seen = set()
+    for item in raw_days:
+        day = clean_text(item).lower()
+        if day in ALLOWED_WORKING_DAYS and day not in seen:
+            normalized.append(day)
+            seen.add(day)
+    return normalized
+
+
+def clean_non_negative_number(value, default):
+    parsed = parse_optional_number(value)
+    if parsed is None:
+        return default
+    return parsed if parsed >= 0 else None
+
+
 def account_payload(row, skill_map, task_count):
     full_name = " ".join(part for part in [row.get("first_name"), row.get("last_name")] if part).strip()
     return {
@@ -39,6 +65,9 @@ def account_payload(row, skill_map, task_count):
         "is_active": bool(row.get("is_active")),
         "skills": ", ".join(skill_map[row["id"]]),
         "assigned_tasks": task_count[row["id"]],
+        "daily_work_hours": float(row.get("daily_work_hours") or 0),
+        "hourly_cost": float(row.get("hourly_cost") or 0),
+        "working_days": row.get("working_days") or [],
     }
 
 
@@ -89,6 +118,13 @@ class handler(BaseHTTPRequestHandler):
         skills = clean_skills(payload.get("skills", []))
         if skills is None:
             return write_json(self, {"error": "Skill non valide"}, HTTPStatus.BAD_REQUEST)
+        working_days = clean_working_days(payload.get("working_days"))
+        if working_days is None:
+            return write_json(self, {"error": "Giorni lavorativi non validi"}, HTTPStatus.BAD_REQUEST)
+        daily_work_hours = clean_non_negative_number(payload.get("daily_work_hours"), 8)
+        hourly_cost = clean_non_negative_number(payload.get("hourly_cost"), 10)
+        if daily_work_hours is None or hourly_cost is None:
+            return write_json(self, {"error": "Ore lavoro o costo orario non validi"}, HTTPStatus.BAD_REQUEST)
 
         try:
             created = insert_rows(
@@ -100,6 +136,9 @@ class handler(BaseHTTPRequestHandler):
                     "email": email,
                     "role": role,
                     "is_active": True,
+                    "daily_work_hours": daily_work_hours,
+                    "hourly_cost": hourly_cost,
+                    "working_days": working_days,
                 },
             )
             user = created[0]
@@ -131,6 +170,13 @@ class handler(BaseHTTPRequestHandler):
             return write_json(self, {"error": "Nome obbligatorio"}, HTTPStatus.BAD_REQUEST)
         if not email or "@" not in email:
             return write_json(self, {"error": "Email non valida"}, HTTPStatus.BAD_REQUEST)
+        working_days = clean_working_days(payload.get("working_days"))
+        if working_days is None:
+            return write_json(self, {"error": "Giorni lavorativi non validi"}, HTTPStatus.BAD_REQUEST)
+        daily_work_hours = clean_non_negative_number(payload.get("daily_work_hours"), 8)
+        hourly_cost = clean_non_negative_number(payload.get("hourly_cost"), 10)
+        if daily_work_hours is None or hourly_cost is None:
+            return write_json(self, {"error": "Ore lavoro o costo orario non validi"}, HTTPStatus.BAD_REQUEST)
 
         try:
             rows = patch_rows(
@@ -143,6 +189,9 @@ class handler(BaseHTTPRequestHandler):
                     "email": email,
                     "role": role,
                     "is_active": bool(payload.get("is_active", True)),
+                    "daily_work_hours": daily_work_hours,
+                    "hourly_cost": hourly_cost,
+                    "working_days": working_days,
                 },
             )
             if not rows:
