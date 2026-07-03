@@ -30,6 +30,10 @@
       supplier_material_code: raw.supplier_material_code || "",
       mms_code: raw.mms_code || "",
       unit: raw.unit || "",
+      color: raw.color || "",
+      description: raw.description || "",
+      unit_cost: raw.unit_cost ?? "",
+      retail_price: raw.retail_price ?? "",
       available_quantity: raw.available_quantity ?? raw.available ?? "",
       status: raw.status || "Disponibile",
     };
@@ -138,6 +142,9 @@
     material.supplier_material_code = item.supplier_material_code || "";
     material.mms_code = item.mms_code || "";
     material.unit = item.unit || "";
+    material.color = item.color || "";
+    material.description = item.description || "";
+    if (!text(material.price) && text(item.retail_price)) material.price = item.retail_price;
     if (!text(material.quantity)) material.quantity = "1";
     renderApp();
   }
