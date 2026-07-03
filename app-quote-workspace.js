@@ -10,7 +10,7 @@ function quoteHtml(value) {
     .replace(/&/g, "&amp;")
     .replace(/</g, "&lt;")
     .replace(/>/g, "&gt;")
-    .replace(/"/g, "&quot;")
+    .replace(/\"/g, "&quot;")
     .replace(/'/g, "&#39;");
 }
 
@@ -31,6 +31,100 @@ function emptyQuoteArticle() {
   return { name: "", quantity: "1", cost: "", materials: [emptyQuoteMaterial()] };
 }
 
+function emptyQuoteClientDraft() {
+  return {
+    email: "",
+    phone: "",
+    vat: "",
+    pec: "",
+    address: "",
+    paymentTerms: "",
+    note: "",
+  };
+}
+
+function ensureQuoteClientDraft() {
+  if (!appState.quoteClientDraft || typeof appState.quoteClientDraft !== "object") {
+    appState.quoteClientDraft = emptyQuoteClientDraft();
+  }
+  appState.quoteClientDraft = { ...emptyQuoteClientDraft(), ...appState.quoteClientDraft };
+  return appState.quoteClientDraft;
+}
+
+function quoteClientCandidates() {
+  return [
+    ...(Array.isArray(appState.realClients) ? appState.realClients : []),
+    ...(Array.isArray(appData?.clients) ? appData.clients : []),
+  ];
+}
+
+function quoteClientName(client) {
+  return quoteText(client?.name || client?.client || client?.client_name || client?.company_name || client?.business_name);
+}
+
+function quoteClientExists(name) {
+  const normalized = quoteText(name).toLowerCase();
+  if (!normalized) return false;
+  return quoteClientCandidates().some((client) => quoteClientName(client).toLowerCase() === normalized);
+}
+
+function renderQuoteOptions(options, selected) {
+  return options
+    .map((option) => `<option value="${quoteHtml(option)}" ${selected === option ? "selected" : ""}>${quoteHtml(option)}</option>`)
+    .join("");
+}
+
+function renderQuoteClientProfile(draft) {
+  const clientDraft = ensureQuoteClientDraft();
+  const clientName = quoteText(draft.client);
+  const existing = quoteClientExists(clientName);
+  const title = existing ? "Scheda cliente" : "Scheda nuovo cliente";
+  const description = existing
+    ? "Cliente gia' presente: puoi completare o aggiornare i dati utili al preventivo."
+    : "Compila subito i dati del nuovo cliente, cosi' restano salvati nel preventivo.";
+
+  return `
+    <div style="height:18px;"></div>
+    <div class="section-title">
+      <div>
+        <h3>${title}</h3>
+        <p>${description}</p>
+      </div>
+      <span class="table-status ${existing ? "done" : "progress"}">${existing ? "Gia' in archivio" : "Nuovo cliente"}</span>
+    </div>
+    <div class="form-grid">
+      <div class="field">
+        <label>Email</label>
+        <input class="field-value" data-quote-client-field="email" value="${quoteHtml(clientDraft.email)}" placeholder="email cliente" />
+      </div>
+      <div class="field">
+        <label>Telefono</label>
+        <input class="field-value" data-quote-client-field="phone" value="${quoteHtml(clientDraft.phone)}" placeholder="telefono" />
+      </div>
+      <div class="field">
+        <label>Partita IVA / CF</label>
+        <input class="field-value" data-quote-client-field="vat" value="${quoteHtml(clientDraft.vat)}" placeholder="P.IVA o codice fiscale" />
+      </div>
+      <div class="field">
+        <label>PEC / SDI</label>
+        <input class="field-value" data-quote-client-field="pec" value="${quoteHtml(clientDraft.pec)}" placeholder="PEC o codice SDI" />
+      </div>
+      <div class="field span-2">
+        <label>Indirizzo / sede</label>
+        <input class="field-value" data-quote-client-field="address" value="${quoteHtml(clientDraft.address)}" placeholder="indirizzo cliente" />
+      </div>
+      <div class="field span-2">
+        <label>Condizioni pagamento / note cliente</label>
+        <textarea class="field-value" data-quote-client-field="paymentTerms" style="min-height:76px; align-items:flex-start; padding-top:12px;" placeholder="es. acconto, saldo, note amministrative">${quoteHtml(clientDraft.paymentTerms)}</textarea>
+      </div>
+      <div class="field span-2">
+        <label>Note operative cliente</label>
+        <textarea class="field-value" data-quote-client-field="note" style="min-height:76px; align-items:flex-start; padding-top:12px;" placeholder="preferenze, riferimenti, note utili">${quoteHtml(clientDraft.note)}</textarea>
+      </div>
+    </div>
+  `;
+}
+
 function ensureQuoteState() {
   if (!appState.draftOrder) appState.draftOrder = {};
   if (!QUOTE_CATEGORY_OPTIONS.includes(appState.draftOrder.category)) appState.draftOrder.category = "Sartoria interna";
@@ -41,6 +135,7 @@ function ensureQuoteState() {
   appState.quoteArticles.forEach((article) => {
     if (!Array.isArray(article.materials) || !article.materials.length) article.materials = [emptyQuoteMaterial()];
   });
+  ensureQuoteClientDraft();
 }
 
 function quoteMaterialTotal(material) {
@@ -56,12 +151,6 @@ function quoteArticleTotal(article) {
 function quoteGrandTotal() {
   ensureQuoteState();
   return appState.quoteArticles.reduce((sum, article) => sum + quoteArticleTotal(article), 0);
-}
-
-function renderQuoteOptions(options, selected) {
-  return options
-    .map((option) => `<option value="${quoteHtml(option)}" ${selected === option ? "selected" : ""}>${quoteHtml(option)}</option>`)
-    .join("");
 }
 
 function renderQuoteMaterialRows(article, articleIndex) {
@@ -145,6 +234,7 @@ renderNewOrder = function renderQuote() {
         </div>
         <div class="screen-actions">
           <div class="ghost-pill">Totale: ${quoteMoney(quoteGrandTotal())}</div>
+          <button class="mini-btn" data-quote-add-article type="button">+ Articolo</button>
           <button class="action-pill" data-action="save-quote" type="button">${appState.busy ? "Salvataggio..." : "Salva preventivo"}</button>
         </div>
       </div>
@@ -153,9 +243,9 @@ renderNewOrder = function renderQuote() {
         <div class="surface-inner">
           <div class="steps">
             <div class="step"><small>Step 1</small><strong>Dati preventivo</strong><span>Cliente, categoria, priorita' e data preventivo.</span></div>
-            <div class="step"><small>Step 2</small><strong>Articoli</strong><span>Nome articolo, quantita' e costo.</span></div>
-            <div class="step"><small>Step 3</small><strong>Materiali</strong><span>Prodotti collegati al magazzino per ogni articolo.</span></div>
-            <div class="step"><small>Step 4</small><strong>Invio cliente</strong><span>PDF e mail per accettazione.</span></div>
+            <div class="step"><small>Step 2</small><strong>Scheda cliente</strong><span>Dati anagrafici subito se e' un nuovo cliente.</span></div>
+            <div class="step"><small>Step 3</small><strong>Articoli</strong><span>Uno o piu' articoli nello stesso preventivo.</span></div>
+            <div class="step"><small>Step 4</small><strong>Materiali</strong><span>Prodotti collegati al magazzino per ogni articolo.</span></div>
           </div>
         </div>
       </div>
@@ -171,7 +261,7 @@ renderNewOrder = function renderQuote() {
           <div class="form-grid">
             <div class="field span-2">
               <label>Cliente / brand</label>
-              <input class="field-value" data-draft="client" value="${quoteHtml(draft.client)}" />
+              <input class="field-value" data-draft="client" value="${quoteHtml(draft.client)}" placeholder="nome cliente o brand" />
             </div>
             <div class="field">
               <label>Categoria</label>
@@ -193,6 +283,19 @@ renderNewOrder = function renderQuote() {
               <label>Note preventivo</label>
               <textarea class="field-value" data-draft="note" style="min-height:86px; align-items:flex-start; padding-top:12px;">${quoteHtml(draft.note)}</textarea>
             </div>
+          </div>
+          ${renderQuoteClientProfile(draft)}
+        </div>
+      </div>
+
+      <div class="surface">
+        <div class="surface-inner">
+          <div class="section-title">
+            <div>
+              <h3>Articoli preventivo</h3>
+              <p>Usa + Articolo quando nello stesso preventivo ci sono piu' capi o lavorazioni.</p>
+            </div>
+            <button class="action-pill" data-quote-add-article type="button">+ Articolo</button>
           </div>
         </div>
       </div>
@@ -254,6 +357,22 @@ function attachQuoteEvents() {
     };
     input.addEventListener("input", handler);
     input.addEventListener("change", handler);
+  });
+
+  document.querySelectorAll("[data-quote-client-field]").forEach((input) => {
+    const handler = (event) => {
+      ensureQuoteState();
+      appState.quoteClientDraft[event.target.dataset.quoteClientField] = event.target.value;
+    };
+    input.addEventListener("input", handler);
+    input.addEventListener("change", handler);
+  });
+
+  document.querySelectorAll("[data-draft='client']").forEach((input) => {
+    input.addEventListener("change", () => {
+      ensureQuoteState();
+      renderApp();
+    });
   });
 
   document.querySelectorAll("[data-quote-add-article]").forEach((button) => {
