@@ -12,6 +12,10 @@
     available_quantity: "0",
     reserved_quantity: "0",
     reorder_threshold: "0",
+    color: "",
+    description: "",
+    unit_cost: "",
+    retail_price: "",
     status: "Disponibile",
     notes: "",
   };
@@ -63,6 +67,10 @@
       supplier_material_code: item.supplier_material_code || "",
       mms_code: item.mms_code || "",
       unit: item.unit || "",
+      color: item.color || "",
+      description: item.description || "",
+      unit_cost: item.unit_cost ?? item.cost ?? "",
+      retail_price: item.retail_price ?? item.public_price ?? "",
       sku: item.sku || item.mms_code || item.supplier_material_code || "",
     };
   }
@@ -121,6 +129,10 @@
         item.supplier_name,
         item.supplier_material_code,
         item.mms_code,
+        item.color,
+        item.description,
+        item.unit_cost,
+        item.retail_price,
         item.notes,
       ].join(" ").toLowerCase();
       return (
@@ -146,6 +158,10 @@
       available_quantity: String(normalized.available_quantity ?? 0),
       reserved_quantity: String(normalized.reserved_quantity ?? 0),
       reorder_threshold: String(normalized.reorder_threshold ?? 0),
+      color: normalized.color || "",
+      description: normalized.description || "",
+      unit_cost: String(normalized.unit_cost ?? ""),
+      retail_price: String(normalized.retail_price ?? ""),
       status: normalized.status || "Disponibile",
       notes: normalized.notes || "",
     };
@@ -165,6 +181,10 @@
       available_quantity: draft.available_quantity,
       reserved_quantity: draft.reserved_quantity,
       reorder_threshold: draft.reorder_threshold,
+      color: draft.color,
+      description: draft.description,
+      unit_cost: draft.unit_cost,
+      retail_price: draft.retail_price,
       status: draft.status,
       notes: draft.notes,
       import_source: "manuale",
@@ -231,8 +251,12 @@
         category: cells[5] || "",
         available_quantity: cells[6] || "0",
         unit: cells[7] || "",
-        status: cells[8] || "Disponibile",
-        notes: cells[9] || "",
+        color: cells[8] || "",
+        description: cells[9] || "",
+        unit_cost: cells[10] || "",
+        retail_price: cells[11] || "",
+        status: cells[12] || "Disponibile",
+        notes: cells[13] || "",
         import_source: "import",
       };
     }).filter((row) => row.name);
@@ -261,7 +285,7 @@
   }
 
   function exportInventoryCsv() {
-    const headers = ["nome", "origine", "fornitore", "codice_fornitore", "codice_mms", "categoria", "quantita", "unita", "stato", "note"];
+    const headers = ["nome", "origine", "fornitore", "codice_fornitore", "codice_mms", "categoria", "quantita", "unita", "colore", "descrizione", "costo", "prezzo_pubblico", "stato", "note"];
     const rows = filteredInventoryItems().map((item) => [
       item.name || item.product,
       item.material_origin || "mms",
@@ -271,6 +295,10 @@
       item.category || "",
       item.available_quantity ?? item.available ?? 0,
       item.unit || "",
+      item.color || "",
+      item.description || "",
+      item.unit_cost ?? "",
+      item.retail_price ?? "",
       item.status || "",
       item.notes || item.reorder || "",
     ]);
@@ -288,17 +316,20 @@
 
   function inventoryRowsMarkup(items) {
     if (!items.length) {
-      return `<tr><td colspan="9"><div class="empty-state">${inventoryLoading ? "Caricamento magazzino..." : "Nessun materiale trovato con questi filtri."}</div></td></tr>`;
+      return `<tr><td colspan="12"><div class="empty-state">${inventoryLoading ? "Caricamento magazzino..." : "Nessun materiale trovato con questi filtri."}</div></td></tr>`;
     }
     return items.map((item) => `
       <tr>
         <td><span class="table-status ${item.material_origin === "fornitore" ? "hold" : "done"}">${item.material_origin === "fornitore" ? "Fornitore" : "MMS"}</span></td>
         <td>${escapeHtml(itemMainCode(item) || item.sku || "-")}</td>
-        <td><strong>${escapeHtml(item.name || item.product)}</strong><div class="muted">${escapeHtml(item.notes || "")}</div></td>
+        <td><strong>${escapeHtml(item.name || item.product)}</strong><div class="muted">${escapeHtml(item.description || item.notes || "")}</div></td>
+        <td>${escapeHtml(item.color || "-")}</td>
         <td>${escapeHtml(item.supplier_name || "-")}<div class="muted">${escapeHtml(item.supplier_material_code || "")}</div></td>
         <td>${escapeHtml(item.category || "-")}</td>
         <td>${escapeHtml(item.available_quantity ?? item.available ?? 0)}</td>
         <td>${escapeHtml(item.unit || "-")}</td>
+        <td>${escapeHtml(item.unit_cost ?? "")}</td>
+        <td>${escapeHtml(item.retail_price ?? "")}</td>
         <td><span class="table-status ${getStatusClass(item.status || "Disponibile")}">${escapeHtml(item.status || "Disponibile")}</span></td>
         <td><button class="mini-btn" data-inventory-edit="${escapeHtml(item.id)}" type="button">Modifica</button></td>
       </tr>
@@ -370,11 +401,15 @@
                 <div class="field"><label>Codice MMS</label><input class="field-value" data-inventory-draft="mms_code" value="${escapeHtml(draft.mms_code)}" placeholder="es. MMS-TESSUTO-001" /></div>
                 <div class="field"><label>Fornitore</label><input class="field-value" data-inventory-draft="supplier_name" value="${escapeHtml(draft.supplier_name)}" placeholder="Nome fornitore" /></div>
                 <div class="field"><label>Codice fornitore</label><input class="field-value" data-inventory-draft="supplier_material_code" value="${escapeHtml(draft.supplier_material_code)}" /></div>
+                <div class="field"><label>Colore</label><input class="field-value" data-inventory-draft="color" value="${escapeHtml(draft.color)}" placeholder="es. Nero, Bianco, Blu" /></div>
                 <div class="field"><label>Unita'</label><input class="field-value" data-inventory-draft="unit" value="${escapeHtml(draft.unit)}" placeholder="m, pz, kg..." /></div>
+                <div class="field"><label>Costo</label><input class="field-value" data-inventory-draft="unit_cost" value="${escapeHtml(draft.unit_cost)}" placeholder="0,00" /></div>
+                <div class="field"><label>Prezzo al pubblico</label><input class="field-value" data-inventory-draft="retail_price" value="${escapeHtml(draft.retail_price)}" placeholder="0,00" /></div>
                 <div class="field"><label>Disponibile</label><input class="field-value" data-inventory-draft="available_quantity" value="${escapeHtml(draft.available_quantity)}" /></div>
                 <div class="field"><label>Impegnato</label><input class="field-value" data-inventory-draft="reserved_quantity" value="${escapeHtml(draft.reserved_quantity)}" /></div>
                 <div class="field"><label>Soglia riordino</label><input class="field-value" data-inventory-draft="reorder_threshold" value="${escapeHtml(draft.reorder_threshold)}" /></div>
                 <div class="field"><label>Stato</label><input class="field-value" data-inventory-draft="status" value="${escapeHtml(draft.status)}" /></div>
+                <div class="field span-2"><label>Descrizione</label><textarea class="field-value" data-inventory-draft="description" style="min-height:82px; align-items:flex-start; padding-top:12px;">${escapeHtml(draft.description)}</textarea></div>
                 <div class="field span-2"><label>Note</label><textarea class="field-value" data-inventory-draft="notes" style="min-height:82px; align-items:flex-start; padding-top:12px;">${escapeHtml(draft.notes)}</textarea></div>
               </div>
             </div>
@@ -388,11 +423,11 @@
                     <div class="section-title">
                       <div>
                         <h3>Import prodotti</h3>
-                        <p>Formato: nome;origine;fornitore;codice_fornitore;codice_mms;categoria;quantita;unita;stato;note</p>
+                        <p>Formato: nome;origine;fornitore;codice_fornitore;codice_mms;categoria;quantita;unita;colore;descrizione;costo;prezzo_pubblico;stato;note</p>
                       </div>
                       <button class="mini-btn" data-inventory-import-action type="button">Importa righe</button>
                     </div>
-                    <textarea class="field-value" data-inventory-import style="min-height:96px; align-items:flex-start; padding-top:12px;" placeholder="Tessuto cotone;mms;;;MMS-COT-001;Tessuti;20;m;Disponibile;Scorta iniziale"></textarea>
+                    <textarea class="field-value" data-inventory-import style="min-height:96px; align-items:flex-start; padding-top:12px;" placeholder="Tessuto cotone;mms;;;MMS-COT-001;Tessuti;20;m;Bianco;Cotone leggero;4,50;12,00;Disponibile;Scorta iniziale"></textarea>
                   </div>
                 </div>
               `
@@ -409,16 +444,19 @@
                 <div class="ghost-pill">${items.length} risultati</div>
               </div>
               <div style="overflow-x:auto; width:100%;">
-                <table style="min-width:980px;">
+                <table style="min-width:1180px;">
                   <thead>
                     <tr>
                       <th>Origine</th>
                       <th>Codice</th>
                       <th>Materiale</th>
+                      <th>Colore</th>
                       <th>Fornitore</th>
                       <th>Categoria</th>
                       <th>Disp.</th>
                       <th>Unita'</th>
+                      <th>Costo</th>
+                      <th>Prezzo pubblico</th>
                       <th>Stato</th>
                       <th></th>
                     </tr>
