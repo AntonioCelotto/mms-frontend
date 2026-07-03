@@ -119,7 +119,40 @@ def split_name(metadata, email):
     return first_name, last_name
 
 
+COMMERCE_SKILLS = {"clienti", "preventivi", "ordini", "pagamenti", "magazzino"}
+
+
+def profile_skills(user_id):
+    if not user_id:
+        return []
+    rows = rest_request(
+        "user_skills",
+        query={"select": "skill_name", "user_id": f"eq.{user_id}", "order": "id.asc"},
+    ) or []
+    skills = []
+    seen = set()
+    for row in rows:
+        skill = clean_text(row.get("skill_name"))
+        key = skill.lower()
+        if skill and key not in seen:
+            skills.append(skill)
+            seen.add(key)
+    return skills
+
+
+def access_profile(row, skills):
+    role = clean_text(row.get("role")).lower()
+    if role == "admin":
+        return "admin"
+    skill_keys = {clean_text(skill).lower() for skill in skills}
+    if skill_keys.intersection(COMMERCE_SKILLS):
+        return "commerce"
+    return "operator"
+
+
 def normalize_profile(row):
+    skills = profile_skills(row.get("id"))
+    profile = access_profile(row, skills)
     return {
         "id": row.get("id"),
         "auth_user_id": row.get("auth_user_id"),
@@ -129,6 +162,9 @@ def normalize_profile(row):
         "email": row.get("email") or "",
         "phone": row.get("phone") or "",
         "role": row.get("role") or "viewer",
+        "access_profile": profile,
+        "profile": profile,
+        "skills": skills,
         "is_active": row.get("is_active") is not False,
         "last_login_at": row.get("last_login_at"),
     }
