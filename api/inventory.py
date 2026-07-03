@@ -14,7 +14,8 @@ except ModuleNotFoundError:
 
 INVENTORY_SELECT = (
     "id,sku,name,category,available_quantity,reserved_quantity,reorder_threshold,status,notes,"
-    "material_origin,supplier_name,supplier_material_code,mms_code,unit,import_source,created_at,updated_at"
+    "material_origin,supplier_name,supplier_material_code,mms_code,unit,color,description,unit_cost,retail_price,"
+    "import_source,created_at,updated_at"
 )
 
 
@@ -83,6 +84,10 @@ def normalize_inventory_item(raw):
         "supplier_material_code": supplier_code,
         "mms_code": mms_code,
         "unit": clean_text(item.get("unit")) or None,
+        "color": clean_text(item.get("color") or item.get("colore")) or None,
+        "description": clean_text(item.get("description") or item.get("descrizione")) or None,
+        "unit_cost": numeric(item.get("unit_cost") or item.get("cost") or item.get("costo"), 0),
+        "retail_price": numeric(item.get("retail_price") or item.get("public_price") or item.get("prezzo_pubblico"), 0),
         "import_source": clean_text(item.get("import_source") or item.get("importSource")) or "manuale",
     }
 
@@ -107,6 +112,10 @@ def shape_inventory_item(row):
         "supplier_material_code": row.get("supplier_material_code") or "",
         "mms_code": row.get("mms_code") or "",
         "unit": row.get("unit") or "",
+        "color": row.get("color") or "",
+        "description": row.get("description") or "",
+        "unit_cost": row.get("unit_cost") or 0,
+        "retail_price": row.get("retail_price") or 0,
         "import_source": row.get("import_source") or "",
         "createdAt": row.get("created_at") or "",
         "updatedAt": row.get("updated_at") or "",
