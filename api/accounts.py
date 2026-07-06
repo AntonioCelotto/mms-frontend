@@ -14,7 +14,7 @@ from urllib.request import Request, urlopen
 SUPABASE_URL = os.environ.get("SUPABASE_URL", "https://fzdqemzowxjuotqalaol.supabase.co").rstrip("/")
 SUPABASE_KEY = os.environ.get(
     "SUPABASE_ANON_KEY",
-    "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJIUzI1NiIsInJlZiI6ImZ6ZHFlbXpvd3hqdW90cWFsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzk5Njg3NzYsImV4cCI6MjA5NTU0NDc3Nn0.fmZ9RThFxnaJGQsOYeu_ZjjUNHThlRX87qz9sX4N6Mk",
+    "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZ6ZHFlbXpvd3hqdW90cWFsYW9sIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzk5Njg3NzYsImV4cCI6MjA5NTU0NDc3Nn0.fmZ9RThFxnaJGQsOYeu_ZjjUNHThlRX87qz9sX4N6Mk",
 )
 TIMEOUT_SECONDS = 8
 MAX_JSON_BODY_BYTES = 128 * 1024
