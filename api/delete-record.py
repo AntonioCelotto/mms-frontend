@@ -1,10 +1,14 @@
 from __future__ import annotations
 
+import json
+import socket
 from http import HTTPStatus
 from http.server import BaseHTTPRequestHandler
+from urllib.error import HTTPError, URLError
+from urllib.request import Request, urlopen
 
-from _api import parse_positive_int, read_json_body, write_json, write_options
-from _supabase import fetch_table, resolve_order, supabase_request
+from _api import clean_text, parse_positive_int, read_json_body, write_json, write_options
+from _supabase import SUPABASE_KEY, SUPABASE_TIMEOUT_SECONDS, SUPABASE_URL, fetch_table, supabase_request
 
 
 def numeric(value, default=0):
@@ -12,6 +16,52 @@ def numeric(value, default=0):
         return float(value)
     except (TypeError, ValueError):
         return default
+
+
+def verify_auth_user(handler):
+    header = clean_text(handler.headers.get("Authorization"))
+    if not header.lower().startswith("bearer "):
+        return None
+    token = header.split(" ", 1)[1].strip()
+    if not token:
+        return None
+    request = Request(
+        f"{SUPABASE_URL}/auth/v1/user",
+        headers={
+            "apikey": SUPABASE_KEY,
+            "Authorization": f"Bearer {token}",
+            "Content-Type": "application/json",
+        },
+        method="GET",
+    )
+    try:
+        with urlopen(request, timeout=SUPABASE_TIMEOUT_SECONDS) as response:
+            body = response.read().decode("utf-8")
+            return json.loads(body) if body else None
+    except (HTTPError, URLError, TimeoutError, socket.timeout, json.JSONDecodeError):
+        return None
+
+
+def current_profile(handler):
+    auth_user = verify_auth_user(handler)
+    auth_user_id = clean_text((auth_user or {}).get("id"))
+    email = clean_text((auth_user or {}).get("email")).lower()
+    if not auth_user_id and not email:
+        return None
+    if auth_user_id:
+        rows = fetch_table("users", select="id,email,role,is_active", filters={"auth_user_id": f"eq.{auth_user_id}"})
+        if rows:
+            return rows[0]
+    if email:
+        rows = fetch_table("users", select="id,email,role,is_active", filters={"email": f"eq.{email}"})
+        if rows:
+            return rows[0]
+    return None
+
+
+def require_admin(handler):
+    profile = current_profile(handler)
+    return bool(profile and profile.get("is_active") is not False and profile.get("role") == "admin")
 
 
 def release_order_inventory(order_id):
@@ -87,6 +137,8 @@ class handler(BaseHTTPRequestHandler):
         payload = read_json_body(self)
         if payload is None:
             return write_json(self, {"error": "JSON non valido"}, HTTPStatus.BAD_REQUEST)
+        if not require_admin(self):
+            return write_json(self, {"error": "Solo un amministratore puo' eliminare clienti e ordini"}, HTTPStatus.FORBIDDEN)
 
         entity = str(payload.get("entity") or "").strip().lower()
         try:
