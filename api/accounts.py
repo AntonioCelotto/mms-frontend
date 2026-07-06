@@ -14,11 +14,13 @@ from urllib.request import Request, urlopen
 SUPABASE_URL = os.environ.get("SUPABASE_URL", "https://fzdqemzowxjuotqalaol.supabase.co").rstrip("/")
 SUPABASE_KEY = os.environ.get(
     "SUPABASE_ANON_KEY",
-    "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZ6ZHFlbXpvd3hqdW90cWFsYW9sIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzk5Njg3NzYsImV4cCI6MjA5NTU0NDc3Nn0.fmZ9RThFxnaJGQsOYeu_ZjjUNHThlRX87qz9sX4N6Mk",
+    "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJIUzI1NiIsInJlZiI6ImZ6ZHFlbXpvd3hqdW90cWFsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzk5Njg3NzYsImV4cCI6MjA5NTU0NDc3Nn0.fmZ9RThFxnaJGQsOYeu_ZjjUNHThlRX87qz9sX4N6Mk",
 )
 TIMEOUT_SECONDS = 8
 MAX_JSON_BODY_BYTES = 128 * 1024
 ALLOWED_ROLES = {"admin", "viewer"}
+ALLOWED_HEADERS = "Content-Type, Authorization"
+DEFAULT_WORKING_DAYS = ["lunedi", "martedi", "mercoledi", "giovedi", "venerdi"]
 
 
 def clean_text(value):
@@ -31,6 +33,14 @@ def parse_positive_int(value):
     except (TypeError, ValueError):
         return None
     return parsed if parsed > 0 else None
+
+
+def parse_non_negative_number(value, fallback):
+    try:
+        parsed = float(str(value).replace(",", "."))
+    except (TypeError, ValueError):
+        return fallback
+    return parsed if parsed >= 0 else fallback
 
 
 def normalize_role(value):
@@ -50,6 +60,20 @@ def clean_skills(raw):
             cleaned.append(skill)
             seen.add(key)
     return cleaned
+
+
+def clean_working_days(raw):
+    if not isinstance(raw, list):
+        return DEFAULT_WORKING_DAYS[:]
+    allowed = {"lunedi", "martedi", "mercoledi", "giovedi", "venerdi", "sabato", "domenica"}
+    days = []
+    seen = set()
+    for item in raw:
+        day = clean_text(item).lower()
+        if day in allowed and day not in seen:
+            days.append(day)
+            seen.add(day)
+    return days or DEFAULT_WORKING_DAYS[:]
 
 
 def read_json_body(handler):
@@ -74,7 +98,7 @@ def write_json(handler, payload, status=HTTPStatus.OK):
     handler.send_header("Cache-Control", "no-store")
     handler.send_header("Access-Control-Allow-Origin", "*")
     handler.send_header("Access-Control-Allow-Methods", "GET, POST, PATCH, DELETE, OPTIONS")
-    handler.send_header("Access-Control-Allow-Headers", "Content-Type")
+    handler.send_header("Access-Control-Allow-Headers", ALLOWED_HEADERS)
     handler.send_header("Content-Length", str(len(body)))
     handler.end_headers()
     handler.wfile.write(body)
@@ -84,7 +108,7 @@ def write_options(handler):
     handler.send_response(HTTPStatus.NO_CONTENT)
     handler.send_header("Access-Control-Allow-Origin", "*")
     handler.send_header("Access-Control-Allow-Methods", "GET, POST, PATCH, DELETE, OPTIONS")
-    handler.send_header("Access-Control-Allow-Headers", "Content-Type")
+    handler.send_header("Access-Control-Allow-Headers", ALLOWED_HEADERS)
     handler.send_header("Cache-Control", "no-store")
     handler.end_headers()
 
@@ -147,6 +171,20 @@ def delete_rows(table, *, filters):
     return supabase_request(f"/rest/v1/{table}", method="DELETE", query=filters, prefer="return=minimal")
 
 
+def account_payload_from_request(payload):
+    return {
+        "first_name": clean_text(payload.get("first_name")),
+        "last_name": clean_text(payload.get("last_name")) or None,
+        "phone": clean_text(payload.get("phone")) or None,
+        "email": clean_text(payload.get("email")).lower(),
+        "role": normalize_role(payload.get("role")),
+        "is_active": payload.get("is_active", True) is not False,
+        "daily_work_hours": parse_non_negative_number(payload.get("daily_work_hours"), 8),
+        "hourly_cost": parse_non_negative_number(payload.get("hourly_cost"), 10),
+        "working_days": clean_working_days(payload.get("working_days", DEFAULT_WORKING_DAYS)),
+    }
+
+
 def load_accounts():
     users = fetch_table("users", order="id.asc")
     skills = fetch_table("user_skills", order="id.asc")
@@ -184,9 +222,18 @@ def load_accounts():
                 "is_active": bool(row.get("is_active")),
                 "skills": ", ".join(skill_map[row["id"]]),
                 "assigned_tasks": task_count[row["id"]],
+                "daily_work_hours": row.get("daily_work_hours") or 8,
+                "hourly_cost": row.get("hourly_cost") or 10,
+                "working_days": row.get("working_days") or DEFAULT_WORKING_DAYS,
             }
         )
     return accounts
+
+
+def account_has_history(user_id, user_row):
+    assigned_tasks = fetch_table("order_tasks", select="id", filters={"assigned_user_id": f"eq.{user_id}"})
+    created_orders = fetch_table("orders", select="id", filters={"created_by_user_id": f"eq.{user_id}"})
+    return bool(assigned_tasks or created_orders or user_row.get("auth_user_id"))
 
 
 class handler(BaseHTTPRequestHandler):
@@ -204,30 +251,18 @@ class handler(BaseHTTPRequestHandler):
         if payload is None:
             return write_json(self, {"error": "JSON non valido"}, HTTPStatus.BAD_REQUEST)
 
-        first_name = clean_text(payload.get("first_name"))
-        email = clean_text(payload.get("email")).lower()
-        role = normalize_role(payload.get("role"))
+        account_payload = account_payload_from_request(payload)
         skills = clean_skills(payload.get("skills", []))
 
-        if not first_name:
+        if not account_payload["first_name"]:
             return write_json(self, {"error": "Nome obbligatorio"}, HTTPStatus.BAD_REQUEST)
-        if not email or "@" not in email:
+        if not account_payload["email"] or "@" not in account_payload["email"]:
             return write_json(self, {"error": "Email non valida"}, HTTPStatus.BAD_REQUEST)
         if skills is None:
             return write_json(self, {"error": "Skill non valide"}, HTTPStatus.BAD_REQUEST)
 
         try:
-            created = insert_rows(
-                "users",
-                {
-                    "first_name": first_name,
-                    "last_name": clean_text(payload.get("last_name")) or None,
-                    "phone": clean_text(payload.get("phone")) or None,
-                    "email": email,
-                    "role": role,
-                    "is_active": True,
-                },
-            )
+            created = insert_rows("users", account_payload)
             user = created[0]
             for skill in skills:
                 insert_rows("user_skills", {"user_id": user["id"], "skill_name": skill}, returning="minimal")
@@ -243,33 +278,20 @@ class handler(BaseHTTPRequestHandler):
             return write_json(self, {"error": "JSON non valido"}, HTTPStatus.BAD_REQUEST)
 
         user_id = parse_positive_int(payload.get("user_id"))
-        first_name = clean_text(payload.get("first_name"))
-        email = clean_text(payload.get("email")).lower()
-        role = normalize_role(payload.get("role"))
+        account_payload = account_payload_from_request(payload)
         skills = clean_skills(payload.get("skills", []))
 
         if not user_id:
             return write_json(self, {"error": "Account non valido"}, HTTPStatus.BAD_REQUEST)
-        if not first_name:
+        if not account_payload["first_name"]:
             return write_json(self, {"error": "Nome obbligatorio"}, HTTPStatus.BAD_REQUEST)
-        if not email or "@" not in email:
+        if not account_payload["email"] or "@" not in account_payload["email"]:
             return write_json(self, {"error": "Email non valida"}, HTTPStatus.BAD_REQUEST)
         if skills is None:
             return write_json(self, {"error": "Skill non valide"}, HTTPStatus.BAD_REQUEST)
 
         try:
-            rows = patch_rows(
-                "users",
-                filters={"id": f"eq.{user_id}"},
-                payload={
-                    "first_name": first_name,
-                    "last_name": clean_text(payload.get("last_name")) or None,
-                    "phone": clean_text(payload.get("phone")) or None,
-                    "email": email,
-                    "role": role,
-                    "is_active": bool(payload.get("is_active", True)),
-                },
-            )
+            rows = patch_rows("users", filters={"id": f"eq.{user_id}"}, payload=account_payload)
             if not rows:
                 return write_json(self, {"error": "Account non trovato"}, HTTPStatus.NOT_FOUND)
             delete_rows("user_skills", filters={"user_id": f"eq.{user_id}"})
@@ -288,14 +310,16 @@ class handler(BaseHTTPRequestHandler):
             return write_json(self, {"error": "Account non valido"}, HTTPStatus.BAD_REQUEST)
 
         try:
-            assigned_tasks = fetch_table("order_tasks", select="id", filters={"assigned_user_id": f"eq.{user_id}"})
-            if assigned_tasks:
+            user_rows = fetch_table("users", select="id,auth_user_id", filters={"id": f"eq.{user_id}"})
+            if not user_rows:
+                return write_json(self, {"error": "Account non trovato"}, HTTPStatus.NOT_FOUND)
+            if account_has_history(user_id, user_rows[0]):
                 patch_rows("users", filters={"id": f"eq.{user_id}"}, payload={"is_active": False})
                 return write_json(
                     self,
                     {
                         "mode": "deactivated",
-                        "message": "Account disattivato per mantenere lo storico dei task assegnati",
+                        "message": "Account disattivato per mantenere accessi e storico collegati",
                         "accounts": load_accounts(),
                     },
                 )
