@@ -43,20 +43,12 @@ def delete_order(payload):
     if not order_ref:
         return {"error": "Ordine non valido"}, HTTPStatus.BAD_REQUEST
 
-    order = resolve_order(order_ref)
-    if not order:
-        return {"error": "Ordine non trovato"}, HTTPStatus.NOT_FOUND
-
-    release_order_inventory(order["id"])
     deleted = supabase_request(
-        "/rest/v1/orders",
-        method="DELETE",
-        query={"id": f"eq.{order['id']}", "select": "id,order_number"},
-        prefer="return=representation",
+        "/rest/v1/rpc/delete_order_safely",
+        method="POST",
+        payload={"p_order_ref": order_ref},
     )
-    if not deleted:
-        return {"error": "Ordine non eliminato"}, HTTPStatus.INTERNAL_SERVER_ERROR
-    return {"ok": True, "entity": "order", "deleted": deleted[0]}, HTTPStatus.OK
+    return deleted, HTTPStatus.OK
 
 
 def delete_client(payload):
