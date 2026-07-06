@@ -55,6 +55,21 @@
       .join(", ");
   }
 
+  async function refreshCurrentAuthProfile() {
+    const sessionResult = await window.mmsSupabaseAuth?.auth?.getSession?.();
+    const token = sessionResult?.data?.session?.access_token;
+    if (!token) return null;
+    const response = await fetch("/api/auth-profile", {
+      method: "POST",
+      headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+      body: JSON.stringify({}),
+    });
+    const payload = await response.json().catch(() => ({}));
+    if (!response.ok || !payload.profile) return null;
+    window.mmsAuthProfile = payload.profile;
+    return payload.profile;
+  }
+
   function renderWorkDays(target, editMode = false) {
     ensureAccountScheduleDraft(target);
     const selected = new Set(accountScheduleDays(target));
@@ -185,6 +200,10 @@
       const draft = appState.accountEditDraft;
       if (!draft?.user_id) return;
       ensureAccountScheduleDraft(draft);
+      const currentProfile = window.mmsAuthProfile || {};
+      const editsCurrentUser =
+        String(draft.user_id) === String(currentProfile.id || "") ||
+        text(draft.email).toLowerCase() === text(currentProfile.email).toLowerCase();
       const skills = typeof accountDraftSkills === "function" ? accountDraftSkills(draft.skills) : text(draft.skills).split(",").map(text).filter(Boolean);
       if (!text(draft.first_name) || !text(draft.email)) {
         setFlashMessage("Inserisci almeno nome ed email dell'account");
@@ -216,6 +235,7 @@
         }
         await refreshBootstrap();
         await refreshAccountsWorkspaceData({ rerender: false });
+        if (editsCurrentUser) await refreshCurrentAuthProfile();
         appState.accountEditId = "";
         appState.accountEditDraft = null;
         setFlashMessage("Account aggiornato");
