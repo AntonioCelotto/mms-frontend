@@ -161,5 +161,14 @@
     true
   );
 
+  let mountAttempts = 0;
+  const mountTimer = window.setInterval(() => {
+    mountAttempts += 1;
+    mountDeleteActions();
+    if (isAdminProfile() || mountAttempts >= 30) {
+      window.clearInterval(mountTimer);
+    }
+  }, 500);
+
   if (document.getElementById("app")?.innerHTML) mountDeleteActions();
 })();
