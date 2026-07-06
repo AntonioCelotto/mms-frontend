@@ -1,0 +1,165 @@
+(function () {
+  function text(value) {
+    return String(value ?? "").trim();
+  }
+
+  function isAdminProfile() {
+    const profile = window.mmsAuthProfile || {};
+    const raw = text(profile.access_profile || profile.profile || profile.role).toLowerCase();
+    return raw === "admin" || raw === "amministratore";
+  }
+
+  function ensureStyle() {
+    if (document.getElementById("mms-delete-actions-style")) return;
+    const style = document.createElement("style");
+    style.id = "mms-delete-actions-style";
+    style.textContent = `
+      .mini-btn.danger,
+      .action-pill.danger {
+        border-color: rgba(185, 28, 28, 0.28) !important;
+        color: #991b1b !important;
+        background: #fff5f5 !important;
+      }
+      .mini-btn.danger:hover,
+      .action-pill.danger:hover {
+        background: #fee2e2 !important;
+      }
+    `;
+    document.head.appendChild(style);
+  }
+
+  function mountOrderDeleteButtons() {
+    if (appState.currentView !== "orders" || !isAdminProfile()) return;
+    document.querySelectorAll("section.view.active tbody tr").forEach((row) => {
+      const detailButton = row.querySelector("[data-detail]");
+      const orderId = detailButton?.dataset.detail;
+      if (!orderId || row.querySelector("[data-delete-order]")) return;
+      const pillRow = detailButton.closest(".pill-row") || detailButton.parentElement;
+      if (!pillRow) return;
+      pillRow.insertAdjacentHTML("beforeend", `<button class="mini-btn danger" data-delete-order="${orderId}" type="button">Elimina</button>`);
+    });
+  }
+
+  function mountClientDeleteButtons() {
+    if (appState.currentView !== "clients" || !isAdminProfile()) return;
+    document.querySelectorAll("section.view.active [data-select-client]").forEach((button) => {
+      const clientId = button.dataset.selectClient;
+      if (!clientId || button.parentElement?.querySelector("[data-delete-client]")) return;
+      button.insertAdjacentHTML("afterend", `<button class="mini-btn danger" data-delete-client="${clientId}" type="button" style="margin-left:6px;">Elimina</button>`);
+    });
+  }
+
+  function mountDeleteActions() {
+    ensureStyle();
+    mountOrderDeleteButtons();
+    mountClientDeleteButtons();
+  }
+
+  function orderLabel(orderId) {
+    const order = (appData.orders || []).find((item) => String(item.id) === String(orderId) || String(item.db_id) === String(orderId));
+    return order ? `#${order.id} - ${order.client}` : `#${orderId}`;
+  }
+
+  function clientLabel(clientId) {
+    const clients = appState.realClients || appData.clients || [];
+    const client = clients.find((item) => String(item.id) === String(clientId));
+    return client?.name || `cliente ${clientId}`;
+  }
+
+  async function authHeaders() {
+    const headers = { "Content-Type": "application/json" };
+    try {
+      const session = await window.mmsSupabaseAuth?.auth?.getSession?.();
+      const token = session?.data?.session?.access_token;
+      if (token) headers.Authorization = `Bearer ${token}`;
+    } catch (error) {
+      // The backend currently accepts the same app session model used by the rest of the app.
+    }
+    return headers;
+  }
+
+  async function deleteRecord(payload) {
+    const response = await fetch("/api/delete-record", {
+      method: "POST",
+      headers: await authHeaders(),
+      body: JSON.stringify(payload),
+    });
+    const body = await response.json().catch(() => ({}));
+    if (!response.ok) {
+      throw new Error(body.detail || body.error || "Eliminazione non riuscita");
+    }
+    return body;
+  }
+
+  async function handleDeleteOrder(orderId) {
+    const label = orderLabel(orderId);
+    if (!window.confirm(`Eliminare definitivamente l'ordine ${label}? Verranno rimossi anche task, materiali, pagamenti e allegati collegati.`)) return;
+    setBusy(true);
+    try {
+      await deleteRecord({ entity: "order", order_id: orderId });
+      await refreshBootstrap();
+      appData.orders = (appData.orders || []).filter((order) => String(order.id) !== String(orderId) && String(order.db_id) !== String(orderId));
+      if (String(appState.selectedOrderId) === String(orderId)) {
+        appState.selectedOrderId = appData.orders?.[0]?.id || null;
+      }
+      appState.currentView = "orders";
+      setFlashMessage(`Ordine ${label} eliminato`);
+    } catch (error) {
+      setFlashMessage(error.message || "Ordine non eliminato");
+    } finally {
+      appState.busy = false;
+      renderApp();
+    }
+  }
+
+  async function handleDeleteClient(clientId) {
+    const label = clientLabel(clientId);
+    if (!window.confirm(`Eliminare definitivamente ${label}? Se ha ordini collegati il sistema blocchera' l'eliminazione.`)) return;
+    setBusy(true);
+    try {
+      await deleteRecord({ entity: "client", client_id: clientId });
+      await refreshBootstrap();
+      if (Array.isArray(appState.realClients)) {
+        appState.realClients = appState.realClients.filter((client) => String(client.id) !== String(clientId));
+      }
+      appData.clients = (appData.clients || []).filter((client) => String(client.id) !== String(clientId));
+      if (String(appState.selectedClientId) === String(clientId)) appState.selectedClientId = null;
+      appState.currentView = "clients";
+      setFlashMessage(`Cliente ${label} eliminato`);
+    } catch (error) {
+      setFlashMessage(error.message || "Cliente non eliminato");
+    } finally {
+      appState.busy = false;
+      renderApp();
+    }
+  }
+
+  const baseRenderAppDeleteActions = renderApp;
+  renderApp = function renderAppDeleteActions() {
+    baseRenderAppDeleteActions();
+    mountDeleteActions();
+  };
+
+  document.addEventListener(
+    "click",
+    (event) => {
+      const orderButton = event.target.closest("[data-delete-order]");
+      if (orderButton) {
+        event.preventDefault();
+        event.stopImmediatePropagation();
+        handleDeleteOrder(orderButton.dataset.deleteOrder);
+        return;
+      }
+
+      const clientButton = event.target.closest("[data-delete-client]");
+      if (clientButton) {
+        event.preventDefault();
+        event.stopImmediatePropagation();
+        handleDeleteClient(clientButton.dataset.deleteClient);
+      }
+    },
+    true
+  );
+
+  if (document.getElementById("app")?.innerHTML) mountDeleteActions();
+})();
