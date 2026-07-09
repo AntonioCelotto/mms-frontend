@@ -60,6 +60,32 @@
     return order ? `#${order.id} - ${order.client}` : `#${orderId}`;
   }
 
+  function deletedOrderRefs(orderId, result) {
+    const deleted = result?.deleted || result?.[0]?.deleted || {};
+    return new Set([orderId, deleted.id, deleted.order_number].filter((value) => value !== undefined && value !== null).map(String));
+  }
+
+  function removeOrderLocally(orderId, result) {
+    const refs = deletedOrderRefs(orderId, result);
+    appData.orders = (appData.orders || []).filter((order) => !refs.has(String(order.id)) && !refs.has(String(order.db_id)) && !refs.has(String(order.order_number)));
+    Object.keys(appData.orderTasks || {}).forEach((key) => {
+      if (refs.has(String(key))) delete appData.orderTasks[key];
+    });
+    Object.keys(appData.orderMaterials || {}).forEach((key) => {
+      if (refs.has(String(key))) delete appData.orderMaterials[key];
+    });
+    Object.keys(appData.orderTimeline || {}).forEach((key) => {
+      if (refs.has(String(key))) delete appData.orderTimeline[key];
+    });
+    if (Array.isArray(appState.realClientOrders)) {
+      appState.realClientOrders = appState.realClientOrders.filter((order) => !refs.has(String(order.id)) && !refs.has(String(order.order_number)));
+    }
+    if (String(appState.selectedOrderId || "") && refs.has(String(appState.selectedOrderId))) {
+      appState.selectedOrderId = appData.orders?.[0]?.id || null;
+    }
+    appState.clientsLoaded = false;
+  }
+
   function clientRecord(clientId) {
     const clients = appState.realClients || appData.clients || [];
     return clients.find((item) => String(item.id) === String(clientId));
@@ -107,17 +133,20 @@
     if (!window.confirm(`Eliminare definitivamente l'ordine ${label}? Verranno rimossi anche task, materiali, pagamenti e allegati collegati.`)) return;
     setBusy(true);
     try {
-      await deleteRecord({ entity: "order", order_id: orderId });
-      await refreshBootstrap();
-      appData.orders = (appData.orders || []).filter((order) => String(order.id) !== String(orderId) && String(order.db_id) !== String(orderId));
-      if (String(appState.selectedOrderId) === String(orderId)) {
-        appState.selectedOrderId = appData.orders?.[0]?.id || null;
-      }
+      const result = await deleteRecord({ entity: "order", order_id: orderId });
+      removeOrderLocally(orderId, result);
       appState.currentView = "orders";
       setFlashMessage(`Ordine ${label} eliminato`);
+      appState.busy = false;
+      renderApp();
+      try {
+        await refreshBootstrap();
+        renderApp();
+      } catch (refreshError) {
+        console.warn("Refresh dopo eliminazione ordine non riuscito", refreshError);
+      }
     } catch (error) {
       setFlashMessage(error.message || "Ordine non eliminato");
-    } finally {
       appState.busy = false;
       renderApp();
     }
@@ -136,7 +165,6 @@
     setBusy(true);
     try {
       await deleteRecord({ entity: "client", client_id: clientId });
-      await refreshBootstrap();
       if (Array.isArray(appState.realClients)) {
         appState.realClients = appState.realClients.filter((client) => String(client.id) !== String(clientId));
       }
@@ -144,9 +172,17 @@
       if (String(appState.selectedClientId) === String(clientId)) appState.selectedClientId = null;
       appState.currentView = "clients";
       setFlashMessage(`Cliente ${label} eliminato`);
+      appState.busy = false;
+      renderApp();
+      try {
+        await refreshBootstrap();
+        appState.clientsLoaded = false;
+        renderApp();
+      } catch (refreshError) {
+        console.warn("Refresh dopo eliminazione cliente non riuscito", refreshError);
+      }
     } catch (error) {
       setFlashMessage(error.message || "Cliente non eliminato");
-    } finally {
       appState.busy = false;
       renderApp();
     }
