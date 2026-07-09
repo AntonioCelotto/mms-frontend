@@ -112,9 +112,12 @@ def delete_client(payload):
 
     linked_orders = fetch_table("orders", select="id,order_number", filters={"client_id": f"eq.{client_id}"})
     if linked_orders:
+        order_numbers = [row.get("order_number") or row.get("id") for row in linked_orders]
+        preview = ", ".join(f"#{number}" for number in order_numbers[:8])
+        suffix = f" e altri {len(order_numbers) - 8}" if len(order_numbers) > 8 else ""
         return {
             "error": "Cliente con ordini collegati",
-            "detail": "Elimina prima gli ordini collegati, poi il cliente.",
+            "detail": f"Cliente non eliminato: ha {len(order_numbers)} ordini collegati ({preview}{suffix}). Elimina prima gli ordini collegati, poi il cliente.",
             "orders": linked_orders,
         }, HTTPStatus.CONFLICT
 
