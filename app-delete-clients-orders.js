@@ -60,10 +60,21 @@
     return order ? `#${order.id} - ${order.client}` : `#${orderId}`;
   }
 
-  function clientLabel(clientId) {
+  function clientRecord(clientId) {
     const clients = appState.realClients || appData.clients || [];
-    const client = clients.find((item) => String(item.id) === String(clientId));
-    return client?.name || `cliente ${clientId}`;
+    return clients.find((item) => String(item.id) === String(clientId));
+  }
+
+  function clientLabel(clientId) {
+    return clientRecord(clientId)?.name || `cliente ${clientId}`;
+  }
+
+  function linkedOrdersForClient(clientId) {
+    const realOrders = Array.isArray(appState.realClientOrders) ? appState.realClientOrders : [];
+    const realMatches = realOrders.filter((order) => String(order.client_id) === String(clientId));
+    if (realMatches.length) return realMatches.map((order) => order.order_number || order.id).filter(Boolean);
+    const client = clientRecord(clientId);
+    return Array.isArray(client?.orders) ? client.orders.filter(Boolean) : [];
   }
 
   async function authHeaders() {
@@ -114,7 +125,14 @@
 
   async function handleDeleteClient(clientId) {
     const label = clientLabel(clientId);
-    if (!window.confirm(`Eliminare definitivamente ${label}? Se ha ordini collegati il sistema blocchera' l'eliminazione.`)) return;
+    const linkedOrders = linkedOrdersForClient(clientId);
+    if (linkedOrders.length) {
+      const preview = linkedOrders.slice(0, 5).map((id) => `#${id}`).join(", ");
+      const suffix = linkedOrders.length > 5 ? ` e altri ${linkedOrders.length - 5}` : "";
+      setFlashMessage(`Cliente ${label} non eliminato: ha ${linkedOrders.length} ordini collegati (${preview}${suffix}). Elimina prima gli ordini collegati.`);
+      return;
+    }
+    if (!window.confirm(`Eliminare definitivamente ${label}?`)) return;
     setBusy(true);
     try {
       await deleteRecord({ entity: "client", client_id: clientId });
