@@ -33,8 +33,18 @@
     return "operator";
   }
 
+  function activeProfile() {
+    return window.mmsAuthProfile || cachedProfile || {};
+  }
+
   function currentRole() {
-    return normalizeProfile(cachedProfile || window.mmsAuthProfile || {});
+    return normalizeProfile(activeProfile());
+  }
+
+  function roleLabel(role = currentRole()) {
+    if (role === "admin") return "Amministratore";
+    if (role === "commerce") return "Commercio";
+    return "Operatore";
   }
 
   function isAllowed(view) {
@@ -45,6 +55,11 @@
 
   function fallbackView() {
     return currentRole() === "operator" ? "calendar" : "dashboard";
+  }
+
+  function updateAuthUserbarRole() {
+    const roleNode = document.querySelector("#mms-auth-userbar span");
+    if (roleNode) roleNode.textContent = roleLabel();
   }
 
   async function loadProfile() {
@@ -92,6 +107,7 @@
   function enforcePermissions() {
     enforceCurrentView();
     hideBlockedNavigation();
+    updateAuthUserbarRole();
   }
 
   const baseNavigateRolePermissions = typeof navigate === "function" ? navigate : null;
