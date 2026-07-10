@@ -54,18 +54,30 @@
     return editMode ? appState.accountEditDraft : appState.accountDraft;
   }
 
-  function ensureProfileDraft(target) {
-    if (!target) return;
-    const normalized = normalizeProfileKey(target.profile);
-    target.profile = normalized || (target.role === "admin" ? "amministratore" : "operatore");
-  }
-
   function normalizeProfileKey(value) {
     const normalized = key(value);
     if (["admin", "administrator", "amministratore"].includes(normalized)) return "amministratore";
     if (["commerce", "commerciale", "commercio"].includes(normalized)) return "commercio";
     if (["operator", "viewer", "operatore", "operatore produzione"].includes(normalized)) return "operatore";
     return "";
+  }
+
+  function ensureProfileDraft(target) {
+    if (!target) return;
+    const normalized = normalizeProfileKey(target.profile);
+    target.profile = normalized || (target.role === "admin" ? "amministratore" : "operatore");
+  }
+
+  function ensureProfileSkills(target) {
+    if (!target) return;
+    ensureProfileDraft(target);
+    const currentSkills = draftSkills(target);
+    if (target.profile === "commercio" && !hasCommerceSkills(currentSkills)) {
+      target.skills = uniqueSkills([...withoutCommerceSkills(currentSkills), ...COMMERCE_SKILLS]).join(", ");
+    }
+    if (target.profile === "operatore" && !currentSkills.length) {
+      target.skills = OPERATOR_SKILLS.join(", ");
+    }
   }
 
   function applyProfile(profileKey, editMode = false) {
@@ -127,7 +139,7 @@
   if (typeof accountCreatePayload === "function") {
     const baseAccountCreatePayloadCommerce = accountCreatePayload;
     accountCreatePayload = function accountCreatePayloadWithStableProfile() {
-      ensureProfileDraft(appState.accountDraft);
+      ensureProfileSkills(appState.accountDraft);
       return baseAccountCreatePayloadCommerce();
     };
   }
