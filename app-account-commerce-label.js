@@ -133,7 +133,7 @@
   }
 
   function normalizeAccountProfileSelects() {
-    if (!window.appState || appState.currentView !== "accounts") return;
+    if (typeof appState === "undefined" || appState.currentView !== "accounts") return;
     ensureProfileDraft(appState.accountDraft);
     ensureProfileDraft(appState.accountEditDraft);
 
