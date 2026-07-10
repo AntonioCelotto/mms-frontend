@@ -286,15 +286,17 @@
       .workday-chip{display:inline-flex;align-items:center;gap:6px;border:1px solid var(--line);border-radius:8px;padding:8px 10px;background:rgba(255,255,255,.72);font-size:12px;cursor:pointer}
       .workday-chip input{margin:0;accent-color:var(--accent)}
       .account-work-days-field{align-self:end}
-      .accounts-workspace-view .layout-2{grid-template-columns:1fr!important}
+      .accounts-workspace-view{min-height:calc(100vh - 116px);align-content:start;padding:18px;border-radius:8px;background:rgba(255,253,248,.74);box-shadow:inset 0 0 0 1px rgba(30,45,41,.06)}
+      .accounts-workspace-view .layout-2{grid-template-columns:1fr!important;width:100%}
+      .accounts-workspace-view .surface{width:100%}
       .accounts-workspace-view .surface-inner{max-width:100%;overflow-x:auto}
       .accounts-workspace-view table{min-width:1120px}
       .accounts-workspace-view th,.accounts-workspace-view td{vertical-align:top}
       .accounts-workspace-view .form-grid{grid-template-columns:repeat(4,minmax(160px,1fr))}
       .accounts-workspace-view .field.span-2{grid-column:span 2}
       .accounts-workspace-view .pill-row{flex-wrap:wrap}
-      @media(max-width:1100px){.accounts-workspace-view .form-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
-      @media(max-width:680px){.accounts-workspace-view .form-grid{grid-template-columns:1fr}.accounts-workspace-view .field.span-2{grid-column:span 1}.accounts-workspace-view table{min-width:980px}}
+      @media(max-width:1100px){.accounts-workspace-view{padding:14px}.accounts-workspace-view .form-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
+      @media(max-width:680px){.accounts-workspace-view{padding:10px}.accounts-workspace-view .form-grid{grid-template-columns:1fr}.accounts-workspace-view .field.span-2{grid-column:span 1}.accounts-workspace-view table{min-width:980px}}
     `;
     document.head.appendChild(style);
   }
