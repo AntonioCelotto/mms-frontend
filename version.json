@@ -1,6 +1,6 @@
 {
-  "version": "clients-inline-edit-1",
-  "label": "Modifica cliente dalla scheda",
-  "updated_at": "2026-07-02T12:50:00Z",
-  "purpose": "Aggiunge nella scheda cliente un pulsante Modifica cliente che apre solo quando serve un pannello con contatti, dati fiscali e note, mantenendo pulita la vista principale"
+  "version": "calendar-hour-distribution-1",
+  "label": "Distribuzione ore task sul calendario",
+  "updated_at": "2026-07-13T13:35:00Z",
+  "purpose": "Distribuisce visivamente le task lunghe sui giorni lavorativi necessari in base alle ore giornaliere dell'operatore e alla data di consegna"
 }
