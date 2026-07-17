@@ -4,19 +4,20 @@ from collections import defaultdict
 from http import HTTPStatus
 from http.server import BaseHTTPRequestHandler
 from time import time
+from urllib.parse import parse_qs, urlparse
 
 try:
     from _api import clean_text, parse_optional_number, parse_positive_int, read_json_body, write_json, write_options
-    from _supabase import fetch_table, supabase_request
+    from _supabase import delete_rows, fetch_table, supabase_request
 except ModuleNotFoundError:
     from api._api import clean_text, parse_optional_number, parse_positive_int, read_json_body, write_json, write_options
-    from api._supabase import fetch_table, supabase_request
+    from api._supabase import delete_rows, fetch_table, supabase_request
 
 
 INVENTORY_SELECT = (
     "id,sku,name,category,available_quantity,reserved_quantity,reorder_threshold,status,notes,"
     "material_origin,supplier_name,supplier_material_code,mms_code,unit,color,description,unit_cost,retail_price,"
-    "import_source,created_at,updated_at"
+    "item_type,import_source,created_at,updated_at"
 )
 SHORTAGE_SELECT = "id,order_id,inventory_item_id,product_name,quantity_required,quantity_reserved,quantity_missing,unit,status"
 ORDER_SELECT = "id,order_number"
@@ -29,6 +30,13 @@ def normalize_origin(value):
     return "mms"
 
 
+def normalize_item_type(value):
+    normalized = clean_text(value).lower()
+    if normalized in {"articolo", "article", "prodotto", "capo"}:
+        return "articolo"
+    return "materiale"
+
+
 def code_base(value, default="MAT"):
     cleaned = clean_text(value).upper()
     chars = [char if char.isalnum() else "-" for char in cleaned]
@@ -38,9 +46,10 @@ def code_base(value, default="MAT"):
     return (base or default)[:18]
 
 
-def generated_mms_code(name):
+def generated_mms_code(name, item_type="materiale"):
     suffix = str(int(time() * 1000))[-6:]
-    return f"MMS-{code_base(name)}-{suffix}"
+    prefix = "ART" if item_type == "articolo" else "MMS"
+    return f"{prefix}-{code_base(name)}-{suffix}"
 
 
 def generated_supplier_sku(supplier_name, supplier_code, name):
@@ -58,15 +67,16 @@ def normalize_inventory_item(raw):
     item = raw if isinstance(raw, dict) else {}
     name = clean_text(item.get("name") or item.get("product") or item.get("material"))
     if not name:
-        raise ValueError("Nome materiale mancante")
+        raise ValueError("Nome materiale/articolo mancante")
 
+    item_type = normalize_item_type(item.get("item_type") or item.get("type") or item.get("tipo"))
     origin = normalize_origin(item.get("material_origin") or item.get("origin"))
     supplier_name = clean_text(item.get("supplier_name") or item.get("supplier")) or None
     supplier_code = clean_text(item.get("supplier_material_code") or item.get("supplier_code")) or None
     mms_code = clean_text(item.get("mms_code")) or None
 
     if origin == "mms":
-        mms_code = mms_code or clean_text(item.get("sku")) or generated_mms_code(name)
+        mms_code = mms_code or clean_text(item.get("sku")) or generated_mms_code(name, item_type)
         sku = clean_text(item.get("sku")) or mms_code
         supplier_name = supplier_name or None
         supplier_code = supplier_code or None
@@ -91,6 +101,7 @@ def normalize_inventory_item(raw):
         "description": clean_text(item.get("description") or item.get("descrizione")) or None,
         "unit_cost": numeric(item.get("unit_cost") or item.get("cost") or item.get("costo"), 0),
         "retail_price": numeric(item.get("retail_price") or item.get("public_price") or item.get("prezzo_pubblico"), 0),
+        "item_type": item_type,
         "import_source": clean_text(item.get("import_source") or item.get("importSource")) or "manuale",
     }
 
@@ -163,10 +174,17 @@ def shape_inventory_item(row, shortage_totals=None, shortage_details=None):
         "description": row.get("description") or "",
         "unit_cost": row.get("unit_cost") or 0,
         "retail_price": row.get("retail_price") or 0,
+        "item_type": row.get("item_type") or "materiale",
         "import_source": row.get("import_source") or "",
         "createdAt": row.get("created_at") or "",
         "updatedAt": row.get("updated_at") or "",
     }
+
+
+def query_value(path, key):
+    params = parse_qs(urlparse(path).query)
+    values = params.get(key) or []
+    return clean_text(values[0]) if values else ""
 
 
 class handler(BaseHTTPRequestHandler):
@@ -192,7 +210,7 @@ class handler(BaseHTTPRequestHandler):
         except ValueError as error:
             return write_json(self, {"error": str(error)}, HTTPStatus.BAD_REQUEST)
         if not payload:
-            return write_json(self, {"error": "Nessun materiale valido"}, HTTPStatus.BAD_REQUEST)
+            return write_json(self, {"error": "Nessun materiale/articolo valido"}, HTTPStatus.BAD_REQUEST)
 
         try:
             rows = supabase_request(
@@ -203,7 +221,7 @@ class handler(BaseHTTPRequestHandler):
                 prefer="resolution=merge-duplicates,return=representation",
             )
         except RuntimeError as error:
-            return write_json(self, {"error": "Materiale non salvato", "detail": str(error)}, HTTPStatus.INTERNAL_SERVER_ERROR)
+            return write_json(self, {"error": "Elemento magazzino non salvato", "detail": str(error)}, HTTPStatus.INTERNAL_SERVER_ERROR)
 
         shortage_totals, shortage_details = active_shortage_maps()
         shaped = [shape_inventory_item(row, shortage_totals, shortage_details) for row in (rows if isinstance(rows, list) else [])]
@@ -216,7 +234,7 @@ class handler(BaseHTTPRequestHandler):
 
         item_id = parse_positive_int(body.get("id"))
         if not item_id:
-            return write_json(self, {"error": "Materiale non valido"}, HTTPStatus.BAD_REQUEST)
+            return write_json(self, {"error": "Elemento magazzino non valido"}, HTTPStatus.BAD_REQUEST)
 
         try:
             payload = normalize_inventory_item(body)
@@ -230,12 +248,38 @@ class handler(BaseHTTPRequestHandler):
         except ValueError as error:
             return write_json(self, {"error": str(error)}, HTTPStatus.BAD_REQUEST)
         except RuntimeError as error:
-            return write_json(self, {"error": "Materiale non aggiornato", "detail": str(error)}, HTTPStatus.INTERNAL_SERVER_ERROR)
+            return write_json(self, {"error": "Elemento magazzino non aggiornato", "detail": str(error)}, HTTPStatus.INTERNAL_SERVER_ERROR)
 
         if not rows:
-            return write_json(self, {"error": "Materiale non trovato"}, HTTPStatus.NOT_FOUND)
+            return write_json(self, {"error": "Elemento magazzino non trovato"}, HTTPStatus.NOT_FOUND)
         shortage_totals, shortage_details = active_shortage_maps()
         return write_json(self, {"item": shape_inventory_item(rows[0], shortage_totals, shortage_details)})
+
+    def do_DELETE(self):
+        item_id = parse_positive_int(query_value(self.path, "id"))
+        if not item_id:
+            return write_json(self, {"error": "Elemento magazzino non valido"}, HTTPStatus.BAD_REQUEST)
+
+        try:
+            supabase_request(
+                "/rest/v1/order_materials",
+                method="PATCH",
+                query={"inventory_item_id": f"eq.{item_id}"},
+                payload={"inventory_item_id": None},
+                prefer="return=minimal",
+            )
+            supabase_request(
+                "/rest/v1/inventory_shortages",
+                method="PATCH",
+                query={"inventory_item_id": f"eq.{item_id}"},
+                payload={"inventory_item_id": None},
+                prefer="return=minimal",
+            )
+            delete_rows("inventory_items", filters={"id": f"eq.{item_id}"})
+        except RuntimeError as error:
+            return write_json(self, {"error": "Elemento magazzino non eliminato", "detail": str(error)}, HTTPStatus.INTERNAL_SERVER_ERROR)
+
+        return write_json(self, {"deleted": True, "id": item_id})
 
     def log_message(self, format, *args):
         return
