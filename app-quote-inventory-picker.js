@@ -98,7 +98,8 @@
   function itemLabel(item) {
     const type = item.item_type === "articolo" ? "Articolo" : "Materiale";
     const code = itemCode(item);
-    const cost = text(item.unit_cost) ? ` - costo ${quoteMoney(item.unit_cost)}` : "";
+    const publicPrice = text(item.retail_price) || text(item.unit_cost);
+    const cost = publicPrice ? ` - prezzo ${quoteMoney(publicPrice)}` : "";
     return `${type}: ${item.name || "Elemento"}${code ? ` (${code})` : ""}${cost}`;
   }
 
@@ -141,12 +142,12 @@
                   .join("")}
               </select>
             `
-            : `<div class="muted">Materiale del cliente: nessun costo da magazzino.</div>`;
+            : `<div class="muted">Materiale del cliente: nessun prezzo da magazzino.</div>`;
         const codeValue = material.product_code || material.inventory_sku || material.sku || "";
         const costInput =
           source === "mms"
-            ? `<input class="field-value" data-quote-material="${articleIndex}" data-quote-material-index="${materialIndex}" data-quote-material-field="price" value="${html(material.price)}" placeholder="costo" />`
-            : `<span class="muted">Nessun costo</span>`;
+            ? `<input class="field-value" data-quote-material="${articleIndex}" data-quote-material-index="${materialIndex}" data-quote-material-field="price" value="${html(material.price)}" placeholder="prezzo pubblico" />`
+            : `<span class="muted">Nessun prezzo</span>`;
         return `
           <tr>
             <td>
@@ -198,7 +199,7 @@
     material.unit = item.unit || "";
     material.color = item.color || "";
     material.description = item.description || "";
-    material.price = text(item.unit_cost) || text(item.retail_price) || "";
+    material.price = text(item.retail_price) || text(item.unit_cost) || "";
     if (!text(material.quantity)) material.quantity = "1";
     renderApp();
   }
@@ -213,7 +214,7 @@
       const markup = baseRenderQuoteArticleInventory(article, articleIndex);
       return markup
         .replace("<th>Materiale / prodotto</th>", "<th>Origine</th><th>Materiale / articolo</th><th>Codice</th>")
-        .replace("<th>Prezzo</th>", "<th>Costo</th>");
+        .replace("<th>Prezzo</th>", "<th>Prezzo pubblico</th>");
     };
   }
 
