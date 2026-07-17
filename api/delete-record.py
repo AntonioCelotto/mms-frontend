@@ -10,6 +10,15 @@ from urllib.request import Request, urlopen
 from _api import clean_text, parse_positive_int, read_json_body, write_json, write_options
 from _supabase import SUPABASE_KEY, SUPABASE_TIMEOUT_SECONDS, SUPABASE_URL, fetch_table, supabase_request
 
+DELETE_ORDER_TIMEOUT_SECONDS = 18
+
+
+def numeric(value, default=0):
+    try:
+        return float(value)
+    except (TypeError, ValueError):
+        return default
+
 
 def numeric(value, default=0):
     try:
@@ -119,16 +128,36 @@ def resolve_order_for_delete(payload):
     return None
 
 
+def delete_order_safely(order_id):
+    request = Request(
+        f"{SUPABASE_URL}/rest/v1/rpc/delete_order_safely",
+        data=json.dumps({"p_order_ref": order_id}, ensure_ascii=True).encode("utf-8"),
+        headers={
+            "apikey": SUPABASE_KEY,
+            "Authorization": f"Bearer {SUPABASE_KEY}",
+            "Content-Type": "application/json",
+        },
+        method="POST",
+    )
+    try:
+        with urlopen(request, timeout=DELETE_ORDER_TIMEOUT_SECONDS) as response:
+            body = response.read().decode("utf-8")
+            return json.loads(body) if body else None
+    except HTTPError as exc:
+        detail = exc.read().decode("utf-8")
+        raise RuntimeError(detail or exc.reason) from exc
+    except (URLError, TimeoutError, socket.timeout) as exc:
+        raise RuntimeError(f"Timeout cancellazione ordine dopo {DELETE_ORDER_TIMEOUT_SECONDS}s: {exc}") from exc
+    except json.JSONDecodeError as exc:
+        raise RuntimeError("Risposta Supabase non valida durante eliminazione ordine") from exc
+
+
 def delete_order(payload):
     order = resolve_order_for_delete(payload)
     if not order:
         return {"error": "Ordine non valido o non trovato"}, HTTPStatus.BAD_REQUEST
 
-    deleted = supabase_request(
-        "/rest/v1/rpc/delete_order_safely",
-        method="POST",
-        payload={"p_order_ref": parse_positive_int(order.get("id"))},
-    )
+    deleted = delete_order_safely(parse_positive_int(order.get("id")))
     return deleted, HTTPStatus.OK
 
 
