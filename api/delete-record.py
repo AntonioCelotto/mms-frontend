@@ -20,13 +20,6 @@ def numeric(value, default=0):
         return default
 
 
-def numeric(value, default=0):
-    try:
-        return float(value)
-    except (TypeError, ValueError):
-        return default
-
-
 def verify_auth_user(handler):
     header = clean_text(handler.headers.get("Authorization"))
     if not header.lower().startswith("bearer "):
