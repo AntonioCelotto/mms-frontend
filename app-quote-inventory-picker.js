@@ -25,6 +25,7 @@
       id: raw.id || "",
       name: raw.name || raw.product || "",
       sku,
+      item_type: raw.item_type === "articolo" ? "articolo" : "materiale",
       material_origin: origin,
       supplier_name: raw.supplier_name || "",
       supplier_material_code: raw.supplier_material_code || "",
@@ -32,8 +33,8 @@
       unit: raw.unit || "",
       color: raw.color || "",
       description: raw.description || "",
-      unit_cost: raw.unit_cost ?? "",
-      retail_price: raw.retail_price ?? "",
+      unit_cost: raw.unit_cost ?? raw.cost ?? "",
+      retail_price: raw.retail_price ?? raw.public_price ?? "",
       available_quantity: raw.available_quantity ?? raw.available ?? "",
       reserved_quantity: raw.reserved_quantity ?? raw.reserved ?? "",
       status: raw.status || "Disponibile",
@@ -90,10 +91,15 @@
     return appData.inventory.map(normalizeInventoryItem).filter((item) => item.id || item.name || item.sku);
   }
 
+  function itemCode(item) {
+    return item.mms_code || item.sku || item.supplier_material_code || "";
+  }
+
   function itemLabel(item) {
-    const code = item.sku || item.mms_code || item.supplier_material_code;
-    const supplier = item.supplier_name ? ` - ${item.supplier_name}` : "";
-    return `${item.name || "Materiale"}${code ? ` (${code})` : ""}${supplier}`;
+    const type = item.item_type === "articolo" ? "Articolo" : "Materiale";
+    const code = itemCode(item);
+    const cost = text(item.unit_cost) ? ` - costo ${quoteMoney(item.unit_cost)}` : "";
+    return `${type}: ${item.name || "Elemento"}${code ? ` (${code})` : ""}${cost}`;
   }
 
   function selectValue(item) {
@@ -116,13 +122,14 @@
   function quoteInventoryMaterialRows(article, articleIndex) {
     const items = inventoryItems();
     const loadingOption = quoteInventoryLoading ? `<option value="">Caricamento magazzino...</option>` : "";
-    const emptyOption = items.length ? "Seleziona dal magazzino" : "Nessun materiale in magazzino";
+    const emptyOption = items.length ? "Seleziona materiale/articolo" : "Nessun materiale in magazzino";
     return article.materials
       .map((material, materialIndex) => {
-        const selected = selectedItemForMaterial(material);
-        return `
-          <tr>
-            <td>
+        const source = material.source_type === "cliente" ? "cliente" : "mms";
+        const selected = source === "mms" ? selectedItemForMaterial(material) : null;
+        const selector =
+          source === "mms"
+            ? `
               <select class="filter-chip" data-quote-inventory-pick="${articleIndex}" data-quote-material-index="${materialIndex}">
                 <option value="">${emptyOption}</option>
                 ${loadingOption}
@@ -133,21 +140,37 @@
                   )
                   .join("")}
               </select>
-              <div class="muted" style="margin-top:6px;">
-                ${
-                  selected
-                    ? `${html(selected.material_origin === "fornitore" ? "Fornitore" : "MMS")} - disp. ${html(
-                        selected.available_quantity || 0
-                      )} ${html(selected.unit)} - impegnato ${html(selected.reserved_quantity || 0)} - libero ${html(freeQuantity(selected))}`
-                    : "Puoi scegliere un materiale salvato o scriverlo manualmente."
-                }
-              </div>
+            `
+            : `<div class="muted">Materiale del cliente: nessun costo da magazzino.</div>`;
+        const codeValue = material.product_code || material.inventory_sku || material.sku || "";
+        const costInput =
+          source === "mms"
+            ? `<input class="field-value" data-quote-material="${articleIndex}" data-quote-material-index="${materialIndex}" data-quote-material-field="price" value="${html(material.price)}" placeholder="costo" />`
+            : `<span class="muted">Nessun costo</span>`;
+        return `
+          <tr>
+            <td>
+              <select class="filter-chip" data-quote-source-choice="${articleIndex}" data-quote-material-index="${materialIndex}">
+                <option value="mms" ${source === "mms" ? "selected" : ""}>MMS</option>
+                <option value="cliente" ${source === "cliente" ? "selected" : ""}>Cliente</option>
+              </select>
+            </td>
+            <td>
+              ${selector}
+              <input class="field-value" style="margin-top:8px;" data-quote-material="${articleIndex}" data-quote-material-index="${materialIndex}" data-quote-material-field="material" value="${html(material.material)}" placeholder="nome materiale/articolo" />
+              ${
+                selected
+                  ? `<div class="muted" style="margin-top:6px;">${html(selected.material_origin === "fornitore" ? "Fornitore" : "MMS")} - disp. ${html(
+                      selected.available_quantity || 0
+                    )} ${html(selected.unit)} - impegnato ${html(selected.reserved_quantity || 0)} - libero ${html(freeQuantity(selected))}</div>`
+                  : ""
+              }
               ${quantityWarning(material, selected)}
             </td>
-            <td><input class="field-value" data-quote-material="${articleIndex}" data-quote-material-index="${materialIndex}" data-quote-material-field="material" value="${html(material.material)}" placeholder="es. stoffa, bottoni, filo" /></td>
+            <td><input class="field-value" data-quote-material="${articleIndex}" data-quote-material-index="${materialIndex}" data-quote-material-field="product_code" value="${html(codeValue)}" placeholder="codice" /></td>
             <td><input class="field-value" data-quote-material="${articleIndex}" data-quote-material-index="${materialIndex}" data-quote-material-field="quantity" value="${html(material.quantity)}" placeholder="q.ta" /></td>
-            <td><input class="field-value" data-quote-material="${articleIndex}" data-quote-material-index="${materialIndex}" data-quote-material-field="price" value="${html(material.price)}" placeholder="prezzo" /></td>
-            <td>${quoteMoney(quoteMaterialTotal(material))}</td>
+            <td>${costInput}</td>
+            <td>${source === "mms" ? quoteMoney(quoteMaterialTotal(material)) : ""}</td>
             <td><button class="mini-btn" data-quote-remove-material="${articleIndex}" data-quote-remove-material-index="${materialIndex}" type="button">Rimuovi</button></td>
           </tr>
         `;
@@ -160,18 +183,22 @@
     const item = inventoryItems().find((candidate) => selectValue(candidate) === itemKey);
     const material = appState.quoteArticles?.[articleIndex]?.materials?.[materialIndex];
     if (!item || !material) return;
+    material.source_type = "mms";
     material.material = item.name;
     material.inventory_item_id = item.id || "";
+    material.inventoryItemId = item.id || "";
     material.inventory_sku = item.sku || "";
     material.sku = item.sku || "";
-    material.source_type = item.material_origin === "fornitore" ? "mms" : item.material_origin;
+    material.product_code = itemCode(item);
+    material.warehouse_origin = item.material_origin || "mms";
+    material.item_type = item.item_type || "materiale";
     material.supplier_name = item.supplier_name || "";
     material.supplier_material_code = item.supplier_material_code || "";
     material.mms_code = item.mms_code || "";
     material.unit = item.unit || "";
     material.color = item.color || "";
     material.description = item.description || "";
-    if (!text(material.price) && text(item.retail_price)) material.price = item.retail_price;
+    material.price = text(item.unit_cost) || text(item.retail_price) || "";
     if (!text(material.quantity)) material.quantity = "1";
     renderApp();
   }
@@ -184,10 +211,9 @@
     const baseRenderQuoteArticleInventory = renderQuoteArticle;
     renderQuoteArticle = function renderQuoteArticleWithInventory(article, articleIndex) {
       const markup = baseRenderQuoteArticleInventory(article, articleIndex);
-      return markup.replace(
-        "<th>Materiale / prodotto</th>",
-        "<th>Magazzino</th><th>Materiale / prodotto</th>"
-      );
+      return markup
+        .replace("<th>Materiale / prodotto</th>", "<th>Origine</th><th>Materiale / articolo</th><th>Codice</th>")
+        .replace("<th>Prezzo</th>", "<th>Costo</th>");
     };
   }
 
@@ -195,6 +221,22 @@
   if (baseAttachQuoteEventsInventory) {
     attachQuoteEvents = function attachQuoteEventsWithInventory() {
       baseAttachQuoteEventsInventory();
+      document.querySelectorAll("[data-quote-source-choice]").forEach((select) => {
+        select.addEventListener("change", (event) => {
+          const material = appState.quoteArticles?.[Number(event.target.dataset.quoteSourceChoice)]?.materials?.[Number(event.target.dataset.quoteMaterialIndex)];
+          if (!material) return;
+          material.source_type = event.target.value === "cliente" ? "cliente" : "mms";
+          if (material.source_type === "cliente") {
+            material.inventory_item_id = "";
+            material.inventoryItemId = "";
+            material.inventory_sku = "";
+            material.sku = "";
+            material.product_code = "";
+            material.price = "";
+          }
+          renderApp();
+        });
+      });
       document.querySelectorAll("[data-quote-inventory-pick]").forEach((select) => {
         select.addEventListener("change", (event) => {
           applyInventoryToQuoteMaterial(
@@ -204,7 +246,7 @@
           );
         });
       });
-      document.querySelectorAll("[data-quote-material-field='quantity']").forEach((input) => {
+      document.querySelectorAll("[data-quote-material-field='quantity'],[data-quote-material-field='price']").forEach((input) => {
         input.addEventListener("change", () => {
           if (appState.currentView === "new-order") renderApp();
         });
