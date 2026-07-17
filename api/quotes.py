@@ -2,13 +2,14 @@ from __future__ import annotations
 
 from http import HTTPStatus
 from http.server import BaseHTTPRequestHandler
+from urllib.parse import parse_qs, urlparse
 
 try:
     from _api import clean_text, read_json_body, write_json, write_options
-    from _supabase import fetch_table, supabase_request
+    from _supabase import delete_rows, fetch_table, supabase_request
 except ModuleNotFoundError:
     from api._api import clean_text, read_json_body, write_json, write_options
-    from api._supabase import fetch_table, supabase_request
+    from api._supabase import delete_rows, fetch_table, supabase_request
 
 
 QUOTE_SELECT = "id,quote_number,client_name,category,priority,quote_date,status,note,total,payload,created_at,updated_at"
@@ -73,6 +74,12 @@ def shape_quote(row):
     quote["createdAt"] = quote.get("createdAt") or row.get("created_at") or ""
     quote["updatedAt"] = row.get("updated_at") or quote.get("updatedAt") or ""
     return quote
+
+
+def query_value(path, key):
+    params = parse_qs(urlparse(path).query)
+    values = params.get(key) or []
+    return clean_text(values[0]) if values else ""
 
 
 class handler(BaseHTTPRequestHandler):
@@ -147,6 +154,18 @@ class handler(BaseHTTPRequestHandler):
         if not rows:
             return write_json(self, {"error": "Preventivo non trovato"}, HTTPStatus.NOT_FOUND)
         return write_json(self, {"quote": shape_quote(rows[0])})
+
+    def do_DELETE(self):
+        quote_number = query_value(self.path, "id") or query_value(self.path, "quote_number")
+        if not quote_number:
+            return write_json(self, {"error": "Preventivo non valido"}, HTTPStatus.BAD_REQUEST)
+
+        try:
+            delete_rows("quotes", filters={"quote_number": f"eq.{quote_number}"})
+        except RuntimeError as error:
+            return write_json(self, {"error": "Preventivo non eliminato", "detail": str(error)}, HTTPStatus.INTERNAL_SERVER_ERROR)
+
+        return write_json(self, {"deleted": True, "id": quote_number})
 
     def log_message(self, format, *args):
         return
