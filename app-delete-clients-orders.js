@@ -147,9 +147,19 @@
       headers: await authHeaders(),
       body: JSON.stringify(payload),
     });
-    const body = await response.json().catch(() => ({}));
+    const raw = await response.text().catch(() => "");
+    let body = {};
+    if (raw) {
+      try {
+        body = JSON.parse(raw);
+      } catch (error) {
+        body = { detail: raw.slice(0, 240) };
+      }
+    }
     if (!response.ok) {
-      throw new Error(body.detail || body.error || "Eliminazione non riuscita");
+      const detail = body.detail || body.message || "";
+      const message = body.error || "Eliminazione non riuscita";
+      throw new Error(detail ? `${message}: ${detail}` : `${message} (HTTP ${response.status})`);
     }
     return body;
   }
