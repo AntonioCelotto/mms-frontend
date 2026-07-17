@@ -88,15 +88,46 @@ def release_order_inventory(order_id):
         )
 
 
+def fetch_order_by_id(order_id):
+    if not order_id:
+        return None
+    rows = fetch_table("orders", select="id,order_number", filters={"id": f"eq.{order_id}"})
+    return rows[0] if rows else None
+
+
+def fetch_order_by_number(order_number):
+    order_number = clean_text(order_number)
+    if not order_number:
+        return None
+    rows = fetch_table("orders", select="id,order_number", filters={"order_number": f"eq.{order_number}"})
+    return rows[0] if rows else None
+
+
+def resolve_order_for_delete(payload):
+    explicit_db_id = parse_positive_int(payload.get("order_db_id") or payload.get("db_id") or payload.get("internal_id"))
+    if explicit_db_id:
+        return fetch_order_by_id(explicit_db_id)
+
+    explicit_number = clean_text(payload.get("order_number") or payload.get("display_order_id"))
+    if explicit_number:
+        return fetch_order_by_number(explicit_number)
+
+    legacy_ref = parse_positive_int(payload.get("order_id") or payload.get("id"))
+    if legacy_ref:
+        return fetch_order_by_id(legacy_ref)
+
+    return None
+
+
 def delete_order(payload):
-    order_ref = parse_positive_int(payload.get("order_id") or payload.get("id"))
-    if not order_ref:
-        return {"error": "Ordine non valido"}, HTTPStatus.BAD_REQUEST
+    order = resolve_order_for_delete(payload)
+    if not order:
+        return {"error": "Ordine non valido o non trovato"}, HTTPStatus.BAD_REQUEST
 
     deleted = supabase_request(
         "/rest/v1/rpc/delete_order_safely",
         method="POST",
-        payload={"p_order_ref": order_ref},
+        payload={"p_order_ref": parse_positive_int(order.get("id"))},
     )
     return deleted, HTTPStatus.OK
 
