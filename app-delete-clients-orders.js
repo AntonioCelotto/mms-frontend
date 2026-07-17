@@ -3,6 +3,14 @@
     return String(value ?? "").trim();
   }
 
+  function attr(value) {
+    return text(value)
+      .replace(/&/g, "&amp;")
+      .replace(/"/g, "&quot;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;");
+  }
+
   function isAdminProfile() {
     const profile = window.mmsAuthProfile || {};
     const raw = text(profile.access_profile || profile.profile || profile.role).toLowerCase();
@@ -28,15 +36,33 @@
     document.head.appendChild(style);
   }
 
+  function findOrderRecord(orderRef) {
+    const ref = text(orderRef);
+    return (appData.orders || []).find(
+      (item) =>
+        text(item.id) === ref ||
+        text(item.db_id) === ref ||
+        text(item.order_number) === ref ||
+        text(item.internal_id) === ref
+    );
+  }
+
   function mountOrderDeleteButtons() {
     if (appState.currentView !== "orders" || !isAdminProfile()) return;
     document.querySelectorAll("section.view.active tbody tr").forEach((row) => {
       const detailButton = row.querySelector("[data-detail]");
-      const orderId = detailButton?.dataset.detail;
-      if (!orderId || row.querySelector("[data-delete-order]")) return;
+      const orderRef = detailButton?.dataset.detail;
+      if (!orderRef || row.querySelector("[data-delete-order]")) return;
+      const order = findOrderRecord(orderRef);
+      const orderDbId = text(order?.db_id || order?.internal_id || "");
+      const orderNumber = text(order?.order_number || order?.id || orderRef);
+      const deleteRef = orderDbId || orderRef;
       const pillRow = detailButton.closest(".pill-row") || detailButton.parentElement;
       if (!pillRow) return;
-      pillRow.insertAdjacentHTML("beforeend", `<button class="mini-btn danger" data-delete-order="${orderId}" type="button">Elimina</button>`);
+      pillRow.insertAdjacentHTML(
+        "beforeend",
+        `<button class="mini-btn danger" data-delete-order="${attr(deleteRef)}" data-delete-order-db="${attr(orderDbId)}" data-delete-order-number="${attr(orderNumber)}" type="button">Elimina</button>`
+      );
     });
   }
 
@@ -55,18 +81,18 @@
     mountClientDeleteButtons();
   }
 
-  function orderLabel(orderId) {
-    const order = (appData.orders || []).find((item) => String(item.id) === String(orderId) || String(item.db_id) === String(orderId));
-    return order ? `#${order.id} - ${order.client}` : `#${orderId}`;
+  function orderLabel(orderId, meta = {}) {
+    const order = findOrderRecord(orderId) || findOrderRecord(meta.orderNumber) || findOrderRecord(meta.orderDbId);
+    return order ? `#${order.id} - ${order.client}` : `#${meta.orderNumber || orderId}`;
   }
 
-  function deletedOrderRefs(orderId, result) {
+  function deletedOrderRefs(orderId, result, meta = {}) {
     const deleted = result?.deleted || result?.[0]?.deleted || {};
-    return new Set([orderId, deleted.id, deleted.order_number].filter((value) => value !== undefined && value !== null).map(String));
+    return new Set([orderId, meta.orderDbId, meta.orderNumber, deleted.id, deleted.order_number].filter((value) => value !== undefined && value !== null).map(String));
   }
 
-  function removeOrderLocally(orderId, result) {
-    const refs = deletedOrderRefs(orderId, result);
+  function removeOrderLocally(orderId, result, meta = {}) {
+    const refs = deletedOrderRefs(orderId, result, meta);
     appData.orders = (appData.orders || []).filter((order) => !refs.has(String(order.id)) && !refs.has(String(order.db_id)) && !refs.has(String(order.order_number)));
     Object.keys(appData.orderTasks || {}).forEach((key) => {
       if (refs.has(String(key))) delete appData.orderTasks[key];
@@ -128,13 +154,16 @@
     return body;
   }
 
-  async function handleDeleteOrder(orderId) {
-    const label = orderLabel(orderId);
+  async function handleDeleteOrder(orderId, meta = {}) {
+    const label = orderLabel(orderId, meta);
     if (!window.confirm(`Eliminare definitivamente l'ordine ${label}? Verranno rimossi anche task, materiali, pagamenti e allegati collegati.`)) return;
+    const payload = { entity: "order", order_id: orderId };
+    if (meta.orderDbId) payload.order_db_id = meta.orderDbId;
+    if (meta.orderNumber) payload.order_number = meta.orderNumber;
     setBusy(true);
     try {
-      const result = await deleteRecord({ entity: "order", order_id: orderId });
-      removeOrderLocally(orderId, result);
+      const result = await deleteRecord(payload);
+      removeOrderLocally(orderId, result, meta);
       appState.currentView = "orders";
       setFlashMessage(`Ordine ${label} eliminato`);
       appState.busy = false;
@@ -201,7 +230,10 @@
       if (orderButton) {
         event.preventDefault();
         event.stopImmediatePropagation();
-        handleDeleteOrder(orderButton.dataset.deleteOrder);
+        handleDeleteOrder(orderButton.dataset.deleteOrder, {
+          orderDbId: orderButton.dataset.deleteOrderDb,
+          orderNumber: orderButton.dataset.deleteOrderNumber,
+        });
         return;
       }
 
