@@ -19,10 +19,7 @@
 
   function normalizeItem(item) {
     const raw = item && typeof item === "object" ? item : {};
-    return {
-      mms_code: raw.mms_code || "",
-      sku: raw.sku || "",
-    };
+    return { mms_code: raw.mms_code || "", sku: raw.sku || "" };
   }
 
   function selectedPrefix() {
@@ -33,10 +30,11 @@
   }
 
   function nextNumber(prefix) {
+    const normalizedPrefix = PREFIXES.includes(text(prefix).toUpperCase()) ? text(prefix).toUpperCase() : "TEX";
     const highest = (appData.inventory || [])
       .map(normalizeItem)
       .map((item) => codeParts(item.mms_code || item.sku))
-      .filter((parts) => parts?.prefix === prefix)
+      .filter((parts) => parts?.prefix === normalizedPrefix)
       .reduce((max, parts) => Math.max(max, Number.parseInt(parts.number, 10) || 0), 0);
     return padNumber(highest + 1);
   }
@@ -46,7 +44,10 @@
   }
 
   function draftNumber() {
-    const parts = codeParts(appState.inventoryDraft?.mms_code);
+    const draft = appState.inventoryDraft || {};
+    const explicit = text(draft.mms_code_number);
+    if (explicit) return padNumber(explicit);
+    const parts = codeParts(draft.mms_code);
     return parts?.number || nextNumber(selectedPrefix());
   }
 
@@ -59,44 +60,55 @@
     appState.inventoryDraft.sku = appState.inventoryDraft.mms_code;
   }
 
+  function relabelPrefixOptions(select) {
+    Array.from(select.options || []).forEach((option) => {
+      const prefix = text(option.value).toUpperCase();
+      if (PREFIXES.includes(prefix)) option.textContent = `MMS-${prefix}`;
+    });
+  }
+
+  function codeInput() {
+    return document.querySelector('[data-inventory-ma-code-number], [data-inventory-ma-draft="mms_code"]');
+  }
+
   function enhanceCodeField() {
     if (appState.currentView !== "inventory") return;
     const select = document.querySelector("[data-inventory-ma-code-prefix]");
-    const input = document.querySelector('[data-inventory-ma-draft="mms_code"]');
-    if (!select || !input || input.dataset.inventoryCodeNumberReady === "1") return;
+    const input = codeInput();
+    if (!select || !input) return;
 
+    relabelPrefixOptions(select);
     const prefix = selectedPrefix();
     const number = draftNumber();
     setDraftCode(prefix, number);
     select.value = prefix;
 
-    input.dataset.inventoryCodeNumberReady = "1";
     input.dataset.inventoryMaCodeNumber = "1";
+    input.dataset.inventoryCodeNumberReady = "1";
     input.removeAttribute("data-inventory-ma-draft");
-    input.value = number;
+    if (document.activeElement !== input) input.value = appState.inventoryDraft.mms_code_number;
     input.placeholder = "001";
     input.inputMode = "numeric";
     input.pattern = "[0-9]*";
+    input.style.textAlign = "center";
+    input.style.fontWeight = "700";
 
     const wrapper = input.parentElement;
-    if (wrapper && !wrapper.querySelector("[data-inventory-code-prefix-label]")) {
-      select.insertAdjacentHTML("afterend", `<div class="field-value" data-inventory-code-prefix-label style="align-items:center;justify-content:center;background:#f7f7f7;font-weight:700;">MMS-${prefix}</div>`);
-      wrapper.style.gridTemplateColumns = "minmax(130px,.9fr) minmax(96px,.65fr) minmax(90px,.45fr)";
-    }
-    const label = wrapper?.querySelector("[data-inventory-code-prefix-label]");
-    if (label) label.textContent = `MMS-${prefix}`;
+    const oldLabel = wrapper?.querySelector("[data-inventory-code-prefix-label]");
+    if (oldLabel) oldLabel.remove();
+    if (wrapper) wrapper.style.gridTemplateColumns = "minmax(150px,.9fr) minmax(90px,.45fr)";
   }
 
   function handlePrefixChange(select) {
     const prefix = text(select.value).toUpperCase();
-    const number = nextNumber(prefix);
-    setDraftCode(prefix, number);
+    setDraftCode(prefix, nextNumber(prefix));
     renderApp();
   }
 
-  function handleNumberInput(input) {
+  function handleNumberInput(input, shouldRender = false) {
     setDraftCode(selectedPrefix(), input.value);
     input.value = appState.inventoryDraft.mms_code_number;
+    if (shouldRender) renderApp();
   }
 
   document.addEventListener(
@@ -118,7 +130,7 @@
       if (!input) return;
       event.preventDefault();
       event.stopImmediatePropagation();
-      handleNumberInput(input);
+      handleNumberInput(input, false);
     },
     true
   );
@@ -130,20 +142,19 @@
       if (!input) return;
       event.preventDefault();
       event.stopImmediatePropagation();
-      handleNumberInput(input);
-      renderApp();
+      handleNumberInput(input, true);
     },
     true
   );
 
   function wrapRender() {
-    if (typeof renderApp !== "function" || renderApp.__mmsInventoryCodeNumberField) return;
+    if (typeof renderApp !== "function" || renderApp.__mmsInventoryCodeNumberFieldV2) return;
     const baseRenderApp = renderApp;
     renderApp = function renderAppInventoryCodeNumberField() {
       baseRenderApp();
       enhanceCodeField();
     };
-    renderApp.__mmsInventoryCodeNumberField = true;
+    renderApp.__mmsInventoryCodeNumberFieldV2 = true;
   }
 
   wrapRender();
