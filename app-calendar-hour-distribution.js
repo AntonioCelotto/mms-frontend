@@ -103,9 +103,10 @@
 
   function cloneForSegment(task, segment, index, count) {
     const planned = parseDate(task.time || task.planned_date || "");
-    const time = planned?.time || "09:00";
+    const time = planned?.time || "";
     const label = formatHours(segment.hours);
-    const baseName = task.name || task.task_name || "Task ordine";
+    const baseName = (task.name || task.task_name || "Task ordine").replace(/\s+\([\d,.]+\s*h\)$/i, "");
+    const plannedValue = `${segment.iso} ${time}`.trim();
     return {
       ...task,
       id: task.id,
@@ -114,8 +115,8 @@
       task_name: `${baseName} (${label})`,
       hours: label,
       estimated_hours: segment.hours,
-      planned_date: `${segment.iso} ${time}`.trim(),
-      time: `${segment.iso} ${time}`.trim(),
+      planned_date: plannedValue,
+      time: plannedValue,
       calendarDay: null,
       calendar_day_label: null,
       calendarSegmentIndex: index + 1,
