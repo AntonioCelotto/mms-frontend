@@ -106,42 +106,13 @@ def normalize_inventory_item(raw):
     }
 
 
-def existing_inventory_row(payload):
-    mms_code = clean_text(payload.get("mms_code"))
-    sku = clean_text(payload.get("sku"))
-    if mms_code:
-        rows = supabase_request(
-            "/rest/v1/inventory_items",
-            query={"select": INVENTORY_SELECT, "mms_code": f"eq.{mms_code}", "limit": "1"},
-        ) or []
-        if rows:
-            return rows[0]
-    if sku:
-        rows = supabase_request(
-            "/rest/v1/inventory_items",
-            query={"select": INVENTORY_SELECT, "sku": f"eq.{sku}", "limit": "1"},
-        ) or []
-        if rows:
-            return rows[0]
-    return None
-
-
 def save_inventory_payload(payload):
-    existing = existing_inventory_row(payload)
-    if existing:
-        return supabase_request(
-            "/rest/v1/inventory_items",
-            method="PATCH",
-            query={"id": f"eq.{existing.get('id')}", "select": INVENTORY_SELECT},
-            payload=payload,
-            prefer="return=representation",
-        ) or []
     rows = supabase_request(
         "/rest/v1/inventory_items",
         method="POST",
-        query={"on_conflict": "sku", "select": INVENTORY_SELECT},
+        query={"select": INVENTORY_SELECT},
         payload=payload,
-        prefer="resolution=merge-duplicates,return=representation",
+        prefer="return=representation",
     )
     return rows if isinstance(rows, list) else []
 
@@ -257,7 +228,17 @@ class handler(BaseHTTPRequestHandler):
             for item in payload:
                 rows.extend(save_inventory_payload(item))
         except RuntimeError as error:
-            return write_json(self, {"error": "Elemento magazzino non salvato", "detail": str(error)}, HTTPStatus.INTERNAL_SERVER_ERROR)
+            detail = str(error)
+            if "duplicate" in detail.lower() or "23505" in detail:
+                return write_json(
+                    self,
+                    {
+                        "error": "Codice magazzino gia' esistente",
+                        "detail": "Premi Nuovo e usa un codice diverso: la creazione non puo' sovrascrivere un materiale o articolo gia' salvato.",
+                    },
+                    HTTPStatus.CONFLICT,
+                )
+            return write_json(self, {"error": "Elemento magazzino non salvato", "detail": detail}, HTTPStatus.INTERNAL_SERVER_ERROR)
 
         shortage_totals, shortage_details = active_shortage_maps()
         shaped = [shape_inventory_item(row, shortage_totals, shortage_details) for row in rows]

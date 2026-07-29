@@ -105,14 +105,24 @@ class handler(BaseHTTPRequestHandler):
             rows = supabase_request(
                 "/rest/v1/quotes",
                 method="POST",
-                query={"on_conflict": "quote_number", "select": QUOTE_SELECT},
+                query={"select": QUOTE_SELECT},
                 payload=row_payload,
-                prefer="resolution=merge-duplicates,return=representation",
+                prefer="return=representation",
             )
         except ValueError as error:
             return write_json(self, {"error": str(error)}, HTTPStatus.BAD_REQUEST)
         except RuntimeError as error:
-            return write_json(self, {"error": "Preventivo non salvato", "detail": str(error)}, HTTPStatus.INTERNAL_SERVER_ERROR)
+            detail = str(error)
+            if "duplicate" in detail.lower() or "23505" in detail:
+                return write_json(
+                    self,
+                    {
+                        "error": "Numero preventivo gia' esistente",
+                        "detail": "Premi Nuovo preventivo e riprova: la creazione non puo' sovrascrivere un preventivo gia' salvato.",
+                    },
+                    HTTPStatus.CONFLICT,
+                )
+            return write_json(self, {"error": "Preventivo non salvato", "detail": detail}, HTTPStatus.INTERNAL_SERVER_ERROR)
 
         row = rows[0] if isinstance(rows, list) and rows else None
         return write_json(self, {"quote": shape_quote(row) if row else raw_quote}, HTTPStatus.CREATED)
