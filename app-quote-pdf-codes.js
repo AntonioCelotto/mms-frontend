@@ -16,6 +16,14 @@
     );
   }
 
+  function lineDescription(item, fallback) {
+    return text(item?.description) || text(item?.material) || text(item?.name) || text(fallback) || "-";
+  }
+
+  function lineColor(item) {
+    return text(item?.color) || text(item?.colore) || "-";
+  }
+
   if (typeof quoteListPdfHtml === "function") {
     quoteListPdfHtml = function quoteListPdfHtmlWithCodes(quote) {
       const clientInfo = quoteListClientInfo(quote);
@@ -39,9 +47,13 @@
           const materialRows = (article.materials || [])
             .map((material) => {
               const materialCode = lineCode(material, material.material || "Materiale");
+              const materialDescription = lineDescription(material, material.material || "Materiale");
+              const materialColor = lineColor(material);
               return `
                 <tr>
                   <td style="padding:6px 0 6px 18px;">${quoteHtml(materialCode)}</td>
+                  <td>${quoteHtml(materialDescription)}</td>
+                  <td>${quoteHtml(materialColor)}</td>
                   <td style="text-align:right;">${quoteHtml(material.quantity)}</td>
                   <td style="text-align:right;">${quoteMoney(material.price)}</td>
                   <td style="text-align:right;">${quoteMoney(quoteMaterialTotal(material))}</td>
@@ -52,6 +64,8 @@
           return `
             <tr>
               <td style="padding-top:12px;"><strong>${index + 1}. ${quoteHtml(articleCode)}</strong></td>
+              <td><strong>${quoteHtml(lineDescription(article, article.name || "Articolo"))}</strong></td>
+              <td>${quoteHtml(lineColor(article))}</td>
               <td style="text-align:right;">${quoteHtml(article.quantity || "1")}</td>
               <td style="text-align:right;">${quoteMoney(article.cost)}</td>
               <td style="text-align:right;">${quoteMoney(quoteArticleTotal(article))}</td>
@@ -101,6 +115,8 @@
               <thead>
                 <tr>
                   <th>Codice</th>
+                  <th>Descrizione</th>
+                  <th>Colore</th>
                   <th style="text-align:right;">Quantita'</th>
                   <th style="text-align:right;">Costo</th>
                   <th style="text-align:right;">Totale</th>
