@@ -4,6 +4,7 @@
   }
 
   function quoteResetDraft() {
+    appState.editingQuoteId = "";
     appState.draftOrder = {
       ...(appState.draftOrder || {}),
       client: "",
