@@ -1,5 +1,18 @@
 (function () {
   const API_URL = "/api/inventory";
+  const MMS_CODE_PREFIXES = [
+    { code: "TEX", label: "TEX - tessuti" },
+    { code: "HRD", label: "HRD - hardware" },
+    { code: "PCK", label: "PCK - packaging" },
+    { code: "PM", label: "PM - pronto moda" },
+    { code: "RIC", label: "RIC - ricami" },
+    { code: "STM", label: "STM - stampe" },
+    { code: "CRT", label: "CRT - cartamodelli" },
+    { code: "SRT", label: "SRT - sartoria" },
+    { code: "STK", label: "STK - stock" },
+    { code: "CNZ", label: "CNZ - consulenza" },
+    { code: "TRT", label: "TRT - trattamenti" },
+  ];
 
   const DEFAULT_DRAFT = {
     id: "",
@@ -20,6 +33,7 @@
     retail_price: "",
     status: "Disponibile",
     notes: "",
+    mms_code_prefix: "TEX",
   };
 
   function text(value) {
@@ -82,6 +96,37 @@
 
   function itemCode(item) {
     return item.mms_code || item.supplier_material_code || item.sku || "";
+  }
+
+  function codeParts(value) {
+    const match = text(value).toUpperCase().match(/^MMS-([A-Z0-9]+)-(\d+)$/);
+    if (!match) return null;
+    return { prefix: match[1], number: Number(match[2]) || 0 };
+  }
+
+  function codePrefixFromDraft(draft) {
+    const parts = codeParts(draft?.mms_code);
+    if (parts && MMS_CODE_PREFIXES.some((option) => option.code === parts.prefix)) return parts.prefix;
+    return draft?.mms_code_prefix || "TEX";
+  }
+
+  function nextMmsCode(prefix) {
+    const normalizedPrefix = text(prefix || "TEX").toUpperCase();
+    const max = appData.inventory
+      .map(normalizeItem)
+      .map((item) => codeParts(item.mms_code || item.sku))
+      .filter((parts) => parts?.prefix === normalizedPrefix)
+      .reduce((highest, parts) => Math.max(highest, parts.number), 0);
+    return `MMS-${normalizedPrefix}-${String(max + 1).padStart(3, "0")}`;
+  }
+
+  function ensureDraftCode() {
+    ensureState();
+    const draft = appState.inventoryDraft;
+    if ((draft.material_origin || "mms") !== "mms") return;
+    const prefix = codePrefixFromDraft(draft);
+    draft.mms_code_prefix = prefix;
+    if (!text(draft.mms_code)) draft.mms_code = nextMmsCode(prefix);
   }
 
   function uniqueValues(items, field) {
@@ -155,15 +200,19 @@
       retail_price: String(normalized.retail_price ?? ""),
       status: normalized.status || "Disponibile",
       notes: normalized.notes || "",
+      mms_code_prefix: codePrefixFromDraft(normalized),
     };
   }
 
   function draftPayload() {
     ensureState();
+    ensureDraftCode();
     const draft = appState.inventoryDraft;
+    const isMms = (draft.material_origin || "mms") !== "fornitore";
     return {
       id: draft.id || undefined,
       item_type: draft.item_type === "articolo" ? "articolo" : "materiale",
+      sku: isMms ? draft.mms_code : undefined,
       name: draft.name,
       category: draft.category,
       material_origin: draft.material_origin || "mms",
@@ -191,6 +240,7 @@
       renderApp();
       return;
     }
+    ensureDraftCode();
     setBusy(true);
     try {
       const isEdit = !!appState.inventoryDraft.id;
@@ -291,6 +341,7 @@
 
   renderInventory = function renderInventoryMaterialsArticles() {
     ensureState();
+    ensureDraftCode();
     const filters = appState.inventoryFilters;
     const draft = appState.inventoryDraft;
     const allItems = appData.inventory.map(normalizeItem);
@@ -350,7 +401,7 @@
               ${field("Tipo", `<select class="filter-chip" data-inventory-ma-draft="item_type"><option value="materiale" ${draft.item_type !== "articolo" ? "selected" : ""}>Materiale</option><option value="articolo" ${draft.item_type === "articolo" ? "selected" : ""}>Articolo</option></select>`)}
               ${field("Nome", `<input class="field-value" data-inventory-ma-draft="name" value="${html(draft.name)}" placeholder="Nome materiale o articolo" />`, "span-2")}
               ${field("Origine", `<select class="filter-chip" data-inventory-ma-draft="material_origin"><option value="mms" ${draft.material_origin !== "fornitore" ? "selected" : ""}>MMS</option><option value="fornitore" ${draft.material_origin === "fornitore" ? "selected" : ""}>Fornitore</option></select>`)}
-              ${field("Codice MMS", `<input class="field-value" data-inventory-ma-draft="mms_code" value="${html(draft.mms_code)}" />`)}
+              ${field("Codice MMS", `<div style="display:grid;grid-template-columns:minmax(110px,.75fr) minmax(130px,1fr);gap:8px;"><select class="filter-chip" data-inventory-ma-code-prefix>${MMS_CODE_PREFIXES.map((option) => `<option value="${html(option.code)}" ${codePrefixFromDraft(draft) === option.code ? "selected" : ""}>${html(option.label)}</option>`).join("")}</select><input class="field-value" data-inventory-ma-draft="mms_code" value="${html(draft.mms_code)}" placeholder="MMS-TEX-001" /></div>`)}
               ${field("Codice fornitore", `<input class="field-value" data-inventory-ma-draft="supplier_material_code" value="${html(draft.supplier_material_code)}" />`)}
               ${field("Fornitore", `<input class="field-value" data-inventory-ma-draft="supplier_name" value="${html(draft.supplier_name)}" />`)}
               ${field("Categoria", `<input class="field-value" data-inventory-ma-draft="category" value="${html(draft.category)}" />`)}
@@ -397,9 +448,21 @@
     document.querySelectorAll("[data-inventory-ma-draft]").forEach((input) => {
       const handler = (event) => {
         appState.inventoryDraft[event.target.dataset.inventoryMaDraft] = event.target.value;
+        if (event.target.dataset.inventoryMaDraft === "material_origin") {
+          if (event.target.value === "mms") ensureDraftCode();
+          renderApp();
+        }
       };
       input.oninput = handler;
       input.onchange = handler;
+    });
+
+    document.querySelectorAll("[data-inventory-ma-code-prefix]").forEach((select) => {
+      select.onchange = (event) => {
+        appState.inventoryDraft.mms_code_prefix = event.target.value;
+        appState.inventoryDraft.mms_code = nextMmsCode(event.target.value);
+        renderApp();
+      };
     });
 
     document.querySelectorAll("[data-inventory-ma-new]").forEach((button) => {
