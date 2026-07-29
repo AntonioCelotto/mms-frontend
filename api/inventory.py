@@ -77,7 +77,7 @@ def normalize_inventory_item(raw):
 
     if origin == "mms":
         mms_code = mms_code or clean_text(item.get("sku")) or generated_mms_code(name, item_type)
-        sku = clean_text(item.get("sku")) or mms_code
+        sku = mms_code
         supplier_name = supplier_name or None
         supplier_code = supplier_code or None
     else:
@@ -104,6 +104,46 @@ def normalize_inventory_item(raw):
         "item_type": item_type,
         "import_source": clean_text(item.get("import_source") or item.get("importSource")) or "manuale",
     }
+
+
+def existing_inventory_row(payload):
+    mms_code = clean_text(payload.get("mms_code"))
+    sku = clean_text(payload.get("sku"))
+    if mms_code:
+        rows = supabase_request(
+            "/rest/v1/inventory_items",
+            query={"select": INVENTORY_SELECT, "mms_code": f"eq.{mms_code}", "limit": "1"},
+        ) or []
+        if rows:
+            return rows[0]
+    if sku:
+        rows = supabase_request(
+            "/rest/v1/inventory_items",
+            query={"select": INVENTORY_SELECT, "sku": f"eq.{sku}", "limit": "1"},
+        ) or []
+        if rows:
+            return rows[0]
+    return None
+
+
+def save_inventory_payload(payload):
+    existing = existing_inventory_row(payload)
+    if existing:
+        return supabase_request(
+            "/rest/v1/inventory_items",
+            method="PATCH",
+            query={"id": f"eq.{existing.get('id')}", "select": INVENTORY_SELECT},
+            payload=payload,
+            prefer="return=representation",
+        ) or []
+    rows = supabase_request(
+        "/rest/v1/inventory_items",
+        method="POST",
+        query={"on_conflict": "sku", "select": INVENTORY_SELECT},
+        payload=payload,
+        prefer="resolution=merge-duplicates,return=representation",
+    )
+    return rows if isinstance(rows, list) else []
 
 
 def active_shortage_maps():
@@ -213,18 +253,14 @@ class handler(BaseHTTPRequestHandler):
             return write_json(self, {"error": "Nessun materiale/articolo valido"}, HTTPStatus.BAD_REQUEST)
 
         try:
-            rows = supabase_request(
-                "/rest/v1/inventory_items",
-                method="POST",
-                query={"on_conflict": "sku", "select": INVENTORY_SELECT},
-                payload=payload if len(payload) > 1 else payload[0],
-                prefer="resolution=merge-duplicates,return=representation",
-            )
+            rows = []
+            for item in payload:
+                rows.extend(save_inventory_payload(item))
         except RuntimeError as error:
             return write_json(self, {"error": "Elemento magazzino non salvato", "detail": str(error)}, HTTPStatus.INTERNAL_SERVER_ERROR)
 
         shortage_totals, shortage_details = active_shortage_maps()
-        shaped = [shape_inventory_item(row, shortage_totals, shortage_details) for row in (rows if isinstance(rows, list) else [])]
+        shaped = [shape_inventory_item(row, shortage_totals, shortage_details) for row in rows]
         return write_json(self, {"items": shaped, "item": shaped[0] if shaped else None}, HTTPStatus.CREATED)
 
     def do_PATCH(self):
