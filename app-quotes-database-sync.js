@@ -76,6 +76,11 @@
     if (typeof quoteStorageWrite === "function") quoteStorageWrite();
   }
 
+  function quoteDatabaseShouldPatch(quote) {
+    const status = String(quote?.status || "Bozza").toLowerCase();
+    return Boolean(quote?.updatedAt) || status !== "bozza";
+  }
+
   async function quoteDatabaseLoad({ rerender = false } = {}) {
     if (quoteDatabaseLoaded || quoteDatabaseLoading || typeof quoteListEnsureState !== "function") return;
     quoteDatabaseLoading = true;
@@ -107,7 +112,8 @@
     if (!normalized || quoteDatabaseSaving) return;
     quoteDatabaseSaving = true;
     try {
-      const payload = await quoteDatabaseRequest("POST", { quote: quoteDatabaseLightCopy(normalized) });
+      const method = quoteDatabaseShouldPatch(normalized) ? "PATCH" : "POST";
+      const payload = await quoteDatabaseRequest(method, { id: normalized.id, quote: quoteDatabaseLightCopy(normalized) });
       if (payload.quote) {
         appState.savedQuotes = quoteDatabaseMerge(appState.savedQuotes || [], [payload.quote]);
         quoteDatabaseWriteLocal();
