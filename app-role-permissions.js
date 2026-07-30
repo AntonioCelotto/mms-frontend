@@ -24,6 +24,8 @@
   const COMMERCE_SKILLS = ["clienti", "preventivi", "ordini", "pagamenti", "magazzino"];
   let cachedProfile = null;
   let loadingProfile = false;
+  let profileLoadedOnce = false;
+  let lastProfileLoadAt = 0;
 
   function normalizeProfile(profile) {
     if (!profile) return "loading";
@@ -37,6 +39,11 @@
 
   function activeProfile() {
     return window.mmsAuthProfile || cachedProfile || null;
+  }
+
+  function sameProfile(a, b) {
+    if (!a || !b) return false;
+    return JSON.stringify(a) === JSON.stringify(b);
   }
 
   function currentRole() {
@@ -70,9 +77,13 @@
     if (roleNode) roleNode.textContent = roleLabel();
   }
 
-  async function loadProfile() {
+  async function loadProfile({ force = false } = {}) {
+    const now = Date.now();
     if (loadingProfile) return;
+    if (!force && profileLoadedOnce && activeProfile()) return;
+    if (!force && now - lastProfileLoadAt < 10000) return;
     loadingProfile = true;
+    lastProfileLoadAt = now;
     try {
       const session = await window.mmsSupabaseAuth?.auth?.getSession?.();
       const token = session?.data?.session?.access_token;
@@ -84,14 +95,17 @@
       });
       const payload = await response.json().catch(() => ({}));
       if (response.ok && payload.profile) {
+        const changed = !sameProfile(activeProfile(), payload.profile);
         cachedProfile = payload.profile;
         window.mmsAuthProfile = payload.profile;
+        profileLoadedOnce = true;
         enforcePermissions();
-        if (typeof renderApp === "function") renderApp();
+        if (changed && typeof renderApp === "function") renderApp();
       }
     } catch (error) {
       console.warn("Permessi account non disponibili", error);
     } finally {
+      profileLoadedOnce = true;
       loadingProfile = false;
     }
   }
@@ -162,11 +176,14 @@
   );
 
   window.addEventListener("mms-auth-profile", (event) => {
-    cachedProfile = event.detail?.profile || null;
+    const nextProfile = event.detail?.profile || null;
+    const changed = !sameProfile(cachedProfile, nextProfile);
+    cachedProfile = nextProfile;
+    profileLoadedOnce = !!nextProfile;
     enforcePermissions();
-    if (typeof renderApp === "function") renderApp();
+    if (changed && typeof renderApp === "function") renderApp();
   });
 
-  loadProfile();
+  loadProfile({ force: true });
   if (document.getElementById("app")?.innerHTML) enforcePermissions();
 })();
