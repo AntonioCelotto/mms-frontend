@@ -22,10 +22,18 @@
     return { mms_code: raw.mms_code || "", sku: raw.sku || "" };
   }
 
+  function draft() {
+    return appState.inventoryDraft || {};
+  }
+
+  function isSupplierDraft() {
+    return text(draft().material_origin).toLowerCase() === "fornitore";
+  }
+
   function selectedPrefix() {
-    const draft = appState.inventoryDraft || {};
-    const parts = codeParts(draft.mms_code);
-    const prefix = text(draft.mms_code_prefix || parts?.prefix || "TEX").toUpperCase();
+    const currentDraft = draft();
+    const parts = codeParts(currentDraft.mms_code);
+    const prefix = text(currentDraft.mms_code_prefix || parts?.prefix || "TEX").toUpperCase();
     return PREFIXES.includes(prefix) ? prefix : "TEX";
   }
 
@@ -44,14 +52,15 @@
   }
 
   function draftNumber() {
-    const draft = appState.inventoryDraft || {};
-    const explicit = text(draft.mms_code_number);
+    const currentDraft = draft();
+    const explicit = text(currentDraft.mms_code_number);
     if (explicit) return padNumber(explicit);
-    const parts = codeParts(draft.mms_code);
+    const parts = codeParts(currentDraft.mms_code);
     return parts?.number || nextNumber(selectedPrefix());
   }
 
   function setDraftCode(prefix, number) {
+    if (isSupplierDraft()) return;
     if (!appState.inventoryDraft) appState.inventoryDraft = {};
     const normalizedPrefix = PREFIXES.includes(text(prefix).toUpperCase()) ? text(prefix).toUpperCase() : "TEX";
     appState.inventoryDraft.mms_code_prefix = normalizedPrefix;
@@ -61,11 +70,12 @@
   }
 
   function shouldResetEmptyCreateDraft() {
-    const draft = appState.inventoryDraft || {};
+    const currentDraft = draft();
     if (appState.currentView !== "inventory") return false;
-    if (appState.inventorySaveMode === "edit" && text(draft.id)) return false;
+    if (isSupplierDraft()) return false;
+    if (appState.inventorySaveMode === "edit" && text(currentDraft.id)) return false;
     if ((appData.inventory || []).length > 0) return false;
-    return !text(draft.name) && !text(draft.category) && !text(draft.supplier_name) && !text(draft.supplier_material_code);
+    return !text(currentDraft.name) && !text(currentDraft.category) && !text(currentDraft.supplier_name) && !text(currentDraft.supplier_material_code);
   }
 
   function resetEmptyCreateDraftNumber() {
@@ -86,12 +96,32 @@
     return document.querySelector('[data-inventory-ma-code-number], [data-inventory-ma-draft="mms_code"]');
   }
 
+  function restoreSupplierCodeField(select, input) {
+    if (select) select.disabled = true;
+    if (!input) return;
+    input.dataset.inventoryMaDraft = "mms_code";
+    delete input.dataset.inventoryMaCodeNumber;
+    delete input.dataset.inventoryCodeNumberReady;
+    input.value = "";
+    input.placeholder = "Non necessario per fornitore";
+    input.inputMode = "text";
+    input.removeAttribute("pattern");
+    input.style.textAlign = "left";
+    input.style.fontWeight = "400";
+  }
+
   function enhanceCodeField() {
     if (appState.currentView !== "inventory") return;
     const select = document.querySelector("[data-inventory-ma-code-prefix]");
     const input = codeInput();
     if (!select || !input) return;
 
+    if (isSupplierDraft()) {
+      restoreSupplierCodeField(select, input);
+      return;
+    }
+
+    select.disabled = false;
     relabelPrefixOptions(select);
     resetEmptyCreateDraftNumber();
     const prefix = selectedPrefix();
@@ -116,12 +146,14 @@
   }
 
   function handlePrefixChange(select) {
+    if (isSupplierDraft()) return;
     const prefix = text(select.value).toUpperCase();
     setDraftCode(prefix, nextNumber(prefix));
     renderApp();
   }
 
   function handleNumberInput(input, shouldRender = false) {
+    if (isSupplierDraft()) return;
     setDraftCode(selectedPrefix(), input.value);
     input.value = appState.inventoryDraft.mms_code_number;
     if (shouldRender) renderApp();
@@ -132,6 +164,7 @@
     (event) => {
       const select = event.target.closest?.("[data-inventory-ma-code-prefix]");
       if (!select) return;
+      if (isSupplierDraft()) return;
       event.preventDefault();
       event.stopImmediatePropagation();
       handlePrefixChange(select);
@@ -144,6 +177,7 @@
     (event) => {
       const input = event.target.closest?.("[data-inventory-ma-code-number]");
       if (!input) return;
+      if (isSupplierDraft()) return;
       event.preventDefault();
       event.stopImmediatePropagation();
       handleNumberInput(input, false);
@@ -156,6 +190,7 @@
     (event) => {
       const input = event.target.closest?.("[data-inventory-ma-code-number]");
       if (!input) return;
+      if (isSupplierDraft()) return;
       event.preventDefault();
       event.stopImmediatePropagation();
       handleNumberInput(input, true);
@@ -164,13 +199,13 @@
   );
 
   function wrapRender() {
-    if (typeof renderApp !== "function" || renderApp.__mmsInventoryCodeNumberFieldV3) return;
+    if (typeof renderApp !== "function" || renderApp.__mmsInventoryCodeNumberFieldV4) return;
     const baseRenderApp = renderApp;
     renderApp = function renderAppInventoryCodeNumberField() {
       baseRenderApp();
       enhanceCodeField();
     };
-    renderApp.__mmsInventoryCodeNumberFieldV3 = true;
+    renderApp.__mmsInventoryCodeNumberFieldV4 = true;
   }
 
   wrapRender();
