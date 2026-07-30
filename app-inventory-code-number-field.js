@@ -60,6 +60,21 @@
     appState.inventoryDraft.sku = appState.inventoryDraft.mms_code;
   }
 
+  function shouldResetEmptyCreateDraft() {
+    const draft = appState.inventoryDraft || {};
+    if (appState.currentView !== "inventory") return false;
+    if (appState.inventorySaveMode === "edit" && text(draft.id)) return false;
+    if ((appData.inventory || []).length > 0) return false;
+    return !text(draft.name) && !text(draft.category) && !text(draft.supplier_name) && !text(draft.supplier_material_code);
+  }
+
+  function resetEmptyCreateDraftNumber() {
+    if (!shouldResetEmptyCreateDraft()) return;
+    const prefix = selectedPrefix();
+    appState.inventorySaveMode = "create";
+    setDraftCode(prefix, nextNumber(prefix));
+  }
+
   function relabelPrefixOptions(select) {
     Array.from(select.options || []).forEach((option) => {
       const prefix = text(option.value).toUpperCase();
@@ -78,6 +93,7 @@
     if (!select || !input) return;
 
     relabelPrefixOptions(select);
+    resetEmptyCreateDraftNumber();
     const prefix = selectedPrefix();
     const number = draftNumber();
     setDraftCode(prefix, number);
@@ -148,13 +164,13 @@
   );
 
   function wrapRender() {
-    if (typeof renderApp !== "function" || renderApp.__mmsInventoryCodeNumberFieldV2) return;
+    if (typeof renderApp !== "function" || renderApp.__mmsInventoryCodeNumberFieldV3) return;
     const baseRenderApp = renderApp;
     renderApp = function renderAppInventoryCodeNumberField() {
       baseRenderApp();
       enhanceCodeField();
     };
-    renderApp.__mmsInventoryCodeNumberFieldV2 = true;
+    renderApp.__mmsInventoryCodeNumberFieldV3 = true;
   }
 
   wrapRender();
