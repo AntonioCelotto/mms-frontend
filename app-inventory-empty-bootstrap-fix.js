@@ -2,6 +2,30 @@
   const VERSION = "inventory-empty-bootstrap-1";
   const PREFIXES = ["TEX", "HRD", "PCK", "PM", "RIC", "STM", "CRT", "SRT", "STK", "CNZ", "TRT"];
 
+  function getState() {
+    try {
+      return typeof appState === "object" ? appState : null;
+    } catch (error) {
+      return null;
+    }
+  }
+
+  function getData() {
+    try {
+      return typeof appData === "object" ? appData : null;
+    } catch (error) {
+      return null;
+    }
+  }
+
+  function hasFallbackData() {
+    try {
+      return typeof fallbackAppData === "object" && !!fallbackAppData;
+    } catch (error) {
+      return false;
+    }
+  }
+
   function text(value) {
     return String(value ?? "").trim();
   }
@@ -27,15 +51,16 @@
   }
 
   function selectedPrefix() {
-    const draft = window.appState?.inventoryDraft || {};
+    const draft = getState()?.inventoryDraft || {};
     const parts = codeParts(draft.mms_code);
     const prefix = text(draft.mms_code_prefix || parts?.prefix || "TEX").toUpperCase();
     return PREFIXES.includes(prefix) ? prefix : "TEX";
   }
 
   function nextNumber(prefix) {
+    const data = getData();
     const normalizedPrefix = PREFIXES.includes(text(prefix).toUpperCase()) ? text(prefix).toUpperCase() : "TEX";
-    const highest = (window.appData?.inventory || [])
+    const highest = (data?.inventory || [])
       .map(normalizeItem)
       .map((item) => codeParts(item.mms_code || item.sku))
       .filter((parts) => parts?.prefix === normalizedPrefix)
@@ -48,11 +73,11 @@
   }
 
   function resetEmptyInventoryDraftCode() {
-    if (typeof window.appState !== "object") return;
-    if (window.appState.currentView !== "inventory") return;
+    const state = getState();
+    if (!state || state.currentView !== "inventory") return;
 
-    const draft = window.appState.inventoryDraft || {};
-    const isEdit = window.appState.inventorySaveMode === "edit" && text(draft.id);
+    const draft = state.inventoryDraft || {};
+    const isEdit = state.inventorySaveMode === "edit" && text(draft.id);
     if (isEdit) return;
 
     const hasUserContent = [draft.name, draft.category, draft.supplier_name, draft.supplier_material_code].some(text);
@@ -60,8 +85,8 @@
 
     const prefix = selectedPrefix();
     const number = nextNumber(prefix);
-    window.appState.inventorySaveMode = "create";
-    window.appState.inventoryDraft = {
+    state.inventorySaveMode = "create";
+    state.inventoryDraft = {
       ...draft,
       mms_code_prefix: prefix,
       mms_code_number: number,
@@ -77,15 +102,18 @@
   }
 
   async function refreshDatabaseBackedState() {
+    const state = getState();
+    if (!state) return;
+
     try {
       const payload = await fetchJson("/api/bootstrap");
-      if (payload && Array.isArray(payload.orders) && typeof window.fallbackAppData === "object") {
-        window.appData = { ...window.fallbackAppData, ...payload };
-        if (window.appData.orders.length) {
-          const selectedExists = window.appData.orders.some((order) => order.id === window.appState.selectedOrderId);
-          if (!selectedExists) window.appState.selectedOrderId = window.appData.orders[0].id;
+      if (payload && Array.isArray(payload.orders) && hasFallbackData()) {
+        appData = { ...fallbackAppData, ...payload };
+        if (appData.orders.length) {
+          const selectedExists = appData.orders.some((order) => order.id === state.selectedOrderId);
+          if (!selectedExists) state.selectedOrderId = appData.orders[0].id;
         } else {
-          window.appState.selectedOrderId = null;
+          state.selectedOrderId = null;
         }
       }
     } catch (error) {
@@ -94,15 +122,19 @@
 
     try {
       const inventoryPayload = await fetchJson("/api/inventory");
-      if (inventoryPayload && Array.isArray(inventoryPayload.items) && typeof window.appData === "object") {
-        window.appData.inventory = inventoryPayload.items;
+      if (inventoryPayload && Array.isArray(inventoryPayload.items) && getData()) {
+        appData.inventory = inventoryPayload.items;
       }
     } catch (error) {
       console.warn(`${VERSION}: inventory refresh skipped`, error);
     }
 
     resetEmptyInventoryDraftCode();
-    if (typeof window.renderApp === "function") window.renderApp();
+    try {
+      if (typeof renderApp === "function") renderApp();
+    } catch (error) {
+      console.warn(`${VERSION}: render skipped`, error);
+    }
   }
 
   window.mmsRefreshDatabaseBackedState = refreshDatabaseBackedState;
