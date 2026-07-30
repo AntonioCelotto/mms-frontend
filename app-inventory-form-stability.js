@@ -1,5 +1,5 @@
 (function () {
-  const VERSION = "inventory-form-stability-1";
+  const VERSION = "inventory-form-stability-2";
   let editingUntil = 0;
   let queuedRender = false;
 
@@ -68,7 +68,6 @@
 
   function ensureMmsCode() {
     const draft = ensureDraft();
-    if (text(draft.material_origin).toLowerCase() === "fornitore") return;
     const parts = codeParts(draft.mms_code);
     setMmsCode(draft.mms_code_prefix || parts?.prefix || "TEX", draft.mms_code_number || parts?.number || nextNumber(draft.mms_code_prefix || parts?.prefix || "TEX"));
   }
@@ -81,13 +80,7 @@
     draft[field] = target.value;
 
     if (field === "material_origin") {
-      if (target.value === "fornitore") {
-        draft.mms_code = "";
-        draft.mms_code_number = "";
-        draft.sku = "";
-      } else {
-        ensureMmsCode();
-      }
+      ensureMmsCode();
       if (typeof renderApp === "function") {
         window.setTimeout(() => {
           if (!editingActive()) renderApp();
@@ -109,7 +102,6 @@
   function handlePrefixField(target) {
     if (!target?.matches?.("[data-inventory-ma-code-prefix]")) return;
     markEditing();
-    if (text(ensureDraft().material_origin).toLowerCase() === "fornitore") return;
     setMmsCode(target.value, nextNumber(target.value));
     if (typeof renderApp === "function") renderApp();
   }
@@ -121,18 +113,47 @@
     const codeInput = document.querySelector('[data-inventory-ma-draft="mms_code"]');
     if (!prefixSelect || !codeInput) return;
 
-    if (text(draft.material_origin).toLowerCase() === "fornitore") {
-      prefixSelect.disabled = true;
-      codeInput.value = "";
-      codeInput.placeholder = "Non necessario per fornitore";
-      return;
-    }
-
     prefixSelect.disabled = false;
     ensureMmsCode();
     prefixSelect.value = currentPrefix();
     if (document.activeElement !== codeInput) codeInput.value = draft.mms_code;
     codeInput.placeholder = "MMS-TEX-001";
+  }
+
+  function normalizeInventoryPayload(payload) {
+    if (!payload || typeof payload !== "object") return payload;
+    if (Array.isArray(payload.items)) {
+      payload.items = payload.items.map((item) => normalizeInventoryPayload(item));
+      return payload;
+    }
+    if (payload.item && typeof payload.item === "object") {
+      payload.item = normalizeInventoryPayload(payload.item);
+      return payload;
+    }
+    const mmsCode = text(payload.mms_code);
+    if (mmsCode && text(payload.material_origin).toLowerCase() === "fornitore") {
+      payload.sku = mmsCode;
+    }
+    return payload;
+  }
+
+  if (typeof window.fetch === "function" && !window.fetch.__mmsInventorySharedSupplierCode) {
+    const baseFetch = window.fetch.bind(window);
+    window.fetch = function fetchInventorySharedSupplierCode(input, init) {
+      const url = typeof input === "string" ? input : input?.url || "";
+      const method = text(init?.method || "GET").toUpperCase();
+      if (url.includes("/api/inventory") && ["POST", "PATCH"].includes(method) && typeof init?.body === "string") {
+        try {
+          const payload = JSON.parse(init.body);
+          const normalized = normalizeInventoryPayload(payload);
+          init = { ...init, body: JSON.stringify(normalized) };
+        } catch (error) {
+          // Lascia passare il payload originale se non e' JSON valido.
+        }
+      }
+      return baseFetch(input, init);
+    };
+    window.fetch.__mmsInventorySharedSupplierCode = true;
   }
 
   document.addEventListener(
