@@ -9,6 +9,7 @@
     supplier_name: "",
     supplier_material_code: "",
     mms_code: "",
+    mms_code_number: "",
     unit: "",
     available_quantity: "0",
     reserved_quantity: "0",
@@ -24,6 +25,12 @@
 
   function text(value) {
     return String(value ?? "").trim();
+  }
+
+  function padNumber(value) {
+    const digits = text(value).replace(/\D/g, "");
+    const parsed = Number.parseInt(digits || "0", 10);
+    return String(Number.isFinite(parsed) && parsed > 0 ? parsed : 1).padStart(3, "0");
   }
 
   function normalizeItem(item) {
@@ -61,26 +68,32 @@
   function currentPrefix() {
     const draft = appState.inventoryDraft || {};
     const parts = codeParts(draft.mms_code);
-    return parts?.prefix || draft.mms_code_prefix || "TEX";
+    return text(draft.mms_code_prefix || parts?.prefix || "TEX").toUpperCase();
   }
 
-  function nextMmsCode(prefix) {
+  function nextMmsNumber(prefix) {
     const normalizedPrefix = text(prefix || "TEX").toUpperCase();
     const max = (appData.inventory || [])
       .map(normalizeItem)
       .map((item) => codeParts(item.mms_code || item.sku))
       .filter((parts) => parts?.prefix === normalizedPrefix)
       .reduce((highest, parts) => Math.max(highest, parts.number), 0);
-    return `MMS-${normalizedPrefix}-${String(max + 1).padStart(3, "0")}`;
+    return padNumber(max + 1);
+  }
+
+  function composeMmsCode(prefix, number) {
+    return `MMS-${text(prefix || "TEX").toUpperCase()}-${padNumber(number)}`;
   }
 
   function freshDraft(type, prefix) {
     const nextPrefix = text(prefix || currentPrefix() || "TEX").toUpperCase();
+    const nextNumber = nextMmsNumber(nextPrefix);
     return {
       ...DEFAULT_DRAFT,
       item_type: type === "articolo" ? "articolo" : "materiale",
       mms_code_prefix: nextPrefix,
-      mms_code: nextMmsCode(nextPrefix),
+      mms_code_number: nextNumber,
+      mms_code: composeMmsCode(nextPrefix, nextNumber),
     };
   }
 
@@ -103,8 +116,12 @@
   function ensureDraftCode(draft) {
     if ((draft.material_origin || "mms") !== "mms") return;
     const prefix = text(draft.mms_code_prefix || currentPrefix() || "TEX").toUpperCase();
+    const existingParts = codeParts(draft.mms_code);
+    const number = text(draft.mms_code_number) || (existingParts?.prefix === prefix ? existingParts.number : "") || nextMmsNumber(prefix);
     draft.mms_code_prefix = prefix;
-    if (!text(draft.mms_code)) draft.mms_code = nextMmsCode(prefix);
+    draft.mms_code_number = padNumber(number);
+    draft.mms_code = composeMmsCode(prefix, draft.mms_code_number);
+    draft.sku = draft.mms_code;
   }
 
   function draftPayload(mode) {
@@ -178,6 +195,7 @@
       unit_cost: String(normalized.unit_cost ?? ""),
       retail_price: String(normalized.retail_price ?? ""),
       mms_code_prefix: parts?.prefix || "TEX",
+      mms_code_number: parts?.number ? padNumber(parts.number) : "",
     };
   }
 
