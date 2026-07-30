@@ -6,7 +6,7 @@
   function attr(value) {
     return text(value)
       .replace(/&/g, "&amp;")
-      .replace(/"/g, "&quot;")
+      .replace(/\"/g, "&quot;")
       .replace(/</g, "&lt;")
       .replace(/>/g, "&gt;");
   }
@@ -277,9 +277,12 @@
     selectInteractionUntil = Date.now() + duration;
   }
 
+  function clearSelectInteraction() {
+    selectInteractionUntil = 0;
+  }
+
   function isSelectInteractionActive() {
-    const active = document.activeElement;
-    return Date.now() < selectInteractionUntil || active instanceof HTMLSelectElement;
+    return Date.now() < selectInteractionUntil;
   }
 
   document.addEventListener(
@@ -287,7 +290,17 @@
     (event) => {
       if (event.target instanceof HTMLSelectElement || event.target?.closest?.("select")) {
         markSelectInteraction(1400);
+      } else {
+        clearSelectInteraction();
       }
+    },
+    true
+  );
+
+  document.addEventListener(
+    "keydown",
+    (event) => {
+      if (event.key === "Escape" || event.key === "Tab") clearSelectInteraction();
     },
     true
   );
@@ -297,6 +310,8 @@
     (event) => {
       if (event.target instanceof HTMLSelectElement) {
         markSelectInteraction(1400);
+      } else {
+        clearSelectInteraction();
       }
     },
     true
@@ -321,7 +336,7 @@
           window.setTimeout(() => {
             renderQueued = false;
             if (!isSelectInteractionActive()) baseRenderApp();
-          }, 220);
+          }, 240);
         }
         return;
       }
