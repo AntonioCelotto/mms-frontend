@@ -5,6 +5,7 @@
     quotes: "Preventivi",
     orders: "Ordini",
     clients: "Clienti",
+    client: "Scheda cliente",
     inventory: "Magazzino",
     payments: "Pagamenti",
     calendar: "Calendario",
@@ -16,7 +17,7 @@
 
   const ALLOWED_VIEWS = {
     admin: "all",
-    commerce: new Set(["dashboard", "new-order", "quotes", "orders", "clients", "inventory", "payments", "calendar", "order-detail", "operator-order"]),
+    commerce: new Set(["dashboard", "new-order", "quotes", "orders", "clients", "client", "inventory", "payments", "calendar", "order-detail", "operator-order"]),
     operator: new Set(["calendar", "operator-order"]),
   };
 
