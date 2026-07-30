@@ -1,6 +1,6 @@
 {
-  "version": "calendar-hour-distribution-1",
-  "label": "Distribuzione ore task sul calendario",
-  "updated_at": "2026-07-13T13:35:00Z",
-  "purpose": "Distribuisce visivamente le task lunghe sui giorni lavorativi necessari in base alle ore giornaliere dell'operatore e alla data di consegna"
+  "version": "inventory-empty-bootstrap-1",
+  "label": "Magazzino vuoto da 001 dopo pulizia ordini",
+  "updated_at": "2026-07-30T09:55:00Z",
+  "purpose": "Quando ordini e magazzino sono vuoti, l'app usa i dati reali del database invece dei dati demo e il prossimo codice MMS riparte da 001"
 }
