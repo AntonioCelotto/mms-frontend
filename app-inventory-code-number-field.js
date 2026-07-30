@@ -59,6 +59,13 @@
     return parts?.number || nextNumber(selectedPrefix());
   }
 
+  function clearSupplierMmsCode() {
+    if (!appState.inventoryDraft) return;
+    appState.inventoryDraft.mms_code = "";
+    appState.inventoryDraft.mms_code_number = "";
+    appState.inventoryDraft.sku = "";
+  }
+
   function setDraftCode(prefix, number) {
     if (isSupplierDraft()) return;
     if (!appState.inventoryDraft) appState.inventoryDraft = {};
@@ -97,6 +104,7 @@
   }
 
   function restoreSupplierCodeField(select, input) {
+    clearSupplierMmsCode();
     if (select) select.disabled = true;
     if (!input) return;
     input.dataset.inventoryMaDraft = "mms_code";
