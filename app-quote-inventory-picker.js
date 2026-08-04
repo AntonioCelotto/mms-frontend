@@ -120,6 +120,40 @@
     });
   }
 
+
+  function inventoryArticles() {
+    return inventoryItems().filter((item) => item.item_type === "articolo");
+  }
+
+  function selectedItemForArticle(article) {
+    const itemId = text(article.inventory_item_id || article.inventoryItemId);
+    const sku = text(article.inventory_sku || article.sku || article.product_code);
+    const name = text(article.name);
+    return inventoryArticles().find((item) => {
+      return (
+        (itemId && String(item.id) === itemId) ||
+        (sku && itemCode(item).toLowerCase() === sku.toLowerCase()) ||
+        (name && item.name.toLowerCase() === name.toLowerCase())
+      );
+    });
+  }
+
+  function quoteArticleSearchMarkup(article, articleIndex) {
+    const items = inventoryArticles();
+    const listId = `quote-article-options-${articleIndex}`;
+    const selected = selectedItemForArticle(article);
+    return `
+      <input class="field-value" list="${listId}" data-quote-article="${articleIndex}" data-quote-article-field="name" data-quote-article-search="${articleIndex}" value="${html(article.name)}" placeholder="Cerca articolo per nome o codice" />
+      <datalist id="${listId}">
+        ${items
+          .map((item) => `<option value="${html(item.name)}" label="${html(`${itemCode(item) || "Senza codice"} - ${quoteMoney(text(item.retail_price) || text(item.unit_cost))}`)}"></option>`)
+          .join("")}
+      </datalist>
+      <div class="muted" style="margin-top:6px;">${items.length ? "Scrivi il nome o il codice e scegli un articolo del Magazzino." : "Nessun articolo presente in Magazzino: puoi compilare il nome manualmente."}</div>
+      ${selected ? `<div class="quote-stock-ok">Selezionato: ${html(itemLabel(selected))}</div>` : ""}
+    `;
+  }
+
   function quoteInventoryMaterialRows(article, articleIndex) {
     const items = inventoryItems();
     const loadingOption = quoteInventoryLoading ? `<option value="">Caricamento magazzino...</option>` : "";
@@ -179,6 +213,31 @@
       .join("");
   }
 
+  function applyInventoryToQuoteArticle(articleIndex, query) {
+    ensureQuoteState();
+    const normalized = text(query).toLowerCase();
+    const item = inventoryArticles().find((candidate) => {
+      return (
+        candidate.name.toLowerCase() === normalized ||
+        itemCode(candidate).toLowerCase() === normalized ||
+        selectValue(candidate) === query
+      );
+    });
+    const article = appState.quoteArticles?.[articleIndex];
+    if (!item || !article) return;
+    article.name = item.name;
+    article.inventory_item_id = item.id || "";
+    article.inventoryItemId = item.id || "";
+    article.inventory_sku = item.sku || "";
+    article.sku = item.sku || "";
+    article.product_code = itemCode(item);
+    article.color = item.color || "";
+    article.description = item.description || "";
+    article.cost = text(item.retail_price) || text(item.unit_cost) || "";
+    if (!text(article.quantity)) article.quantity = "1";
+    renderApp();
+  }
+
   function applyInventoryToQuoteMaterial(articleIndex, materialIndex, itemKey) {
     ensureQuoteState();
     const item = inventoryItems().find((candidate) => selectValue(candidate) === itemKey);
@@ -212,7 +271,9 @@
     const baseRenderQuoteArticleInventory = renderQuoteArticle;
     renderQuoteArticle = function renderQuoteArticleWithInventory(article, articleIndex) {
       const markup = baseRenderQuoteArticleInventory(article, articleIndex);
+      const nameInput = `<input class="field-value" data-quote-article="${articleIndex}" data-quote-article-field="name" value="${quoteHtml(article.name)}" placeholder="es. Giacca, pantalone, camicia" />`;
       return markup
+        .replace(nameInput, quoteArticleSearchMarkup(article, articleIndex))
         .replace("<th>Materiale / prodotto</th>", "<th>Origine</th><th>Materiale / articolo</th><th>Codice</th>")
         .replace("<th>Prezzo</th>", "<th>Prezzo pubblico</th>");
     };
@@ -222,6 +283,11 @@
   if (baseAttachQuoteEventsInventory) {
     attachQuoteEvents = function attachQuoteEventsWithInventory() {
       baseAttachQuoteEventsInventory();
+      document.querySelectorAll("[data-quote-article-search]").forEach((input) => {
+        input.addEventListener("change", (event) => {
+          applyInventoryToQuoteArticle(Number(event.target.dataset.quoteArticleSearch), event.target.value);
+        });
+      });
       document.querySelectorAll("[data-quote-source-choice]").forEach((select) => {
         select.addEventListener("change", (event) => {
           const material = appState.quoteArticles?.[Number(event.target.dataset.quoteSourceChoice)]?.materials?.[Number(event.target.dataset.quoteMaterialIndex)];

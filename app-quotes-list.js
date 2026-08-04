@@ -3,6 +3,8 @@ const QUOTE_LIST_VIEW = "quotes";
 function quoteListEnsureState() {
   if (!Array.isArray(appState.savedQuotes)) appState.savedQuotes = [];
   if (!appState.selectedQuoteId && appState.savedQuotes[0]) appState.selectedQuoteId = appState.savedQuotes[0].id;
+  if (typeof appState.quoteListSearch !== "string") appState.quoteListSearch = "";
+  if (typeof appState.quoteListPendingSearch !== "string") appState.quoteListPendingSearch = appState.quoteListSearch;
 }
 
 function quoteListClone(value) {
@@ -50,6 +52,24 @@ function quoteListArticleCount(quote) {
 
 function quoteListMaterialCount(quote) {
   return (quote.articles || []).reduce((sum, article) => sum + (article.materials || []).length, 0);
+}
+
+
+function quoteListMatchesSearch(quote, query) {
+  const normalized = quoteText(query).toLowerCase();
+  if (!normalized) return true;
+  const articleText = (quote.articles || [])
+    .flatMap((article) => [
+      article.name,
+      article.product_code,
+      article.sku,
+      ...(article.materials || []).flatMap((material) => [material.material, material.product_code, material.sku]),
+    ])
+    .join(" ");
+  return [quote.id, quote.client, quote.category, quote.status, articleText]
+    .join(" ")
+    .toLowerCase()
+    .includes(normalized);
 }
 
 function quoteListClientInfo(quote) {
@@ -275,7 +295,8 @@ function quoteListConvertToOrder(quoteId) {
 
 function renderQuotes() {
   quoteListEnsureState();
-  const quotes = appState.savedQuotes;
+  const allQuotes = appState.savedQuotes;
+  const quotes = allQuotes.filter((quote) => quoteListMatchesSearch(quote, appState.quoteListSearch));
   const selected = quoteListFind();
   return `
     <section class="view ${appState.currentView === QUOTE_LIST_VIEW ? "active" : ""}">
@@ -285,7 +306,7 @@ function renderQuotes() {
           <p>Archivio commerciale prima dell'ordine: PDF, invio al cliente, accettazione o rifiuto.</p>
         </div>
         <div class="screen-actions">
-          <div class="ghost-pill">${quotes.length} preventivi salvati</div>
+          <div class="ghost-pill">${appState.quoteListSearch ? `${quotes.length} di ${allQuotes.length}` : allQuotes.length} preventivi salvati</div>
           <button class="action-pill" data-open="new-order" type="button">Nuovo preventivo</button>
         </div>
       </div>
@@ -298,6 +319,10 @@ function renderQuotes() {
                 <h3>Elenco preventivi</h3>
                 <p>Solo i preventivi accettati vengono trasformati in ordini operativi.</p>
               </div>
+            </div>
+            <div class="filter-row" style="grid-template-columns:minmax(220px,1fr) auto; margin-bottom:16px;">
+              <input class="filter-chip" data-quote-list-search value="${quoteHtml(appState.quoteListPendingSearch)}" placeholder="Cerca preventivo, cliente o articolo" />
+              <button class="action-pill" data-quote-list-search-apply type="button">Cerca</button>
             </div>
             <table>
               <thead>
@@ -402,6 +427,25 @@ function attachQuotesListEvents() {
       },
       true
     );
+  });
+
+  const applyQuoteSearch = () => {
+    appState.quoteListSearch = appState.quoteListPendingSearch || "";
+    renderApp();
+  };
+  document.querySelectorAll("[data-quote-list-search]").forEach((input) => {
+    input.addEventListener("input", (event) => {
+      appState.quoteListPendingSearch = event.target.value;
+    });
+    input.addEventListener("keydown", (event) => {
+      if (event.key === "Enter") {
+        event.preventDefault();
+        applyQuoteSearch();
+      }
+    });
+  });
+  document.querySelectorAll("[data-quote-list-search-apply]").forEach((button) => {
+    button.addEventListener("click", applyQuoteSearch);
   });
 
   document.querySelectorAll("[data-quote-select]").forEach((button) => {
