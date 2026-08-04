@@ -234,7 +234,6 @@ renderNewOrder = function renderQuote() {
         </div>
         <div class="screen-actions">
           <div class="ghost-pill">Totale: ${quoteMoney(quoteGrandTotal())}</div>
-          <button class="mini-btn" data-quote-add-article type="button">+ Articolo</button>
           <button class="action-pill" data-action="save-quote" type="button">${appState.busy ? "Salvataggio..." : "Salva preventivo"}</button>
         </div>
       </div>
@@ -295,7 +294,6 @@ renderNewOrder = function renderQuote() {
               <h3>Articoli preventivo</h3>
               <p>Usa + Articolo quando nello stesso preventivo ci sono piu' capi o lavorazioni.</p>
             </div>
-            <button class="action-pill" data-quote-add-article type="button">+ Articolo</button>
           </div>
         </div>
       </div>
