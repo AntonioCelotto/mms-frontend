@@ -2,6 +2,7 @@
   const DISCOUNT_NONE = "none";
   const DISCOUNT_PERCENTAGE = "percentage";
   const DISCOUNT_FIXED = "fixed";
+  const DEFAULT_QUOTE_VAT_RATE = 22;
 
   function discountNumber(value) {
     if (typeof value === "number") return Number.isFinite(value) ? value : 0;
@@ -41,6 +42,25 @@
     return { subtotal, type, value, amount, total: discountRound(subtotal - amount) };
   }
 
+  function quoteVatRate(value, fallback = DEFAULT_QUOTE_VAT_RATE) {
+    if (value === null || value === undefined || value === "") return fallback;
+    return Math.min(100, Math.max(0, discountRound(value)));
+  }
+
+  function calculateQuoteTotals(subtotalValue, typeValue, discountValue, vatRateValue = DEFAULT_QUOTE_VAT_RATE) {
+    const discount = calculateDiscount(subtotalValue, typeValue, discountValue);
+    const vatRate = quoteVatRate(vatRateValue);
+    const taxable = discount.total;
+    const vatAmount = discountRound((taxable * vatRate) / 100);
+    return {
+      ...discount,
+      taxable,
+      vatRate,
+      vatAmount,
+      total: discountRound(taxable + vatAmount),
+    };
+  }
+
   function discountMoney(value) {
     if (typeof quoteMoney === "function") return quoteMoney(value);
     return new Intl.NumberFormat("it-IT", { style: "currency", currency: "EUR" }).format(discountNumber(value));
@@ -76,7 +96,7 @@
 
   function quoteDiscountCalculation() {
     const draft = ensureQuoteDiscountDraft();
-    return calculateDiscount(quoteSubtotal(), draft.type, draft.value);
+    return calculateQuoteTotals(quoteSubtotal(), draft.type, draft.value, DEFAULT_QUOTE_VAT_RATE);
   }
 
   function applyDiscountToQuote(quote, calculation) {
@@ -86,6 +106,9 @@
     quote.discountType = result.type;
     quote.discountValue = result.value;
     quote.discountAmount = result.amount;
+    quote.taxableAmount = result.taxable;
+    quote.vatRate = result.vatRate;
+    quote.vatAmount = result.vatAmount;
     quote.total = result.total;
     return quote;
   }
@@ -94,7 +117,8 @@
     const subtotal = discountNumber(record?.subtotal ?? record?.total);
     const type = normalizeDiscountType(record?.discountType ?? record?.discount_type);
     const value = discountNumber(record?.discountValue ?? record?.discount_value);
-    return calculateDiscount(subtotal, type, value);
+    const vatRate = quoteVatRate(record?.vatRate ?? record?.vat_rate, DEFAULT_QUOTE_VAT_RATE);
+    return calculateQuoteTotals(subtotal, type, value, vatRate);
   }
 
   function loadQuoteDiscountDraft(quote) {
@@ -155,7 +179,9 @@
         <div class="total" style="max-width:360px;margin-left:auto;display:grid;gap:8px;font-size:16px;">
           <div style="display:flex;justify-content:space-between;gap:24px;font-weight:400;"><span>Subtotale</span><span>${discountMoney(calculation.subtotal)}</span></div>
           <div style="display:flex;justify-content:space-between;gap:24px;font-weight:400;"><span>${discountEscape(label)}</span><span>- ${discountMoney(calculation.amount)}</span></div>
-          <div style="display:flex;justify-content:space-between;gap:24px;padding-top:10px;border-top:2px solid #111;font-size:22px;"><span>Totale</span><span>${discountMoney(calculation.total)}</span></div>
+          <div style="display:flex;justify-content:space-between;gap:24px;font-weight:400;"><span>Imponibile</span><span>${discountMoney(calculation.taxable)}</span></div>
+          <div style="display:flex;justify-content:space-between;gap:24px;font-weight:400;"><span>IVA ${String(calculation.vatRate).replace(".", ",")}%</span><span>${discountMoney(calculation.vatAmount)}</span></div>
+          <div style="display:flex;justify-content:space-between;gap:24px;padding-top:10px;border-top:2px solid #111;font-size:22px;"><span>Totale IVA inclusa</span><span>${discountMoney(calculation.total)}</span></div>
         </div>`;
       return html.replace(/<div class="total">[\s\S]*?<\/div>/, summary);
     };
@@ -187,7 +213,9 @@
           <div class="mms-discount-summary">
             <span>Subtotale <strong data-discount-output="subtotal">${discountMoney(calculation.subtotal)}</strong></span>
             <span>Sconto <strong data-discount-output="amount">- ${discountMoney(calculation.amount)}</strong></span>
-            <span>Totale <strong data-discount-output="total">${discountMoney(calculation.total)}</strong></span>
+            <span>Imponibile <strong data-discount-output="taxable">${discountMoney(calculation.taxable)}</strong></span>
+            <span>IVA 22% <strong data-discount-output="vat">${discountMoney(calculation.vatAmount)}</strong></span>
+            <span>Totale IVA inclusa <strong data-discount-output="total">${discountMoney(calculation.total)}</strong></span>
           </div>
         </div>
       </div>`;
@@ -197,6 +225,8 @@
     const calculation = quoteDiscountCalculation();
     panel.querySelector('[data-discount-output="subtotal"]')?.replaceChildren(document.createTextNode(discountMoney(calculation.subtotal)));
     panel.querySelector('[data-discount-output="amount"]')?.replaceChildren(document.createTextNode(`- ${discountMoney(calculation.amount)}`));
+    panel.querySelector('[data-discount-output="taxable"]')?.replaceChildren(document.createTextNode(discountMoney(calculation.taxable)));
+    panel.querySelector('[data-discount-output="vat"]')?.replaceChildren(document.createTextNode(discountMoney(calculation.vatAmount)));
     panel.querySelector('[data-discount-output="total"]')?.replaceChildren(document.createTextNode(discountMoney(calculation.total)));
     const totalPill = document.querySelector("section.view.active .screen-actions .ghost-pill");
     if (totalPill) totalPill.textContent = `Totale: ${discountMoney(calculation.total)}`;
