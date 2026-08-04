@@ -12,7 +12,7 @@ except ModuleNotFoundError:
     from api._supabase import delete_rows, fetch_table, supabase_request
 
 
-QUOTE_SELECT = "id,quote_number,client_name,category,priority,quote_date,status,note,subtotal,discount_type,discount_value,discount_amount,total,payload,created_at,updated_at"
+QUOTE_SELECT = "id,quote_number,client_name,category,priority,quote_date,status,note,subtotal,discount_type,discount_value,discount_amount,taxable_amount,vat_rate,vat_amount,total,payload,created_at,updated_at"
 
 
 def quote_date(value):
@@ -44,12 +44,19 @@ def quote_discount_fields(quote):
     else:
         discount_value = 0
         discount_amount = 0
-    total = round(subtotal - discount_amount, 2)
+    taxable_amount = round(subtotal - discount_amount, 2)
+    raw_vat_rate = quote.get("vatRate") if quote.get("vatRate") is not None else quote.get("vat_rate")
+    vat_rate = min(100, max(0, quote_total(22 if raw_vat_rate is None else raw_vat_rate)))
+    vat_amount = round(taxable_amount * vat_rate / 100, 2)
+    total = round(taxable_amount + vat_amount, 2)
     return {
         "subtotal": subtotal,
         "discount_type": discount_type,
         "discount_value": discount_value,
         "discount_amount": discount_amount,
+        "taxable_amount": taxable_amount,
+        "vat_rate": vat_rate,
+        "vat_amount": vat_amount,
         "total": total,
     }
 
@@ -74,6 +81,9 @@ def normalize_quote_payload(raw_quote):
     payload["discountType"] = discount["discount_type"]
     payload["discountValue"] = discount["discount_value"]
     payload["discountAmount"] = discount["discount_amount"]
+    payload["taxableAmount"] = discount["taxable_amount"]
+    payload["vatRate"] = discount["vat_rate"]
+    payload["vatAmount"] = discount["vat_amount"]
     payload["total"] = discount["total"]
 
     return {
@@ -88,6 +98,9 @@ def normalize_quote_payload(raw_quote):
         "discount_type": discount["discount_type"],
         "discount_value": discount["discount_value"],
         "discount_amount": discount["discount_amount"],
+        "taxable_amount": discount["taxable_amount"],
+        "vat_rate": discount["vat_rate"],
+        "vat_amount": discount["vat_amount"],
         "total": discount["total"],
         "payload": payload,
     }
@@ -107,6 +120,9 @@ def shape_quote(row):
     quote["discountType"] = row.get("discount_type") or quote.get("discountType") or quote.get("discount_type") or "none"
     quote["discountValue"] = float(row.get("discount_value") or quote.get("discountValue") or quote.get("discount_value") or 0)
     quote["discountAmount"] = float(row.get("discount_amount") or quote.get("discountAmount") or quote.get("discount_amount") or 0)
+    quote["taxableAmount"] = float(row.get("taxable_amount") or quote.get("taxableAmount") or quote.get("taxable_amount") or 0)
+    quote["vatRate"] = float(row.get("vat_rate") if row.get("vat_rate") is not None else quote.get("vatRate") or quote.get("vat_rate") or 0)
+    quote["vatAmount"] = float(row.get("vat_amount") or quote.get("vatAmount") or quote.get("vat_amount") or 0)
     quote["total"] = float(row.get("total") or quote.get("total") or 0)
     quote["articles"] = quote.get("articles") if isinstance(quote.get("articles"), list) else []
     quote["photos"] = quote.get("photos") if isinstance(quote.get("photos"), list) else []
