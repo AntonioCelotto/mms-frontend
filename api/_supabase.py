@@ -184,6 +184,12 @@ def build_bootstrap():
                 "estimatedDelivery": row.get("estimated_delivery_date") or "Da definire",
                 "warehouseLinked": bool(row.get("warehouse_linked")),
                 "clientVisibility": row.get("client_visibility_note") or "",
+                "sourceQuoteId": row.get("source_quote_number") or "",
+                "subtotal": float(row.get("subtotal") or 0),
+                "discountType": row.get("discount_type") or "none",
+                "discountValue": float(row.get("discount_value") or 0),
+                "discountAmount": float(row.get("discount_amount") or 0),
+                "total": float(row.get("total") or 0),
             }
         )
 
