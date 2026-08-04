@@ -6,18 +6,27 @@
     return item && typeof item === "object" ? item : {};
   }
 
+  function dataStore() {
+    return typeof appData !== "undefined" ? appData : null;
+  }
+
+  function stateStore() {
+    return typeof appState !== "undefined" ? appState : null;
+  }
+
   function findItem(id) {
-    const inventory = Array.isArray(window.appData?.inventory) ? window.appData.inventory : [];
+    const data = dataStore();
+    const inventory = Array.isArray(data?.inventory) ? data.inventory : [];
     return inventory.map(normalizedItem).find((item) => String(item.id) === String(id));
   }
 
   function showMessage(message) {
-    if (typeof window.setFlashMessage === "function") window.setFlashMessage(message);
+    if (typeof setFlashMessage === "function") setFlashMessage(message);
   }
 
   function redraw() {
     if (document.activeElement instanceof HTMLElement) document.activeElement.blur();
-    if (typeof window.renderApp === "function") window.renderApp();
+    if (typeof renderApp === "function") renderApp();
   }
 
   async function requestDeletion(id) {
@@ -33,22 +42,25 @@
   }
 
   function removeFromLocalState(id) {
-    if (!Array.isArray(window.appData?.inventory)) return;
-    window.appData.inventory = window.appData.inventory.filter((item) => String(item.id) !== String(id));
+    const data = dataStore();
+    const state = stateStore();
+    if (!Array.isArray(data?.inventory)) return;
+    data.inventory = data.inventory.filter((item) => String(item.id) !== String(id));
 
-    if (String(window.appState?.inventoryDraft?.id || "") === String(id)) {
-      window.appState.inventoryDraft = {};
+    if (String(state?.inventoryDraft?.id || "") === String(id)) {
+      state.inventoryDraft = {};
     }
 
-    const supplierFilter = window.appState?.inventoryFilters?.supplier;
+    const supplierFilter = state?.inventoryFilters?.supplier;
     if (supplierFilter && supplierFilter !== "all") {
-      const supplierStillExists = window.appData.inventory.some((item) => item?.supplier_name === supplierFilter);
-      if (!supplierStillExists) window.appState.inventoryFilters.supplier = "all";
+      const supplierStillExists = data.inventory.some((item) => item?.supplier_name === supplierFilter);
+      if (!supplierStillExists) state.inventoryFilters.supplier = "all";
     }
   }
 
   async function deleteInventoryItem(id) {
-    if (deletionInProgress || window.appState?.busy) return;
+    const state = stateStore();
+    if (deletionInProgress || state?.busy) return;
     const item = findItem(id);
     if (!item) {
       showMessage("Elemento non trovato: aggiorna la pagina e riprova");
@@ -60,7 +72,7 @@
     if (!window.confirm(`Eliminare ${typeLabel} ${item.name || "selezionato"}?`)) return;
 
     deletionInProgress = true;
-    if (window.appState) window.appState.busy = true;
+    if (state) state.busy = true;
     showMessage("Eliminazione in corso...");
     redraw();
 
@@ -72,7 +84,7 @@
       showMessage(error.message || "Elemento magazzino non eliminato");
     } finally {
       deletionInProgress = false;
-      if (window.appState) window.appState.busy = false;
+      if (state) state.busy = false;
       redraw();
     }
   }
