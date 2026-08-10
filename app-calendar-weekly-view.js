@@ -11,6 +11,42 @@
       .replace(/'/g, "&#39;");
   }
 
+  function calendarWeeklyRole() {
+    const profile = window.mmsAuthProfile;
+    if (!profile) return "loading";
+    const raw = String(profile.access_profile || profile.profile || profile.role || "").toLowerCase();
+    if (raw === "admin" || raw === "amministratore") return "admin";
+    if (raw === "commerce" || raw === "commercio") return "commerce";
+    const skills = Array.isArray(profile.skills) ? profile.skills.join(" ").toLowerCase() : "";
+    return ["clienti", "preventivi", "ordini", "pagamenti", "magazzino"].some((skill) => skills.includes(skill)) ? "commerce" : "operator";
+  }
+
+  function calendarWeeklyIsOperator() {
+    return calendarWeeklyRole() === "operator";
+  }
+
+  function calendarWeeklyProfileName() {
+    const profile = window.mmsAuthProfile || {};
+    return String(profile.name || [profile.first_name, profile.last_name].filter(Boolean).join(" ") || profile.email || "").trim();
+  }
+
+  function calendarWeeklyCanSeeSlot(slot) {
+    if (!calendarWeeklyIsOperator()) return true;
+    const profile = window.mmsAuthProfile || {};
+    const assignedId = slot.assignedUserId || slot.assigned_user_id || "";
+    if (assignedId && profile.id) return String(assignedId) === String(profile.id);
+    return calendarWeeklyProfileName().toLowerCase() === String(slot.owner || "").trim().toLowerCase();
+  }
+
+  function calendarWeeklyHoursLabel(slot) {
+    const total = slot.estimatedHours || slot.estimated_hours || slot.hours || "";
+    const daily = Number(slot.calendarSegmentHours || 0);
+    const formattedDaily = daily ? `${String(daily).replace(".", ",")} h` : "";
+    const formattedTotal = typeof total === "number" ? `${String(total).replace(".", ",")} h` : String(total || "");
+    if (formattedDaily && formattedTotal) return `${formattedDaily} oggi · ${formattedTotal} totali`;
+    return formattedTotal ? `${formattedTotal} previste` : "";
+  }
+
   function calendarWeeklyEnsureFilters() {
     if (!appState.calendarFilters || typeof appState.calendarFilters !== "object") {
       appState.calendarFilters = { employee: "all", phase: "all" };
@@ -61,7 +97,7 @@
         date: slot.date || day.date || "",
         owner: calendarWeeklyOwner(slot),
       }))
-    );
+    ).filter(calendarWeeklyCanSeeSlot);
   }
 
   function calendarWeeklyMatches(slot) {
@@ -100,6 +136,7 @@
   }
 
   function calendarWeeklyEmployeeOptions() {
+    if (calendarWeeklyIsOperator()) return ["all"];
     const employees = typeof getCalendarEmployees === "function" ? getCalendarEmployees() : ["all"];
     return employees.filter(Boolean);
   }
@@ -330,7 +367,7 @@
 
   function calendarWeeklyRender() {
     calendarWeeklyEnsureFilters();
-    const worklog = typeof calendarWorklogPanel === "function" ? calendarWorklogPanel() : "";
+    const worklog = "";
     return `
       <section class="view ${appState.currentView === "calendar" ? "active" : ""}">
         <div class="screen-header">
@@ -462,7 +499,7 @@
         return;
       }
       const eventCard = event.target.closest?.(".calendar-event");
-      if (eventCard?.dataset.detail) {
+      if (eventCard?.dataset.detail && !calendarWeeklyIsOperator()) {
         event.preventDefault();
         navigate("order-detail", Number(eventCard.dataset.detail));
         return;
@@ -483,7 +520,7 @@
     if (appState.currentView !== "calendar") return;
     if (!["Enter", " "].includes(event.key)) return;
     const eventCard = event.target.closest?.(".calendar-event");
-    if (!eventCard?.dataset.detail) return;
+    if (!eventCard?.dataset.detail || calendarWeeklyIsOperator()) return;
     event.preventDefault();
     navigate("order-detail", Number(eventCard.dataset.detail));
   });
