@@ -226,7 +226,7 @@ def sync_profile(auth_user):
             "phone": None,
             "email": email,
             "role": "viewer",
-            "is_active": True,
+            "is_active": False,
             "last_login_at": utc_now_iso(),
         },
         prefer="return=representation",
@@ -250,8 +250,17 @@ class handler(BaseHTTPRequestHandler):
             if not auth_user:
                 return write_json(self, {"error": "Accesso non valido"}, HTTPStatus.UNAUTHORIZED)
             profile = sync_profile(auth_user)
-            status = HTTPStatus.OK if profile["is_active"] else HTTPStatus.FORBIDDEN
-            return write_json(self, {"profile": profile}, status)
+            if not profile["is_active"]:
+                return write_json(
+                    self,
+                    {
+                        "error": "Account in attesa di approvazione",
+                        "detail": "La registrazione e' stata ricevuta. Un amministratore deve approvare l'account prima dell'accesso.",
+                        "profile": profile,
+                    },
+                    HTTPStatus.FORBIDDEN,
+                )
+            return write_json(self, {"profile": profile})
         except Exception as error:
             return write_json(
                 self,
