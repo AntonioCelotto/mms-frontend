@@ -297,10 +297,11 @@
                                 <div class="calendar-event" data-detail="${calendarWeeklyEscape(slot.orderId)}" style="--owner-color:${color}" role="button" tabindex="0">
                                   <span class="calendar-event-time">${calendarWeeklyEscape(slot.time || "Da pianificare")}</span>
                                   <strong>#${calendarWeeklyEscape(slot.orderId)} - ${calendarWeeklyEscape(slot.title || slot.phase || "Task")}</strong>
-                                  <span>${calendarWeeklyEscape(order?.client || "Cliente")} · ${calendarWeeklyEscape(slot.phase || "Lavorazione")}</span>
-                                  <small>${calendarWeeklyEscape(slot.owner || "Non assegnato")}</small>
+                                  <span>${calendarWeeklyEscape(slot.phase || "Lavorazione")}</span>
+                                  ${calendarWeeklyIsOperator() ? "" : `<small>${calendarWeeklyEscape(order?.client || "Cliente")} · ${calendarWeeklyEscape(slot.owner || "Non assegnato")}</small>`}
+                                  ${calendarWeeklyHoursLabel(slot) ? `<small class="calendar-event-hours">${calendarWeeklyEscape(calendarWeeklyHoursLabel(slot))}</small>` : ""}
                                   <div class="calendar-event-actions">
-                                    <button class="mini-btn" data-calendar-open-order="${calendarWeeklyEscape(slot.orderId)}" type="button">Apri</button>
+                                    <button class="mini-btn" data-calendar-open-order="${calendarWeeklyEscape(slot.orderId)}" data-calendar-open-task="${calendarWeeklyEscape(taskId)}" type="button">Apri</button>
                                     <button class="mini-btn" data-weekly-worklog-action="${isRunning ? "pause" : "start"}" data-weekly-worklog-task="${calendarWeeklyEscape(
                                 taskId
                               )}" type="button">${isRunning ? "Pausa" : "Inizio"}</button>
