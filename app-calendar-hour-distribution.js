@@ -101,20 +101,20 @@
     return dates.reverse();
   }
 
-  function cloneForSegment(task, segment, index, count) {
+  function cloneForSegment(task, segment, index, count, totalHours) {
     const planned = parseDate(task.time || task.planned_date || "");
     const time = planned?.time || "";
-    const label = formatHours(segment.hours);
     const baseName = (task.name || task.task_name || "Task ordine").replace(/\s+\([\d,.]+\s*h\)$/i, "");
     const plannedValue = `${segment.iso} ${time}`.trim();
     return {
       ...task,
       id: task.id,
       taskId: task.taskId || task.id,
-      name: `${baseName} (${label})`,
-      task_name: `${baseName} (${label})`,
-      hours: label,
-      estimated_hours: segment.hours,
+      name: baseName,
+      task_name: baseName,
+      hours: formatHours(totalHours),
+      estimated_hours: totalHours,
+      estimatedHours: totalHours,
       planned_date: plannedValue,
       time: plannedValue,
       calendarDay: null,
@@ -145,7 +145,7 @@
       return { iso: isoDate(date), hours };
     });
 
-    return segments.map((segment, index) => cloneForSegment(task, segment, index, segments.length));
+    return segments.map((segment, index) => cloneForSegment(task, segment, index, segments.length, totalHours));
   }
 
   function distributedOrderTasks(source) {
@@ -165,7 +165,11 @@
     if (accountScheduleLoadStarted || hasAccountSchedules()) return;
     accountScheduleLoadStarted = true;
     try {
-      const response = await fetch("/api/accounts", { headers: { Accept: "application/json" } });
+      const session = await window.mmsSupabaseAuth?.auth?.getSession?.();
+      const token = session?.data?.session?.access_token || "";
+      const headers = { Accept: "application/json" };
+      if (token) headers.Authorization = `Bearer ${token}`;
+      const response = await fetch("/api/accounts", { headers });
       const payload = await response.json().catch(() => ({}));
       if (!response.ok || !Array.isArray(payload.accounts)) return;
       appData.accounts = payload.accounts;
