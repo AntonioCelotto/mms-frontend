@@ -198,6 +198,8 @@
       const preview = linkedOrders.slice(0, 5).map((id) => `#${id}`).join(", ");
       const suffix = linkedOrders.length > 5 ? ` e altri ${linkedOrders.length - 5}` : "";
       setFlashMessage(`Cliente ${label} non eliminato: ha ${linkedOrders.length} ordini collegati (${preview}${suffix}). Elimina prima gli ordini collegati.`);
+      appState.currentView = "clients";
+      renderApp();
       return;
     }
     if (!window.confirm(`Eliminare definitivamente ${label}?`)) return;
