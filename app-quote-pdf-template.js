@@ -128,8 +128,8 @@
         <tbody>
           <tr>
             <td class="payment" rowspan="${rows.length}">
-              ${quoteHtml(paymentText)}
-              <strong>Banca Sella</strong>
+              ${quoteHtml(paymentText)}<br /><br />
+              <span class="bank">Banca Sella</span>
             </td>
             <td>${quoteHtml(rows[0][0])}</td>
             <td>${rows[0][1]}</td>
@@ -195,11 +195,11 @@
             .data-row strong { font-weight: 400; overflow-wrap: anywhere; }
             .services { margin-top: 9mm; border-top: 1.2px solid #ff2029; padding-top: 3.5mm; }
             table { width: 100%; border-collapse: collapse; table-layout: fixed; }
-            th { padding: 0 0 6mm; font-size: 19pt; text-align: left; vertical-align: bottom; }
-            th:first-child { width: 43%; font-size: 28pt; font-weight: 900; }
-            th:nth-child(2) { width: 24%; }
-            th:nth-child(3) { width: 13%; text-align: center; }
-            th:nth-child(4) { width: 20%; text-align: right; }
+            th { padding: 0 0 6mm; font-size: 14pt; text-align: left; vertical-align: bottom; }
+            th:first-child { width: 42%; font-size: 24pt; font-weight: 900; }
+            th:nth-child(2) { width: 25%; padding-right: 5mm; }
+            th:nth-child(3) { width: 12%; text-align: center; }
+            th:nth-child(4) { width: 21%; text-align: right; }
             td { padding: 4.2mm 0; vertical-align: top; page-break-inside: avoid; }
             td:nth-child(2) { text-align: right; padding-right: 7mm; }
             td:nth-child(3) { text-align: center; }
@@ -215,7 +215,7 @@
             .summary td:nth-child(2) { text-align: left; padding-right: 3mm; }
             .summary td:last-child { width: 30mm; text-align: right; white-space: nowrap; }
             .summary .payment { width: auto; text-align: center !important; padding: 6mm 7mm 6mm 0 !important; line-height: 1.55; vertical-align: middle; }
-            .summary .payment strong { display: block; margin-top: 6mm; font-weight: 400; text-transform: uppercase; }
+            .summary .payment .bank { font-weight: 400; text-transform: uppercase; }
             .summary tr.total td { font-weight: 700; }
             .terms { width: 58%; margin: 6mm 0 0 auto; color: #ff2029; font-size: 10pt; font-weight: 700; line-height: 1.55; text-transform: uppercase; }
             .terms p { margin: 0 0 2mm; }
