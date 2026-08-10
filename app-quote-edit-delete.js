@@ -13,6 +13,45 @@
     }
   }
 
+  function lightQuoteCopy(quote) {
+    return {
+      ...quote,
+      photos: Array.isArray(quote.photos)
+        ? quote.photos.map((photo) => ({
+            name: photo?.name || "Foto preventivo",
+            size: photo?.size || 0,
+            type: photo?.type || "",
+          }))
+        : [],
+    };
+  }
+
+  function quoteLooksLikePlaceholder() {
+    const client = text(appState.draftOrder?.client).toUpperCase();
+    const articles = Array.isArray(appState.quoteArticles) ? appState.quoteArticles : [];
+    const hasMeaningfulArticle = articles.some((article) => {
+      const name = text(article?.name);
+      const hasNamedArticle = name && name.toLowerCase() !== "articolo 1";
+      const hasValue = Number(String(article?.cost || "0").replace(",", ".")) > 0;
+      const hasMaterial = (Array.isArray(article?.materials) ? article.materials : []).some(
+        (material) => text(material?.material) || Number(String(material?.price || "0").replace(",", ".")) > 0
+      );
+      return hasNamedArticle || hasValue || hasMaterial;
+    });
+    return client === "ROBY" && !hasMeaningfulArticle;
+  }
+
+  async function patchQuote(id, quote) {
+    const response = await fetch(QUOTES_API, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ id, quote: lightQuoteCopy({ ...quote, id }) }),
+    });
+    const payload = await response.json().catch(() => ({}));
+    if (!response.ok) throw new Error(payload.detail || payload.error || "Preventivo non aggiornato");
+    return payload.quote || null;
+  }
+
   function writeQuotesLocal() {
     if (typeof quoteHistoryRecoveryWrite === "function") quoteHistoryRecoveryWrite(appState.savedQuotes || []);
     if (typeof quoteStorageWrite === "function") quoteStorageWrite();
@@ -72,41 +111,79 @@
 
   if (typeof quoteListSaveCurrent === "function") {
     const baseQuoteListSaveCurrent = quoteListSaveCurrent;
-    quoteListSaveCurrent = function quoteListSaveCurrentWithEdit() {
+    quoteListSaveCurrent = async function quoteListSaveCurrentWithEdit() {
       const editingId = text(appState.editingQuoteId);
-      if (!editingId) return baseQuoteListSaveCurrent();
+      if (!editingId) {
+        if (quoteLooksLikePlaceholder()) {
+          const confirmed = window.confirm(
+            "Il preventivo sembra ancora incompleto: cliente ROBY, totale zero, articolo generico e nessun materiale. Salvarlo comunque?"
+          );
+          if (!confirmed) {
+            setFlashMessage("Salvataggio annullato: completa cliente, articolo, importi o materiali.");
+            renderApp();
+            return;
+          }
+        }
+        return baseQuoteListSaveCurrent();
+      }
 
       if (typeof ensureQuoteState === "function") ensureQuoteState();
       const quote = quoteById(editingId);
       if (!quote) {
+        setFlashMessage(`Il preventivo ${editingId} non e' piu' disponibile. Riaprilo dall'archivio.`);
+        appState.currentView = "quotes";
         resetEditingState();
-        return baseQuoteListSaveCurrent();
-      }
-
-      const client = text(appState.draftOrder?.client);
-      if (!client) {
-        setFlashMessage("Inserisci almeno il cliente prima di salvare il preventivo");
         renderApp();
         return;
       }
 
-      quote.client = client;
-      quote.clientInfo = clone(appState.quoteClientDraft, {});
-      quote.category = appState.draftOrder.category || "Sartoria interna";
-      quote.priority = appState.draftOrder.priority || "Standard";
-      quote.quoteDate = appState.draftOrder.orderDate || new Date().toISOString().slice(0, 10);
-      quote.note = appState.draftOrder.note || "";
-      quote.articles = clone(appState.quoteArticles, []);
-      quote.photos = clone(appState.quotePhotos, quote.photos || []);
-      quote.total = typeof quoteGrandTotal === "function" ? quoteGrandTotal() : quote.total || 0;
-      quote.updatedAt = new Date().toISOString();
-      appState.selectedQuoteId = quote.id;
-      appState.currentView = "quotes";
-      resetEditingState();
-      writeQuotesLocal();
-      if (typeof window.quoteDatabaseSave === "function") window.quoteDatabaseSave(quote);
-      setFlashMessage(`Preventivo ${quote.id} aggiornato`);
+      const client = text(appState.draftOrder?.client);
+      if (!client) {
+        setFlashMessage("Inserisci almeno il cliente prima di aggiornare il preventivo");
+        renderApp();
+        return;
+      }
+
+      const updatedQuote = {
+        ...quote,
+        id: editingId,
+        client,
+        clientInfo: clone(appState.quoteClientDraft, {}),
+        category: appState.draftOrder.category || "Sartoria interna",
+        priority: appState.draftOrder.priority || "Standard",
+        quoteDate: appState.draftOrder.orderDate || new Date().toISOString().slice(0, 10),
+        note: appState.draftOrder.note || "",
+        articles: clone(appState.quoteArticles, []),
+        photos: clone(appState.quotePhotos, quote.photos || []),
+        total: typeof quoteGrandTotal === "function" ? quoteGrandTotal() : quote.total || 0,
+        updatedAt: new Date().toISOString(),
+      };
+
+      appState.busy = true;
+      setFlashMessage(`Aggiornamento ${editingId} in corso...`);
       renderApp();
+      try {
+        const remoteQuote = await patchQuote(editingId, updatedQuote);
+        const savedQuote = {
+          ...updatedQuote,
+          ...(remoteQuote || {}),
+          id: editingId,
+          photos: updatedQuote.photos,
+        };
+        const index = (appState.savedQuotes || []).findIndex((item) => item.id === editingId);
+        if (index >= 0) appState.savedQuotes[index] = savedQuote;
+        appState.selectedQuoteId = editingId;
+        appState.currentView = "quotes";
+        resetEditingState();
+        writeQuotesLocal();
+        setFlashMessage(`Preventivo ${editingId} aggiornato nel database`);
+      } catch (error) {
+        appState.currentView = "new-order";
+        setFlashMessage(error.message || `Preventivo ${editingId} non aggiornato. I dati restano aperti per riprovare.`);
+      } finally {
+        appState.busy = false;
+        renderApp();
+      }
     };
   }
 
@@ -137,9 +214,23 @@
     document.querySelectorAll("[data-quote-pdf]").forEach((button) => addButtonsNear(button, button.dataset.quotePdf));
   }
 
+  function mountEditingLabels() {
+    const editingId = text(appState.editingQuoteId);
+    if (!editingId || appState.currentView !== "new-order") return;
+    const view = document.querySelector(".view.active");
+    const title = view?.querySelector(".screen-header h2");
+    const description = view?.querySelector(".screen-header p");
+    if (title) title.textContent = `Modifica preventivo ${editingId}`;
+    if (description) description.textContent = "Aggiorna il preventivo esistente. Il numero resta invariato e tornerai all'archivio solo dopo il salvataggio nel database.";
+    view?.querySelectorAll("[data-action='save-quote']").forEach((button) => {
+      button.textContent = appState.busy ? "Aggiornamento..." : `Aggiorna ${editingId}`;
+    });
+  }
+
   const baseRenderAppQuoteEditDelete = renderApp;
   renderApp = function renderAppQuoteEditDelete() {
     baseRenderAppQuoteEditDelete();
+    mountEditingLabels();
     mountQuoteActionButtons();
   };
 
