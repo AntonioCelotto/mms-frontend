@@ -18,6 +18,7 @@
       startedAt: row.startedAt || row.started_at || "",
       finishedAt: row.finishedAt || row.finished_at || "",
       pauses: Number(row.pauses || 0) || 0,
+      notes: String(row.notes || row.payload?.notes || "").trim(),
       updatedAt: row.updatedAt || row.updated_at || "",
       payload: row.payload && typeof row.payload === "object" ? row.payload : {},
     };
@@ -33,6 +34,7 @@
         startedAt: normalized.startedAt,
         finishedAt: normalized.finishedAt,
         pauses: normalized.pauses,
+        notes: normalized.notes,
         updatedAt: normalized.updatedAt,
       };
       return state;
@@ -120,7 +122,7 @@
       startedAt: normalized.startedAt || null,
       finishedAt: normalized.finishedAt || null,
       pauses: normalized.pauses,
-      payload: meta.payload || {},
+      payload: { ...(meta.payload || {}), notes: normalized.notes || "" },
     };
     try {
       await worklogDatabaseRequest("POST", {
