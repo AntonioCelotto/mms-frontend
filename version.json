@@ -1,6 +1,6 @@
 {
-  "version": "quote-edit-patch-await-1",
-  "label": "Modifica preventivo sullo stesso numero",
-  "updated_at": "2026-08-10T09:00:00Z",
-  "purpose": "La modifica di un preventivo attende la PATCH al database, mantiene invariato il numero selezionato e avvisa prima di creare un placeholder ROBY incompleto"
+  "version": "client-delete-reliability-1",
+  "label": "Eliminazione clienti con feedback e API stabile",
+  "updated_at": "2026-08-10T10:35:00Z",
+  "purpose": "Corregge gli import Vercel dell'endpoint delete-record e mostra subito il motivo quando un cliente non puo essere eliminato perche ha ordini collegati"
 }
