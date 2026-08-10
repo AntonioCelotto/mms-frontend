@@ -115,6 +115,36 @@
     }).join("");
   }
 
+  function summaryTable(totals, vatLabel, paymentText) {
+    const rows = [
+      ["SUBTOTALE", money(totals.subtotal)],
+      ...(totals.discount ? [["SCONTO", `- ${money(totals.discount)}`]] : []),
+      ["IMPONIBILE", money(totals.taxable)],
+      [vatLabel, money(totals.vat)],
+      ["TOT", money(totals.total)],
+    ];
+    return `
+      <table class="summary">
+        <tbody>
+          <tr>
+            <td class="payment" rowspan="${rows.length}">
+              ${quoteHtml(paymentText)}
+              <strong>Banca Sella</strong>
+            </td>
+            <td>${quoteHtml(rows[0][0])}</td>
+            <td>${rows[0][1]}</td>
+          </tr>
+          ${rows.slice(1).map((row, index) => `
+            <tr class="${index === rows.length - 2 ? "total" : ""}">
+              <td>${quoteHtml(row[0])}</td>
+              <td>${row[1]}</td>
+            </tr>
+          `).join("")}
+        </tbody>
+      </table>
+    `;
+  }
+
   function photoPages(quote) {
     const photos = Array.isArray(quote.photos) ? quote.photos.filter((photo) => photo?.dataUrl || photo?.url || photo?.localUrl) : [];
     if (!photos.length) return "";
@@ -151,14 +181,17 @@
             * { box-sizing: border-box; }
             html, body { margin: 0; padding: 0; color: #171717; background: #fff; font-family: Arial, Helvetica, sans-serif; }
             body { font-size: 10.5pt; }
-            .print-action { position: fixed; top: 10px; right: 12px; z-index: 10; border: 1px solid #171717; background: #fff; padding: 9px 14px; cursor: pointer; }
-            .quote-page, .photo-page { width: 210mm; min-height: 297mm; padding: 18mm 16mm 14mm; display: flex; flex-direction: column; background: #fff; }
+            .quote-page, .photo-page { width: 210mm; min-height: 297mm; padding: 18mm 16mm 14mm; position: relative; background: #fff; }
             h1 { margin: 0 0 11mm; font-size: 31pt; line-height: .95; font-weight: 900; letter-spacing: 0; }
             h2 { margin: 0; font-size: 26pt; font-weight: 900; }
             h3 { margin: 0 0 8mm; font-size: 20pt; line-height: 1; }
-            .top-grid { display: grid; grid-template-columns: 1fr 1fr; column-gap: 25mm; row-gap: 11mm; }
-            .data-row { display: grid; grid-template-columns: 27mm minmax(0, 1fr); gap: 2mm; margin-bottom: 4.5mm; line-height: 1.25; }
-            .data-row span { color: #333; }
+            .info-grid { width: 100%; border-collapse: separate; border-spacing: 0 10mm; margin: -10mm 0 0; table-layout: fixed; }
+            .info-grid > tbody > tr > td { width: 50%; padding: 0 12mm 0 0; vertical-align: top; }
+            .info-grid > tbody > tr > td + td { padding: 0 0 0 12mm; }
+            .data-list { display: table; width: 100%; border-collapse: separate; border-spacing: 0 4mm; }
+            .data-row { display: table-row; line-height: 1.25; }
+            .data-row span, .data-row strong { display: table-cell; vertical-align: top; }
+            .data-row span { width: 27mm; padding-right: 2mm; color: #333; }
             .data-row strong { font-weight: 400; overflow-wrap: anywhere; }
             .services { margin-top: 9mm; border-top: 1.2px solid #ff2029; padding-top: 3.5mm; }
             table { width: 100%; border-collapse: collapse; table-layout: fixed; }
@@ -177,66 +210,71 @@
             tr.secondary .service-name { padding-left: 7mm; }
             tr.secondary .service-name strong { color: #444; }
             td small { display: block; margin: 1.4mm 0 0 7mm; color: #666; font-size: 8.5pt; line-height: 1.35; }
-            .summary { width: 58%; margin: 7mm 0 0 auto; border-top: 1.2px solid #ff2029; border-bottom: 1.2px solid #ff2029; padding: 6mm 0; display: grid; grid-template-columns: 1fr 33mm; gap: 3mm 8mm; }
-            .summary .payment { grid-row: 1 / span 6; text-align: center; padding-right: 4mm; font-size: 9pt; line-height: 1.55; }
-            .summary .payment strong { display: block; margin-top: 7mm; font-weight: 400; text-transform: uppercase; }
-            .total-line { display: contents; }
-            .total-line span:last-child { text-align: right; white-space: nowrap; }
-            .total-line.total span { font-weight: 700; }
+            .summary { width: 58%; margin: 7mm 0 0 auto; border-collapse: collapse; border-top: 1.2px solid #ff2029; border-bottom: 1.2px solid #ff2029; }
+            .summary td { padding: 2mm 0; font-size: 9pt; }
+            .summary td:nth-child(2) { text-align: left; padding-right: 3mm; }
+            .summary td:last-child { width: 30mm; text-align: right; white-space: nowrap; }
+            .summary .payment { width: auto; text-align: center !important; padding: 6mm 7mm 6mm 0 !important; line-height: 1.55; vertical-align: middle; }
+            .summary .payment strong { display: block; margin-top: 6mm; font-weight: 400; text-transform: uppercase; }
+            .summary tr.total td { font-weight: 700; }
             .terms { width: 58%; margin: 6mm 0 0 auto; color: #ff2029; font-size: 10pt; font-weight: 700; line-height: 1.55; text-transform: uppercase; }
             .terms p { margin: 0 0 2mm; }
             .note { width: 58%; margin: 4mm 0 0 auto; font-size: 9pt; line-height: 1.45; }
             .note strong { color: #ff2029; }
-            .logo { width: 43mm; height: auto; margin-top: auto; object-fit: contain; object-position: left bottom; }
+            .logo { width: 43mm; height: auto; display: block; margin-top: 30mm; object-fit: contain; }
             .photo-page { page-break-before: always; }
             .photo-head { display: flex; justify-content: space-between; align-items: baseline; padding-bottom: 4mm; border-bottom: 1.2px solid #ff2029; }
-            .photo-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 7mm; margin-top: 9mm; }
-            figure { margin: 0; break-inside: avoid; }
+            .photo-grid { display: block; margin: 9mm -3.5mm 0; }
+            figure { display: inline-block; width: calc(50% - 7mm); margin: 0 3.5mm 7mm; vertical-align: top; break-inside: avoid; }
             figure img { width: 100%; height: 92mm; object-fit: contain; border: 1px solid #e5e5e5; }
             figcaption { margin-top: 2mm; color: #555; font-size: 9pt; }
             .empty { text-align: left !important; color: #666; padding: 8mm 0; }
             @media print {
-              .print-action { display: none; }
               .quote-page, .photo-page { break-after: page; }
               .photo-page:last-child, .quote-page:last-child { break-after: auto; }
             }
           </style>
         </head>
         <body>
-          <button class="print-action" onclick="window.print()">Stampa / salva PDF</button>
           <section class="quote-page">
             <h1>PREVENTIVO</h1>
-            <div class="top-grid">
-              <div>
-                <h3>[ Mittente ]</h3>
-                ${dataRows([
-                  ["Name", "MMS SRL"],
-                  ["E-mail", "NICOLAMINOTTIMMS@GMAIL.COM"],
-                  ["Vat", "15716861008"],
-                  ["Indirizzo", "VIA TUSCOLANA 1661"],
-                  ["Cap", "00133"],
-                ])}
-              </div>
-              <div>
-                <h3>[ Destinatario ]</h3>
-                ${dataRows(recipientRows(info, quote))}
-              </div>
-              <div>
-                <h3>[ Dettagli Banca ]</h3>
-                ${dataRows([
-                  ["Name", "Banca Sella"],
-                  ["IBAN", "IT58M0326803200052816944630"],
-                  ["Indirizzo", "Via Tuscolana 1661 00133"],
-                ])}
-              </div>
-              <div>
-                <h3>[ Data ]</h3>
-                ${dataRows([
-                  ["Emissione", dateLabel(quote.quoteDate)],
-                  ["Preventivo", quote.id || ""],
-                ])}
-              </div>
-            </div>
+            <table class="info-grid">
+              <tbody>
+                <tr>
+                  <td>
+                    <h3>[ Mittente ]</h3>
+                    <div class="data-list">${dataRows([
+                      ["Name", "MMS SRL"],
+                      ["E-mail", "NICOLAMINOTTIMMS@GMAIL.COM"],
+                      ["Vat", "15716861008"],
+                      ["Indirizzo", "VIA TUSCOLANA 1661"],
+                      ["Cap", "00133"],
+                    ])}</div>
+                  </td>
+                  <td>
+                    <h3>[ Destinatario ]</h3>
+                    <div class="data-list">${dataRows(recipientRows(info, quote))}</div>
+                  </td>
+                </tr>
+                <tr>
+                  <td>
+                    <h3>[ Dettagli Banca ]</h3>
+                    <div class="data-list">${dataRows([
+                      ["Name", "Banca Sella"],
+                      ["IBAN", "IT58M0326803200052816944630"],
+                      ["Indirizzo", "Via Tuscolana 1661 00133"],
+                    ])}</div>
+                  </td>
+                  <td>
+                    <h3>[ Data ]</h3>
+                    <div class="data-list">${dataRows([
+                      ["Emissione", dateLabel(quote.quoteDate)],
+                      ["Preventivo", quote.id || ""],
+                    ])}</div>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
 
             <div class="services">
               <table>
@@ -245,14 +283,7 @@
               </table>
             </div>
 
-            <div class="summary">
-              <div class="payment">${quoteHtml(paymentText)}<strong>Banca Sella</strong></div>
-              <div class="total-line"><span>SUBTOTALE</span><span>${money(totals.subtotal)}</span></div>
-              ${totals.discount ? `<div class="total-line"><span>SCONTO</span><span>- ${money(totals.discount)}</span></div>` : ""}
-              <div class="total-line"><span>IMPONIBILE</span><span>${money(totals.taxable)}</span></div>
-              <div class="total-line"><span>${quoteHtml(vatLabel)}</span><span>${money(totals.vat)}</span></div>
-              <div class="total-line total"><span>TOT</span><span>${money(totals.total)}</span></div>
-            </div>
+            ${summaryTable(totals, vatLabel, paymentText)}
 
             <div class="terms">
               <p>50% di anticipo per avvio del progetto</p>
