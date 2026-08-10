@@ -12,10 +12,11 @@ from urllib.request import Request, urlopen
 
 
 SUPABASE_URL = os.environ.get("SUPABASE_URL", "https://fzdqemzowxjuotqalaol.supabase.co").rstrip("/")
-SUPABASE_KEY = os.environ.get(
+SUPABASE_ANON_KEY = os.environ.get(
     "SUPABASE_ANON_KEY",
     "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZ6ZHFlbXpvd3hqdW90cWFsYW9sIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzk5Njg3NzYsImV4cCI6MjA5NTU0NDc3Nn0.fmZ9RThFxnaJGQsOYeu_ZjjUNHThlRX87qz9sX4N6Mk",
 )
+SUPABASE_KEY = os.environ.get("SUPABASE_SERVICE_ROLE_KEY") or SUPABASE_ANON_KEY
 TIMEOUT_SECONDS = 8
 MAX_JSON_BODY_BYTES = 128 * 1024
 ALLOWED_ROLES = {"admin", "viewer"}
@@ -153,6 +154,52 @@ def fetch_table(table, *, select="*", filters=None, order=None):
     return supabase_request(f"/rest/v1/{table}", query=query) or []
 
 
+def verify_token(handler):
+    header = clean_text(handler.headers.get("Authorization"))
+    if not header.lower().startswith("bearer "):
+        return None
+    token = header.split(" ", 1)[1].strip()
+    if not token:
+        return None
+    request = Request(
+        f"{SUPABASE_URL}/auth/v1/user",
+        headers={
+            "apikey": SUPABASE_ANON_KEY,
+            "Authorization": f"Bearer {token}",
+            "Content-Type": "application/json",
+        },
+        method="GET",
+    )
+    try:
+        with urlopen(request, timeout=TIMEOUT_SECONDS) as response:
+            body = response.read().decode("utf-8")
+            return json.loads(body) if body else None
+    except (HTTPError, URLError, TimeoutError, socket.timeout, json.JSONDecodeError):
+        return None
+
+
+def current_profile(handler):
+    auth_user = verify_token(handler)
+    auth_user_id = clean_text((auth_user or {}).get("id"))
+    email = clean_text((auth_user or {}).get("email")).lower()
+    if not auth_user_id and not email:
+        return None
+    if auth_user_id:
+        rows = fetch_table("users", select="id,email,role,is_active", filters={"auth_user_id": f"eq.{auth_user_id}"})
+        if rows:
+            return rows[0]
+    if email:
+        rows = fetch_table("users", select="id,email,role,is_active", filters={"email": f"eq.{email}"})
+        if rows:
+            return rows[0]
+    return None
+
+
+def require_admin(handler):
+    profile = current_profile(handler)
+    return bool(profile and profile.get("is_active") is not False and profile.get("role") == "admin")
+
+
 def insert_rows(table, payload, *, returning="representation"):
     return supabase_request(f"/rest/v1/{table}", method="POST", payload=payload, prefer=f"return={returning}")
 
@@ -212,6 +259,7 @@ def load_accounts():
         accounts.append(
             {
                 "id": row["id"],
+                "auth_user_id": row.get("auth_user_id"),
                 "first_name": row.get("first_name") or "",
                 "last_name": row.get("last_name") or "",
                 "name": full_name,
@@ -241,12 +289,16 @@ class handler(BaseHTTPRequestHandler):
         return write_options(self)
 
     def do_GET(self):
+        if not require_admin(self):
+            return write_json(self, {"error": "Solo un amministratore puo' gestire gli account"}, HTTPStatus.FORBIDDEN)
         try:
             return write_json(self, {"accounts": load_accounts()})
         except Exception as error:
             return write_json(self, {"error": "Lettura account non riuscita", "detail": str(error)}, HTTPStatus.INTERNAL_SERVER_ERROR)
 
     def do_POST(self):
+        if not require_admin(self):
+            return write_json(self, {"error": "Solo un amministratore puo' gestire gli account"}, HTTPStatus.FORBIDDEN)
         payload = read_json_body(self)
         if payload is None:
             return write_json(self, {"error": "JSON non valido"}, HTTPStatus.BAD_REQUEST)
@@ -273,6 +325,8 @@ class handler(BaseHTTPRequestHandler):
             return write_json(self, {"error": "Creazione account non riuscita", "detail": detail}, status)
 
     def do_PATCH(self):
+        if not require_admin(self):
+            return write_json(self, {"error": "Solo un amministratore puo' gestire gli account"}, HTTPStatus.FORBIDDEN)
         payload = read_json_body(self)
         if payload is None:
             return write_json(self, {"error": "JSON non valido"}, HTTPStatus.BAD_REQUEST)
@@ -302,6 +356,8 @@ class handler(BaseHTTPRequestHandler):
             return write_json(self, {"error": "Aggiornamento account non riuscito", "detail": str(error)}, HTTPStatus.INTERNAL_SERVER_ERROR)
 
     def do_DELETE(self):
+        if not require_admin(self):
+            return write_json(self, {"error": "Solo un amministratore puo' gestire gli account"}, HTTPStatus.FORBIDDEN)
         payload = read_json_body(self)
         if payload is None:
             return write_json(self, {"error": "JSON non valido"}, HTTPStatus.BAD_REQUEST)
