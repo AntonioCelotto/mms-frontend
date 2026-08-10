@@ -35,6 +35,14 @@ const ACCOUNT_QUICK_SKILLS = [
 
 const ACCOUNT_API_PATH = "/api/accounts";
 
+async function accountApiHeaders(extra = {}) {
+  const headers = { Accept: "application/json", ...extra };
+  const session = await window.mmsSupabaseAuth?.auth?.getSession?.().catch?.(() => null);
+  const token = session?.data?.session?.access_token;
+  if (token) headers.Authorization = `Bearer ${token}`;
+  return headers;
+}
+
 
 function accountText(value) {
   return String(value || "").trim();
@@ -202,6 +210,7 @@ function renderAccountRows(accounts) {
           <td><span class="table-status ${account.isActive ? "done" : "hold"}">${account.isActive ? "Attivo" : "Disattivato"}</span></td>
           <td>
             <div class="pill-row">
+              ${!account.isActive ? `<button class="mini-btn" data-account-approve="${account.id}">Approva</button>` : ""}
               <button class="mini-btn" data-account-edit="${account.id}">Modifica</button>
               <button class="mini-btn" data-account-delete="${account.id}">${deleteLabel}</button>
             </div>
@@ -300,7 +309,7 @@ function renderAccounts() {
           <p>Gestione completa degli account: creazione, modifica, disattivazione, competenze e collegamento ai task.</p>
         </div>
         <div class="screen-actions">
-          <div class="ghost-pill">Account v10</div>
+          <div class="ghost-pill">Account v11 · approvazione accessi</div>
           <div class="ghost-pill">${accounts.length} account totali</div>
           <button class="action-pill" data-action="save-account">${appState.busy ? "Salvataggio..." : "Crea account"}</button>
         </div>
@@ -462,7 +471,7 @@ function renderAccounts() {
 
 async function refreshAccountsWorkspaceData({ rerender = true } = {}) {
   try {
-    const response = await fetch(ACCOUNT_API_PATH);
+    const response = await fetch(ACCOUNT_API_PATH, { headers: await accountApiHeaders() });
     if (!response.ok) return false;
     const payload = await response.json();
     if (payload && Array.isArray(payload.accounts)) {
@@ -490,7 +499,7 @@ function accountCreatePayload() {
 async function createAccountViaApi(payload) {
   const response = await fetch(ACCOUNT_API_PATH, {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
+    headers: await accountApiHeaders({ "Content-Type": "application/json" }),
     body: JSON.stringify(payload),
   });
   const result = await response.json().catch(() => ({}));
@@ -514,7 +523,7 @@ async function updateAccountDraft() {
   try {
     const response = await fetch(ACCOUNT_API_PATH, {
       method: "PATCH",
-      headers: { "Content-Type": "application/json" },
+      headers: await accountApiHeaders({ "Content-Type": "application/json" }),
       body: JSON.stringify({
         user_id: draft.user_id,
         first_name: draft.first_name,
@@ -543,6 +552,43 @@ async function updateAccountDraft() {
   }
 }
 
+async function approveAccount(accountId) {
+  const account = accountsWithTaskCounts().find((item) => Number(item.id) === Number(accountId));
+  if (!account || account.isActive) return;
+  if (!window.confirm(`Approvare l'accesso di ${account.displayName} come ${accountProfileFromSkills(account)}?`)) return;
+
+  setBusy(true);
+  try {
+    const response = await fetch(ACCOUNT_API_PATH, {
+      method: "PATCH",
+      headers: await accountApiHeaders({ "Content-Type": "application/json" }),
+      body: JSON.stringify({
+        user_id: account.id,
+        first_name: account.firstName,
+        last_name: account.lastName,
+        phone: account.phone || "",
+        email: account.email,
+        role: account.roleKey || "viewer",
+        is_active: true,
+        skills: account.skillsList,
+        daily_work_hours: account.daily_work_hours || account.dailyWorkHours || 8,
+        hourly_cost: account.hourly_cost || account.hourlyCost || 10,
+        working_days: account.working_days || account.workingDays || ["lunedi", "martedi", "mercoledi", "giovedi", "venerdi"],
+      }),
+    });
+    const result = await response.json().catch(() => ({}));
+    if (!response.ok) throw new Error(result.detail || result.error || "Approvazione account non riuscita");
+    await refreshBootstrap();
+    await refreshAccountsWorkspaceData({ rerender: false });
+    setFlashMessage(`Account ${account.displayName} approvato`);
+  } catch (error) {
+    setFlashMessage(error.message || "Approvazione account non riuscita");
+  } finally {
+    appState.busy = false;
+    renderApp();
+  }
+}
+
 async function deleteOrDeactivateAccount(accountId) {
   const accounts = accountsWithTaskCounts();
   const account = accounts.find((item) => Number(item.id) === Number(accountId));
@@ -554,7 +600,7 @@ async function deleteOrDeactivateAccount(accountId) {
   try {
     const response = await fetch(ACCOUNT_API_PATH, {
       method: "DELETE",
-      headers: { "Content-Type": "application/json" },
+      headers: await accountApiHeaders({ "Content-Type": "application/json" }),
       body: JSON.stringify({ user_id: account.id }),
     });
     if (!response.ok) {
@@ -585,6 +631,12 @@ attachEvents = function attachEventsAccountsWorkspace() {
 
   document.querySelectorAll("[data-account-skill]").forEach((button) => {
     button.addEventListener("click", () => addAccountQuickSkill(button.dataset.accountSkill));
+  });
+
+  document.querySelectorAll("[data-account-approve]").forEach((button) => {
+    button.addEventListener("click", () => {
+      if (!appState.busy) approveAccount(Number(button.dataset.accountApprove));
+    });
   });
 
   document.querySelectorAll("[data-account-edit]").forEach((button) => {
