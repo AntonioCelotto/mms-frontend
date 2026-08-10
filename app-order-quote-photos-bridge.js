@@ -127,7 +127,7 @@
       if (result && typeof result.then === "function") await result;
       if (appState.orderFromQuoteDraft?.quote) hydrateQuotePhotos(appState.orderFromQuoteDraft.quote);
       const photos = quotePhotos(appState.orderFromQuoteDraft?.quote || quote);
-      if (photos.length) {
+      if (photos.length && (!Array.isArray(appState.draftOrderAttachments) || !appState.draftOrderAttachments.length)) {
         appState.draftOrderAttachments = photos.map(attachmentFromPhoto).filter(Boolean);
       }
       return result;
@@ -139,7 +139,9 @@
     const quote = hydrateQuotePhotos(appState.orderFromQuoteDraft?.quote || null);
     const quoteId = quote?.id || appState.selectedQuoteId || "";
     const photos = quotePhotos(quote);
-    if (photos.length) appState.draftOrderAttachments = photos.map(attachmentFromPhoto).filter(Boolean);
+    if (photos.length && (!Array.isArray(appState.draftOrderAttachments) || !appState.draftOrderAttachments.length)) {
+      appState.draftOrderAttachments = photos.map(attachmentFromPhoto).filter(Boolean);
+    }
     await baseSaveDraftOrderPhotoBridge();
     const order = typeof getSelectedOrder === "function" ? getSelectedOrder() : null;
     const displayId = Number(order?.id || appState.selectedOrderId || 0);
