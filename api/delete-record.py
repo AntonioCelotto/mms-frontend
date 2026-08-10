@@ -7,8 +7,12 @@ from http.server import BaseHTTPRequestHandler
 from urllib.error import HTTPError, URLError
 from urllib.request import Request, urlopen
 
-from _api import clean_text, parse_positive_int, read_json_body, write_json, write_options
-from _supabase import SUPABASE_KEY, SUPABASE_TIMEOUT_SECONDS, SUPABASE_URL, fetch_table, supabase_request
+try:
+    from _api import clean_text, parse_positive_int, read_json_body, write_json, write_options
+    from _supabase import SUPABASE_KEY, SUPABASE_TIMEOUT_SECONDS, SUPABASE_URL, fetch_table, supabase_request
+except ModuleNotFoundError:
+    from api._api import clean_text, parse_positive_int, read_json_body, write_json, write_options
+    from api._supabase import SUPABASE_KEY, SUPABASE_TIMEOUT_SECONDS, SUPABASE_URL, fetch_table, supabase_request
 
 DELETE_ORDER_TIMEOUT_SECONDS = 18
 
