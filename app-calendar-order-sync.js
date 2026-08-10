@@ -92,6 +92,8 @@ function calendarOrderSyncBuildCalendarFromTasks() {
         day: parts.day,
         sortKey: parts.sortKey,
         status: task.state || task.status || "Da avviare",
+        assignedUserId: task.assignedUserId || task.assigned_user_id || "",
+        estimatedHours: task.estimated_hours || task.hours || "",
         hours: task.hours || task.estimated_hours || "",
       });
     });
