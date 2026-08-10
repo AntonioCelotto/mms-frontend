@@ -147,6 +147,11 @@ class handler(BaseHTTPRequestHandler):
             except ValueError as error:
                 return write_json(self, {"error": str(error)}, HTTPStatus.BAD_REQUEST)
 
+            # A PATCH updates the selected quote only: the body cannot renumber it.
+            patch_payload["quote_number"] = quote_number
+            if isinstance(patch_payload.get("payload"), dict):
+                patch_payload["payload"]["id"] = quote_number
+
         if not patch_payload:
             return write_json(self, {"error": "Nessun dato da aggiornare"}, HTTPStatus.BAD_REQUEST)
 
