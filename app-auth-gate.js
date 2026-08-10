@@ -341,7 +341,7 @@
         const profile = await syncProfile(session);
         renderAuthenticated(profile);
       } catch (error) {
-        await client.auth.signOut().catch(() => {});
+        window.setTimeout(() => client.auth.signOut().catch(() => {}), 0);
         authState.message = error.message || "Sessione non valida";
         renderAuth();
       }
