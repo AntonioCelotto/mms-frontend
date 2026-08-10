@@ -136,7 +136,18 @@
   function tasksForOrder(order) {
     const orderId = Number(order?.id || selectedOperatorOrderId());
     const dbId = Number(order?.db_id || 0);
-    return appData.orderTasks?.[orderId] || appData.orderTasks?.[String(orderId)] || (dbId ? appData.orderTasks?.[dbId] || [] : []);
+    const rows = appData.orderTasks?.[orderId] || appData.orderTasks?.[String(orderId)] || (dbId ? appData.orderTasks?.[dbId] || [] : []);
+    if (!Array.isArray(rows)) return [];
+    const selectedTaskId = text(appState.operatorTaskId);
+    if (selectedTaskId) return rows.filter((task) => String(task.id || task.taskId || "") === selectedTaskId);
+    const profile = window.mmsAuthProfile || {};
+    const profileName = text(profile.name || [profile.first_name, profile.last_name].filter(Boolean).join(" ")).toLowerCase();
+    return rows.filter((task) => {
+      const assignedId = task.assignedUserId || task.assigned_user_id || "";
+      if (assignedId && profile.id) return String(assignedId) === String(profile.id);
+      const owner = text(task.owner || task.team).split(" - ").pop().toLowerCase();
+      return profileName && owner === profileName;
+    });
   }
 
   function renderMaterials(order) {
@@ -364,31 +375,20 @@
 
       if (appState.currentView !== "calendar" || !isOperatorOnly()) return;
       const openButton = event.target.closest?.("[data-calendar-open-order]");
-      const eventCard = event.target.closest?.(".calendar-event, .slot[data-detail]");
       const orderButton = event.target.closest?.("[data-open='order-detail']");
-      const orderId = Number(openButton?.dataset.calendarOpenOrder || eventCard?.dataset.detail || appState.selectedOrderId || 0);
-      if (!orderId && !orderButton) return;
+      if (!openButton && !orderButton) return;
+      const orderId = Number(openButton?.dataset.calendarOpenOrder || appState.selectedOrderId || 0);
+      if (!orderId) return;
       event.preventDefault();
       event.stopImmediatePropagation();
-      appState.operatorOrderId = orderId || appState.selectedOrderId;
-      appState.selectedOrderId = appState.operatorOrderId;
-      navigate("operator-order", appState.operatorOrderId);
+      appState.operatorTaskId = openButton?.dataset.calendarOpenTask || "";
+      appState.operatorOrderId = orderId;
+      appState.selectedOrderId = orderId;
+      navigate("operator-order", orderId);
     },
     true
   );
 
-  document.addEventListener("keydown", (event) => {
-    if (appState.currentView !== "calendar" || !isOperatorOnly()) return;
-    if (!["Enter", " "].includes(event.key)) return;
-    const eventCard = event.target.closest?.(".calendar-event, .slot[data-detail]");
-    if (!eventCard?.dataset.detail) return;
-    event.preventDefault();
-    event.stopImmediatePropagation();
-    const orderId = Number(eventCard.dataset.detail);
-    appState.operatorOrderId = orderId;
-    appState.selectedOrderId = orderId;
-    navigate("operator-order", orderId);
-  });
 
   if (document.getElementById("app")?.innerHTML) renderApp();
 })();
