@@ -169,7 +169,7 @@
         <div class="mms-auth-panel">
           <div class="mms-auth-logo">MMS Studio</div>
           <h1>${isRegister ? "Registrazione dipendente" : "Accesso gestionale"}</h1>
-          <p>${isRegister ? "Crea il tuo accesso con email e password. Se l'email esiste gia' negli Account, verra' collegata al profilo dipendente." : "Accedi con la tua email aziendale e password per entrare nel gestionale."}</p>
+          <p>${isRegister ? "Invia la richiesta di accesso con email e password. Potrai entrare solo dopo l'approvazione di un amministratore." : "Accedi con la tua email aziendale e password per entrare nel gestionale."}</p>
           <div class="mms-auth-tabs">
             <button type="button" data-auth-mode="login" class="${!isRegister ? "active" : ""}">Accedi</button>
             <button type="button" data-auth-mode="register" class="${isRegister ? "active" : ""}">Registrati</button>
@@ -241,7 +241,7 @@
     });
     const payload = await response.json().catch(() => ({}));
     if (!response.ok) {
-      throw new Error(payload.error || payload.detail || "Profilo non autorizzato");
+      throw new Error(payload.detail || payload.error || "Profilo non autorizzato");
     }
     if (payload.profile?.is_active === false) {
       throw new Error("Account disattivato. Contatta l'amministratore.");
@@ -279,7 +279,7 @@
         });
         if (error) throw error;
         if (!data.session) {
-          authState.message = "Registrazione creata. Se Supabase richiede conferma email, apri il link ricevuto e poi accedi.";
+          authState.message = "Registrazione ricevuta. Conferma l'email se richiesto, poi attendi l'approvazione di un amministratore prima di accedere.";
           authState.busy = false;
           renderAuth();
           return;
@@ -295,6 +295,7 @@
       completed = true;
       renderAuthenticated(profile);
     } catch (error) {
+      await client.auth.signOut().catch(() => {});
       authState.message = error.message || "Accesso non riuscito";
     } finally {
       authState.busy = false;
@@ -340,6 +341,7 @@
         const profile = await syncProfile(session);
         renderAuthenticated(profile);
       } catch (error) {
+        await client.auth.signOut().catch(() => {});
         authState.message = error.message || "Sessione non valida";
         renderAuth();
       }
