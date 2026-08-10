@@ -11,13 +11,14 @@
     calendar: "Calendario",
     "order-detail": "Scheda ordine",
     "operator-order": "Scheda lavorazione",
+    "order-create": "Creazione ordine",
     accounts: "Account",
     "ai-assistant": "Assistente AI",
   };
 
   const ALLOWED_VIEWS = {
     admin: "all",
-    commerce: new Set(["dashboard", "new-order", "quotes", "orders", "clients", "client", "inventory", "payments", "calendar", "order-detail", "operator-order"]),
+    commerce: new Set(["dashboard", "new-order", "quotes", "orders", "clients", "client", "inventory", "payments", "calendar", "order-detail", "operator-order", "order-create"]),
     operator: new Set(["calendar", "operator-order"]),
   };
 
