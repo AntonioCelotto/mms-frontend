@@ -229,12 +229,12 @@
     if (title) title.textContent = `Modifica preventivo ${editingId}`;
     if (description) description.textContent = "Aggiorna il preventivo esistente. Il numero resta invariato e tornerai all'archivio solo dopo il salvataggio nel database.";
     view?.querySelectorAll("[data-action='save-quote']").forEach((button) => {
-      button.textContent = appState.busy ? "Aggiornamento..." : `Aggiorna ${editingId}`;
+      button.textContent = appState.busy ? "Salvataggio..." : "Salva";
     });
     if (view && !view.querySelector("[data-quote-edit-save]")) {
       view.insertAdjacentHTML(
         "beforeend",
-        `<div class="quote-edit-save-dock"><button class="action-pill" data-quote-edit-save type="button" ${appState.busy ? "disabled" : ""}>${appState.busy ? "Aggiornamento..." : `Aggiorna ${quoteHtml(editingId)}`}</button></div>`
+        `<div class="quote-edit-save-dock"><button class="action-pill" data-quote-edit-save type="button" ${appState.busy ? "disabled" : ""}>${appState.busy ? "Salvataggio..." : "Salva"}</button></div>`
       );
     }
   }
