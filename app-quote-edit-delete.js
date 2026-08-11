@@ -194,6 +194,12 @@
     style.textContent = `
       .mini-btn.danger-btn{border-color:rgba(185,28,28,.28)!important;color:#991b1b!important;background:#fff5f5!important}
       .mini-btn.danger-btn:hover{background:#fee2e2!important}
+      .quote-edit-save-dock{position:fixed;right:24px;bottom:24px;z-index:120;display:flex;justify-content:flex-end;pointer-events:none}
+      .quote-edit-save-dock .action-pill{min-height:48px;padding:13px 20px;font-weight:700;box-shadow:0 14px 34px rgba(229,12,57,.34);pointer-events:auto}
+      @media (max-width:760px){
+        .quote-edit-save-dock{left:12px;right:12px;bottom:12px}
+        .quote-edit-save-dock .action-pill{width:100%}
+      }
     `;
     document.head.appendChild(style);
   }
@@ -225,6 +231,12 @@
     view?.querySelectorAll("[data-action='save-quote']").forEach((button) => {
       button.textContent = appState.busy ? "Aggiornamento..." : `Aggiorna ${editingId}`;
     });
+    if (view && !view.querySelector("[data-quote-edit-save]")) {
+      view.insertAdjacentHTML(
+        "beforeend",
+        `<div class="quote-edit-save-dock"><button class="action-pill" data-quote-edit-save type="button" ${appState.busy ? "disabled" : ""}>${appState.busy ? "Aggiornamento..." : `Aggiorna ${quoteHtml(editingId)}`}</button></div>`
+      );
+    }
   }
 
   const baseRenderAppQuoteEditDelete = renderApp;
@@ -237,6 +249,14 @@
   document.addEventListener(
     "click",
     (event) => {
+      const editSaveButton = event.target.closest?.("[data-quote-edit-save]");
+      if (editSaveButton) {
+        event.preventDefault();
+        event.stopImmediatePropagation();
+        if (!appState.busy && typeof quoteListSaveCurrent === "function") quoteListSaveCurrent();
+        return;
+      }
+
       const editButton = event.target.closest?.("[data-quote-edit]");
       if (editButton) {
         event.preventDefault();
