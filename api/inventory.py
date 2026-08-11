@@ -278,25 +278,19 @@ class handler(BaseHTTPRequestHandler):
             return write_json(self, {"error": "Elemento magazzino non valido"}, HTTPStatus.BAD_REQUEST)
 
         try:
-            supabase_request(
-                "/rest/v1/order_materials",
-                method="PATCH",
-                query={"inventory_item_id": f"eq.{item_id}"},
-                payload={"inventory_item_id": None},
-                prefer="return=minimal",
+            result = supabase_request(
+                "/rest/v1/rpc/delete_inventory_item_safely",
+                method="POST",
+                payload={"p_item_id": item_id},
             )
-            supabase_request(
-                "/rest/v1/inventory_shortages",
-                method="PATCH",
-                query={"inventory_item_id": f"eq.{item_id}"},
-                payload={"inventory_item_id": None},
-                prefer="return=minimal",
-            )
-            delete_rows("inventory_items", filters={"id": f"eq.{item_id}"})
         except RuntimeError as error:
             return write_json(self, {"error": "Elemento magazzino non eliminato", "detail": str(error)}, HTTPStatus.INTERNAL_SERVER_ERROR)
 
-        return write_json(self, {"deleted": True, "id": item_id})
+        if not isinstance(result, dict):
+            return write_json(self, {"error": "Risposta eliminazione non valida"}, HTTPStatus.INTERNAL_SERVER_ERROR)
+        if result.get("deleted") is False:
+            return write_json(self, {"error": "Elemento magazzino non trovato", **result}, HTTPStatus.NOT_FOUND)
+        return write_json(self, result)
 
     def log_message(self, format, *args):
         return
