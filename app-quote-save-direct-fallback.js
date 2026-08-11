@@ -3,7 +3,7 @@
   const SUPABASE_URL = "https://fzdqemzowxjuotqalaol.supabase.co";
   const SUPABASE_ANON_KEY =
     "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZ6ZHFlbXpvd3hqdW90cWFsYW9sIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzk5Njg3NzYsImV4cCI6MjA5NTU0NDc3Nn0.fmZ9RThFxnaJGQsOYeu_ZjjUNHThlRX87qz9sX4N6Mk";
-  const QUOTE_SELECT = "id,quote_number,client_name,category,priority,quote_date,status,note,total,payload,created_at,updated_at";
+  const QUOTE_SELECT = "id,quote_number,client_name,category,priority,quote_date,status,note,subtotal,discount_type,discount_value,discount_amount,taxable_amount,vat_rate,vat_amount,total,payload,created_at,updated_at";
 
   function isQuotePatch(input, init) {
     const url = typeof input === "string" ? input : input?.url || "";
@@ -17,6 +17,35 @@
   function amount(value) {
     const parsed = Number(String(value ?? "0").replace(",", "."));
     return Number.isFinite(parsed) ? Math.round(parsed * 100) / 100 : 0;
+  }
+
+  function quoteValues(quote) {
+    const subtotal = amount(quote.subtotal ?? quote.total);
+    const rawType = clean(quote.discountType || quote.discount_type).toLowerCase();
+    const discountType = ["percentage", "fixed"].includes(rawType) ? rawType : "none";
+    let discountValue = Math.max(0, amount(quote.discountValue ?? quote.discount_value));
+    let discountAmount = 0;
+    if (discountType === "percentage") {
+      discountValue = Math.min(discountValue, 100);
+      discountAmount = amount((subtotal * discountValue) / 100);
+    } else if (discountType === "fixed") {
+      discountAmount = Math.min(discountValue, subtotal);
+    } else {
+      discountValue = 0;
+    }
+    const taxableAmount = amount(subtotal - discountAmount);
+    const vatRate = Math.min(100, Math.max(0, amount(quote.vatRate ?? quote.vat_rate ?? 22)));
+    const vatAmount = amount((taxableAmount * vatRate) / 100);
+    return {
+      subtotal,
+      discountType,
+      discountValue,
+      discountAmount,
+      taxableAmount,
+      vatRate,
+      vatAmount,
+      total: amount(taxableAmount + vatAmount),
+    };
   }
 
   async function sessionToken() {
@@ -80,6 +109,7 @@
       return apiResponse || jsonResponse({ error: "Numero o cliente preventivo mancante" }, 400);
     }
 
+    const values = quoteValues(quote);
     const normalizedQuote = {
       ...quote,
       id: quoteNumber,
@@ -87,6 +117,7 @@
       status: clean(quote.status) || "Bozza",
       articles: Array.isArray(quote.articles) ? quote.articles : [],
       photos: Array.isArray(quote.photos) ? quote.photos : [],
+      ...values,
     };
     const row = {
       quote_number: quoteNumber,
@@ -96,7 +127,14 @@
       quote_date: clean(quote.quoteDate || quote.quote_date).slice(0, 10) || null,
       status: normalizedQuote.status,
       note: clean(quote.note) || null,
-      total: amount(quote.total),
+      subtotal: values.subtotal,
+      discount_type: values.discountType,
+      discount_value: values.discountValue,
+      discount_amount: values.discountAmount,
+      taxable_amount: values.taxableAmount,
+      vat_rate: values.vatRate,
+      vat_amount: values.vatAmount,
+      total: values.total,
       payload: normalizedQuote,
     };
 
