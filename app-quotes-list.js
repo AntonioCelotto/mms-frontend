@@ -52,6 +52,51 @@ function quoteListMaterialCount(quote) {
   return (quote.articles || []).reduce((sum, article) => sum + (article.materials || []).length, 0);
 }
 
+function quoteListServiceValue(item, keys) {
+  for (const key of keys) {
+    const value = quoteText(item?.[key]);
+    if (value) return value;
+  }
+  return "";
+}
+
+function quoteListServiceRows(quote) {
+  return (quote.articles || []).flatMap((article) => {
+    const materials = Array.isArray(article.materials) ? article.materials.filter(Boolean) : [];
+    const sourceRows = materials.length ? materials : [article];
+    return sourceRows.map((item) => ({
+      code: quoteListServiceValue(item, ["product_code", "inventory_sku", "mms_code", "sku", "code", "material_code", "article_code"]),
+      color: quoteListServiceValue(item, ["color", "colore"]),
+      description: quoteListServiceValue(item, ["description", "descrizione", "material", "name"]),
+    })).filter((row) => row.code || row.color || row.description);
+  });
+}
+
+function quoteListServicesHtml(quote) {
+  const rows = quoteListServiceRows(quote);
+  return `
+    <div class="quote-services-summary">
+      <div class="section-title"><h3>Servizi</h3></div>
+      <div style="overflow-x:auto;">
+        <table>
+          <thead><tr><th>Codice</th><th>Colore</th><th>Descrizione</th></tr></thead>
+          <tbody>
+            ${rows.length
+              ? rows.map((row) => `
+                  <tr>
+                    <td><strong>${quoteHtml(row.code || "-")}</strong></td>
+                    <td>${quoteHtml(row.color || "-")}</td>
+                    <td>${quoteHtml(row.description || "-")}</td>
+                  </tr>
+                `).join("")
+              : `<tr><td colspan="3"><span class="muted">Nessun servizio inserito</span></td></tr>`}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  `;
+}
+
 function quoteListClientInfo(quote) {
   return quote?.clientInfo && typeof quote.clientInfo === "object" ? quote.clientInfo : {};
 }
@@ -354,6 +399,8 @@ function renderQuotes() {
                     <div class="alert-item"><strong>Note</strong><span>${quoteHtml(selected.note || "Nessuna nota")}</span></div>
                   </div>
                   ${quoteListClientInfoHtml(selected)}
+                  <div style="height:16px;"></div>
+                  ${quoteListServicesHtml(selected)}
                   <div style="height:16px;"></div>
                   <div class="pill-row">
                     <button class="mini-btn" data-quote-pdf="${selected.id}" type="button">Scarica PDF</button>
