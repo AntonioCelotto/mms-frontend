@@ -485,6 +485,10 @@ async function saveDraftOrder() {
         note: appState.draftOrder.note,
         client_visibility_note: "Cliente vede avanzamento base",
         deposit_status: appState.draftOrder.deposit,
+        source_quote_number: appState.draftOrder.sourceQuoteNumber || null,
+        subtotal: Number(appState.draftOrder.subtotal || 0),
+        discount_type: appState.draftOrder.discountType || "none",
+        discount_value: Number(appState.draftOrder.discountValue || 0),
       }),
     });
     if (!orderResponse.ok) {
