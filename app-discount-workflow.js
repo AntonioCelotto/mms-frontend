@@ -106,8 +106,26 @@
     `;
   }
 
+  let loadedQuoteDiscountId = "";
+
+  function syncQuoteDiscountContext() {
+    const editingId = String(appState.editingQuoteId || "").trim();
+    if (editingId && editingId !== loadedQuoteDiscountId) {
+      const quote = typeof quoteListFind === "function" ? quoteListFind(editingId) : null;
+      appState.quoteDiscountDraft = {
+        type: normalizeType(quote?.discountType || quote?.discount_type),
+        value: numberValue(quote?.discountValue ?? quote?.discount_value) || "",
+      };
+      loadedQuoteDiscountId = editingId;
+    } else if (!editingId && loadedQuoteDiscountId) {
+      appState.quoteDiscountDraft = { type: "none", value: "" };
+      loadedQuoteDiscountId = "";
+    }
+  }
+
   function mountQuoteDiscount() {
     if (appState.currentView !== "new-order") return;
+    syncQuoteDiscountContext();
     ensureQuoteDiscount();
     document.querySelectorAll(".quote-article .section-title h3").forEach((title) => {
       if (/^Articolo\s+\d+$/i.test(title.textContent.trim())) title.textContent = "Articolo";
