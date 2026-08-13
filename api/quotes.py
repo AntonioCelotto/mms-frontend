@@ -12,7 +12,7 @@ except ModuleNotFoundError:
     from api._supabase import delete_rows, fetch_table, supabase_request
 
 
-QUOTE_SELECT = "id,quote_number,client_name,category,priority,quote_date,status,note,total,payload,created_at,updated_at"
+QUOTE_SELECT = "id,quote_number,client_name,category,priority,quote_date,status,note,subtotal,discount_type,discount_value,discount_amount,taxable_amount,vat_rate,vat_amount,total,payload,created_at,updated_at"
 
 
 def quote_date(value):
@@ -45,6 +45,36 @@ def normalize_quote_payload(raw_quote):
     payload["articles"] = quote.get("articles") if isinstance(quote.get("articles"), list) else []
     payload["photos"] = quote.get("photos") if isinstance(quote.get("photos"), list) else []
 
+    subtotal = max(0, quote_total(quote.get("subtotal")))
+    discount_type = clean_text(quote.get("discountType") or quote.get("discount_type")).lower() or "none"
+    if discount_type not in {"none", "percentage", "fixed"}:
+        discount_type = "none"
+    discount_value = max(0, quote_total(quote.get("discountValue") or quote.get("discount_value")))
+    if discount_type == "percentage":
+        discount_value = min(100, discount_value)
+        discount_amount = round(subtotal * discount_value / 100, 2)
+    elif discount_type == "fixed":
+        discount_amount = min(subtotal, discount_value)
+    else:
+        discount_value = 0
+        discount_amount = 0
+    taxable_amount = round(subtotal - discount_amount, 2)
+    vat_rate = max(0, min(100, quote_total(quote.get("vatRate") or quote.get("vat_rate") or 22)))
+    vat_amount = round(taxable_amount * vat_rate / 100, 2)
+    total = round(taxable_amount + vat_amount, 2)
+    payload.update(
+        {
+            "subtotal": subtotal,
+            "discountType": discount_type,
+            "discountValue": discount_value,
+            "discountAmount": discount_amount,
+            "taxableAmount": taxable_amount,
+            "vatRate": vat_rate,
+            "vatAmount": vat_amount,
+            "total": total,
+        }
+    )
+
     return {
         "quote_number": quote_number,
         "client_name": client_name,
@@ -53,7 +83,14 @@ def normalize_quote_payload(raw_quote):
         "quote_date": quote_date(quote.get("quoteDate") or quote.get("quote_date")),
         "status": payload["status"],
         "note": clean_text(quote.get("note")) or None,
-        "total": quote_total(quote.get("total")),
+        "subtotal": subtotal,
+        "discount_type": discount_type,
+        "discount_value": discount_value,
+        "discount_amount": discount_amount,
+        "taxable_amount": taxable_amount,
+        "vat_rate": vat_rate,
+        "vat_amount": vat_amount,
+        "total": total,
         "payload": payload,
     }
 
@@ -68,6 +105,13 @@ def shape_quote(row):
     quote["quoteDate"] = row.get("quote_date") or quote.get("quoteDate") or ""
     quote["status"] = row.get("status") or quote.get("status") or "Bozza"
     quote["note"] = row.get("note") or quote.get("note") or ""
+    quote["subtotal"] = float(row.get("subtotal") or quote.get("subtotal") or 0)
+    quote["discountType"] = row.get("discount_type") or quote.get("discountType") or "none"
+    quote["discountValue"] = float(row.get("discount_value") or quote.get("discountValue") or 0)
+    quote["discountAmount"] = float(row.get("discount_amount") or quote.get("discountAmount") or 0)
+    quote["taxableAmount"] = float(row.get("taxable_amount") or quote.get("taxableAmount") or 0)
+    quote["vatRate"] = float(row.get("vat_rate") or quote.get("vatRate") or 0)
+    quote["vatAmount"] = float(row.get("vat_amount") or quote.get("vatAmount") or 0)
     quote["total"] = float(row.get("total") or quote.get("total") or 0)
     quote["articles"] = quote.get("articles") if isinstance(quote.get("articles"), list) else []
     quote["photos"] = quote.get("photos") if isinstance(quote.get("photos"), list) else []
