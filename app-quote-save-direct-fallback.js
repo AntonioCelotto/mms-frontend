@@ -3,7 +3,7 @@
   const SUPABASE_URL = "https://fzdqemzowxjuotqalaol.supabase.co";
   const SUPABASE_ANON_KEY =
     "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZ6ZHFlbXpvd3hqdW90cWFsYW9sIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzk5Njg3NzYsImV4cCI6MjA5NTU0NDc3Nn0.fmZ9RThFxnaJGQsOYeu_ZjjUNHThlRX87qz9sX4N6Mk";
-  const QUOTE_SELECT = "id,quote_number,client_name,category,priority,quote_date,status,note,total,payload,created_at,updated_at";
+  const QUOTE_SELECT = "id,quote_number,client_name,category,priority,quote_date,status,note,subtotal,discount_type,discount_value,discount_amount,taxable_amount,vat_rate,vat_amount,total,payload,created_at,updated_at";
 
   function isQuotePatch(input, init) {
     const url = typeof input === "string" ? input : input?.url || "";
@@ -39,6 +39,13 @@
       quoteDate: row?.quote_date || stored.quoteDate || "",
       status: row?.status || stored.status || "Bozza",
       note: row?.note ?? stored.note ?? "",
+      subtotal: Number(row?.subtotal ?? stored.subtotal ?? 0),
+      discountType: row?.discount_type || stored.discountType || "none",
+      discountValue: Number(row?.discount_value ?? stored.discountValue ?? 0),
+      discountAmount: Number(row?.discount_amount ?? stored.discountAmount ?? 0),
+      taxableAmount: Number(row?.taxable_amount ?? stored.taxableAmount ?? 0),
+      vatRate: Number(row?.vat_rate ?? stored.vatRate ?? 0),
+      vatAmount: Number(row?.vat_amount ?? stored.vatAmount ?? 0),
       total: Number(row?.total ?? stored.total ?? 0),
       articles: Array.isArray(stored.articles) ? stored.articles : [],
       photos: Array.isArray(stored.photos) ? stored.photos : [],
@@ -96,6 +103,13 @@
       quote_date: clean(quote.quoteDate || quote.quote_date).slice(0, 10) || null,
       status: normalizedQuote.status,
       note: clean(quote.note) || null,
+      subtotal: amount(quote.subtotal),
+      discount_type: clean(quote.discountType || quote.discount_type) || "none",
+      discount_value: amount(quote.discountValue ?? quote.discount_value),
+      discount_amount: amount(quote.discountAmount ?? quote.discount_amount),
+      taxable_amount: amount(quote.taxableAmount ?? quote.taxable_amount),
+      vat_rate: amount(quote.vatRate ?? quote.vat_rate),
+      vat_amount: amount(quote.vatAmount ?? quote.vat_amount),
       total: amount(quote.total),
       payload: normalizedQuote,
     };
