@@ -39,6 +39,10 @@ class handler(BaseHTTPRequestHandler):
                     "p_client_visibility_note": clean_text(payload.get("client_visibility_note")) or None,
                     "p_internal_notes": clean_text(payload.get("note")) or None,
                     "p_deposit_status": clean_text(payload.get("deposit_status")) or None,
+                    "p_source_quote_number": clean_text(payload.get("source_quote_number")) or None,
+                    "p_subtotal": payload.get("subtotal") or 0,
+                    "p_discount_type": clean_text(payload.get("discount_type")) or "none",
+                    "p_discount_value": payload.get("discount_value") or 0,
                 },
             )
             if not isinstance(order, dict) or not order.get("id") or not order.get("db_id"):
@@ -57,7 +61,22 @@ class handler(BaseHTTPRequestHandler):
                 HTTPStatus.INTERNAL_SERVER_ERROR,
             )
 
-        return write_json(self, {"order": {"id": int(order["id"]), "db_id": order["db_id"]}}, HTTPStatus.CREATED)
+        return write_json(
+            self,
+            {
+                "order": {
+                    "id": int(order["id"]),
+                    "db_id": order["db_id"],
+                    "source_quote_number": order.get("source_quote_number"),
+                    "subtotal": order.get("subtotal", 0),
+                    "discount_type": order.get("discount_type", "none"),
+                    "discount_value": order.get("discount_value", 0),
+                    "discount_amount": order.get("discount_amount", 0),
+                    "total": order.get("total", 0),
+                }
+            },
+            HTTPStatus.CREATED,
+        )
 
     def log_message(self, format, *args):
         return
