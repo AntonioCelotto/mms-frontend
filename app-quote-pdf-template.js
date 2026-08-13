@@ -217,7 +217,7 @@
             .terms p { margin: 0 0 2mm; }
             .note { width: 58%; margin: 4mm 0 0 auto; font-size: 9pt; line-height: 1.45; }
             .note strong { color: #ff2029; }
-            .logo { width: 43mm; height: auto; display: block; margin-top: 30mm; object-fit: contain; }
+            .header-logo { width: 24mm; height: auto; display: block; margin: 0 0 5mm; object-fit: contain; }\n            .photo-page .logo { width: 24mm; height: auto; display: block; margin-top: 18mm; object-fit: contain; }
             .photo-page { page-break-before: always; }
             .photo-head { display: flex; justify-content: space-between; align-items: baseline; padding-bottom: 4mm; border-bottom: 1.2px solid #ff2029; }
             .photo-grid { display: block; margin: 9mm -3.5mm 0; }
@@ -233,7 +233,7 @@
         </head>
         <body>
           <section class="quote-page">
-            <h1>PREVENTIVO</h1>
+            <img class="header-logo" src="${LOGO_DATA_URL}" alt="MMS Studio" />\n            <h1>PREVENTIVO</h1>
             <table class="info-grid">
               <tbody>
                 <tr>
@@ -286,7 +286,7 @@
               <p>Consegna 10 / 15 giorni, salvo rallentamenti di produzione</p>
             </div>
             ${notes ? `<div class="note"><strong>NOTE</strong><br />${quoteHtml(notes)}</div>` : ""}
-            <img class="logo" src="${LOGO_DATA_URL}" alt="MMS Studio" />
+
           </section>
           ${photoPages(quote)}
         </body>
