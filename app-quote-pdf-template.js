@@ -41,28 +41,26 @@
 
   function serviceRows(quote) {
     return (quote.articles || []).flatMap((article) => {
+      const materials = Array.isArray(article.materials) ? article.materials.filter(Boolean) : [];
       const articleTotal = typeof quoteArticleTotal === "function" ? quoteArticleTotal(article) : numberValue(article.cost) * (numberValue(article.quantity) || 1);
-      const articleRows = [{
-        name: text(article.name) || "Articolo",
+      const articleRow = {
         code: lineCode(article),
         description: lineDescription(article, article.name),
         color: lineColor(article),
         quantity: text(article.quantity) || "1",
         unit: numberValue(article.cost),
         total: articleTotal,
-        secondary: false,
-      }];
-      const materials = (article.materials || []).map((material) => ({
-        name: text(material.material) || "Materiale",
+      };
+      const materialRows = materials.map((material) => ({
         code: lineCode(material),
         description: lineDescription(material, material.material),
         color: lineColor(material),
         quantity: text(material.quantity) || "1",
         unit: numberValue(material.price),
         total: typeof quoteMaterialTotal === "function" ? quoteMaterialTotal(material) : numberValue(material.price) * (numberValue(material.quantity) || 1),
-        secondary: true,
       }));
-      return [...articleRows, ...materials];
+      if (materialRows.length && !articleRow.code && !articleRow.color && !numberValue(article.cost)) return materialRows;
+      return [articleRow, ...materialRows].filter((row) => row.code || row.color || row.description);
     });
   }
 
@@ -100,13 +98,14 @@
     const rows = serviceRows(quote);
     if (!rows.length) return `<tr><td colspan="4" class="empty">Nessun servizio inserito</td></tr>`;
     return rows.map((row) => {
-      const details = [row.code, row.description !== row.name ? row.description : "", row.color ? `Colore: ${row.color}` : ""].filter(Boolean).join(" · ");
+      const fields = [
+        row.code ? `<span><b>Codice</b> ${quoteHtml(row.code)}</span>` : "",
+        row.color ? `<span><b>Colore</b> ${quoteHtml(row.color)}</span>` : "",
+        row.description ? `<span><b>Descrizione</b> ${quoteHtml(row.description)}</span>` : "",
+      ].filter(Boolean).join("");
       return `
-        <tr class="${row.secondary ? "secondary" : ""}">
-          <td>
-            <div class="service-name">${row.secondary ? "" : "<i></i>"}<strong>${quoteHtml(row.name)}</strong></div>
-            ${details ? `<small>${quoteHtml(details)}</small>` : ""}
-          </td>
+        <tr>
+          <td><div class="service-fields">${fields}</div></td>
           <td>${money(row.unit)}</td>
           <td>${quoteHtml(row.quantity)}</td>
           <td>${money(row.total)}</td>
@@ -182,9 +181,9 @@
             html, body { margin: 0; padding: 0; color: #171717; background: #fff; font-family: Arial, Helvetica, sans-serif; }
             body { font-size: 10.5pt; }
             .quote-page, .photo-page { width: 210mm; min-height: 297mm; padding: 18mm 16mm 14mm; position: relative; background: #fff; }
-            h1 { margin: 0 0 11mm; font-size: 31pt; line-height: .95; font-weight: 900; letter-spacing: 0; }
-            h2 { margin: 0; font-size: 26pt; font-weight: 900; }
-            h3 { margin: 0 0 8mm; font-size: 20pt; line-height: 1; }
+            h1 { margin: 0 0 9mm; font-size: 24pt; line-height: .95; font-weight: 900; letter-spacing: 0; }
+            h2 { margin: 0; font-size: 18pt; font-weight: 900; }
+            h3 { margin: 0 0 5mm; font-size: 13pt; line-height: 1; }
             .info-grid { width: 100%; border-collapse: separate; border-spacing: 0 10mm; margin: -10mm 0 0; table-layout: fixed; }
             .info-grid > tbody > tr > td { width: 50%; padding: 0 12mm 0 0; vertical-align: top; }
             .info-grid > tbody > tr > td + td { padding: 0 0 0 12mm; }
@@ -195,8 +194,8 @@
             .data-row strong { font-weight: 400; overflow-wrap: anywhere; }
             .services { margin-top: 9mm; border-top: 1.2px solid #ff2029; padding-top: 3.5mm; }
             table { width: 100%; border-collapse: collapse; table-layout: fixed; }
-            th { padding: 0 0 6mm; font-size: 14pt; text-align: left; vertical-align: bottom; }
-            th:first-child { width: 42%; font-size: 24pt; font-weight: 900; }
+            th { padding: 0 0 4mm; font-size: 10pt; text-align: left; vertical-align: bottom; }
+            th:first-child { width: 42%; font-size: 16pt; font-weight: 900; }
             th:nth-child(2) { width: 25%; padding-right: 5mm; }
             th:nth-child(3) { width: 12%; text-align: center; }
             th:nth-child(4) { width: 21%; text-align: right; }
@@ -204,12 +203,9 @@
             td:nth-child(2) { text-align: right; padding-right: 7mm; }
             td:nth-child(3) { text-align: center; }
             td:nth-child(4) { text-align: right; }
-            .service-name { display: flex; align-items: baseline; gap: 5mm; }
-            .service-name i { width: 2mm; height: 2mm; flex: 0 0 auto; background: #171717; border-radius: 50%; }
-            .service-name strong { font-size: 10.5pt; font-weight: 400; text-transform: uppercase; }
-            tr.secondary .service-name { padding-left: 7mm; }
-            tr.secondary .service-name strong { color: #444; }
-            td small { display: block; margin: 1.4mm 0 0 7mm; color: #666; font-size: 8.5pt; line-height: 1.35; }
+            .service-fields { display: grid; gap: 1.1mm; font-size: 8.7pt; line-height: 1.3; }
+            .service-fields span { display: block; overflow-wrap: anywhere; }
+            .service-fields b { display: inline-block; min-width: 18mm; color: #555; font-size: 7.5pt; text-transform: uppercase; }
             .summary { width: 58%; margin: 7mm 0 0 auto; border-collapse: collapse; border-top: 1.2px solid #ff2029; border-bottom: 1.2px solid #ff2029; }
             .summary td { padding: 2mm 0; font-size: 9pt; }
             .summary td:nth-child(2) { text-align: left; padding-right: 3mm; }
@@ -242,7 +238,7 @@
               <tbody>
                 <tr>
                   <td>
-                    <h3>[ Mittente ]</h3>
+                    <h3>Mittente</h3>
                     <div class="data-list">${dataRows([
                       ["Name", "MMS SRL"],
                       ["E-mail", "NICOLAMINOTTIMMS@GMAIL.COM"],
@@ -252,13 +248,13 @@
                     ])}</div>
                   </td>
                   <td>
-                    <h3>[ Destinatario ]</h3>
+                    <h3>Destinatario</h3>
                     <div class="data-list">${dataRows(recipientRows(info, quote))}</div>
                   </td>
                 </tr>
                 <tr>
                   <td>
-                    <h3>[ Dettagli Banca ]</h3>
+                    <h3>Dettagli Banca</h3>
                     <div class="data-list">${dataRows([
                       ["Name", "Banca Sella"],
                       ["IBAN", "IT58M0326803200052816944630"],
@@ -266,7 +262,7 @@
                     ])}</div>
                   </td>
                   <td>
-                    <h3>[ Data ]</h3>
+                    <h3>Data</h3>
                     <div class="data-list">${dataRows([
                       ["Emissione", dateLabel(quote.quoteDate)],
                       ["Preventivo", quote.id || ""],
