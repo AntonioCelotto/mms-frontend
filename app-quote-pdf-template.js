@@ -67,11 +67,11 @@
   function quoteTotals(quote) {
     const calculatedSubtotal = serviceRows(quote).reduce((sum, row) => sum + numberValue(row.total), 0);
     const subtotal = numberValue(quote.subtotal) || calculatedSubtotal;
-    const discount = numberValue(quote.discount_amount);
-    const taxable = numberValue(quote.taxable_amount) || Math.max(0, subtotal - discount);
+    const discount = numberValue(quote.discountAmount ?? quote.discount_amount);
+    const taxable = numberValue(quote.taxableAmount ?? quote.taxable_amount) || Math.max(0, subtotal - discount);
     const total = numberValue(quote.total);
-    const vat = numberValue(quote.vat_amount) || Math.max(0, total - taxable);
-    const vatRate = numberValue(quote.vat_rate) || (taxable ? (vat / taxable) * 100 : 0);
+    const vat = numberValue(quote.vatAmount ?? quote.vat_amount) || Math.max(0, total - taxable);
+    const vatRate = numberValue(quote.vatRate ?? quote.vat_rate) || (taxable ? (vat / taxable) * 100 : 0);
     return { subtotal, discount, taxable, vat, vatRate, total: total || taxable + vat };
   }
 
