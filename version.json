@@ -1,6 +1,6 @@
 {
-  "version": "client-delete-reliability-1",
-  "label": "Eliminazione clienti con feedback e API stabile",
-  "updated_at": "2026-08-10T10:35:00Z",
-  "purpose": "Corregge gli import Vercel dell'endpoint delete-record e mostra subito il motivo quando un cliente non puo essere eliminato perche ha ordini collegati"
+  "version": "quote-services-fields-1",
+  "label": "Servizi preventivo con codice, colore e descrizione",
+  "updated_at": "2026-08-13T08:00:00Z",
+  "purpose": "Mostra nella scheda e nel PDF dei preventivi solo codice MMS, colore e descrizione per i servizi, riduce i titoli e rimuove le parentesi dai titoli PDF"
 }
