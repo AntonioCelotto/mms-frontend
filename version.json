@@ -1,6 +1,6 @@
 {
-  "version": "quote-pdf-logo-header-1",
-  "label": "Logo piccolo nell'intestazione del PDF preventivo",
-  "updated_at": "2026-08-13T08:20:00Z",
-  "purpose": "Sposta il logo MMS in alto prima del titolo Preventivo, lo riduce e rimuove il logo grande dal fondo della pagina principale"
+  "version": "quote-order-discount-flow-1",
+  "label": "Sconto nei preventivi e negli ordini",
+  "updated_at": "2026-08-13T09:00:00Z",
+  "purpose": "Aggiunge sconto percentuale o fisso nei preventivi, lo trasferisce agli ordini, consente di modificarlo nella scheda ordine e mostra il titolo Articolo senza numero"
 }
