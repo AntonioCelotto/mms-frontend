@@ -92,8 +92,8 @@
       </div>
       <div class="field">
         <label>Valore sconto ${type === "percentage" ? "%" : "EUR"}</label>
-        <input class="field-value" type="number" min="0" ${type === "percentage" ? 'max="100"' : ""} step="0.01"
-          data-${prefix}-discount-field="value" value="${type === "none" ? "" : values.value}" ${type === "none" ? "disabled" : ""} placeholder="0,00" />
+        <input class="field-value" type="text" inputmode="decimal" autocomplete="off"
+          data-${prefix}-discount-field="value" value="${type === "none" ? "" : values.value}" placeholder="0,00" />
       </div>
       <div class="field span-2 ${prefix}-discount-summary">
         <div class="pill-row">
@@ -292,11 +292,22 @@
     if (quoteField) {
       const draft = ensureQuoteDiscount();
       draft[quoteField] = event.target.value;
+      if (quoteField === "value" && draft.type === "none" && String(event.target.value).trim()) {
+        draft.type = "fixed";
+        const typeField = document.querySelector("[data-quote-discount-field='type']");
+        if (typeField) typeField.value = "fixed";
+      }
       return;
     }
     const orderField = event.target.dataset?.orderDiscountField;
     if (orderField && appState.orderFromQuoteDraft) {
-      appState.orderFromQuoteDraft[orderField === "type" ? "discountType" : "discountValue"] = event.target.value;
+      const draft = appState.orderFromQuoteDraft;
+      draft[orderField === "type" ? "discountType" : "discountValue"] = event.target.value;
+      if (orderField === "value" && normalizeType(draft.discountType) === "none" && String(event.target.value).trim()) {
+        draft.discountType = "fixed";
+        const typeField = document.querySelector("[data-order-discount-field='type']");
+        if (typeField) typeField.value = "fixed";
+      }
       syncOrderFinancials();
       return;
     }
@@ -304,7 +315,14 @@
     if (editField) {
       const order = typeof getSelectedOrder === "function" ? getSelectedOrder() : null;
       const draft = order && typeof orderDetailEditDraftFor === "function" ? orderDetailEditDraftFor(order) : null;
-      if (draft) draft[editField === "type" ? "discountType" : "discountValue"] = event.target.value;
+      if (draft) {
+        draft[editField === "type" ? "discountType" : "discountValue"] = event.target.value;
+        if (editField === "value" && normalizeType(draft.discountType) === "none" && String(event.target.value).trim()) {
+          draft.discountType = "fixed";
+          const typeField = document.querySelector("[data-order-edit-discount-field='type']");
+          if (typeField) typeField.value = "fixed";
+        }
+      }
     }
   }, true);
 
