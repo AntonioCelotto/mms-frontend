@@ -117,6 +117,27 @@ def save_inventory_payload(payload):
     return rows if isinstance(rows, list) else []
 
 
+def fetch_all_inventory_items(page_size=1000):
+    rows = []
+    offset = 0
+    while True:
+        page = supabase_request(
+            "/rest/v1/inventory_items",
+            query={
+                "select": INVENTORY_SELECT,
+                "order": "name.asc,id.asc",
+                "limit": page_size,
+                "offset": offset,
+            },
+        ) or []
+        if not isinstance(page, list):
+            raise RuntimeError("Risposta Magazzino non valida")
+        rows.extend(page)
+        if len(page) < page_size:
+            return rows
+        offset += len(page)
+
+
 def active_shortage_maps():
     try:
         shortages = fetch_table("inventory_shortages", select=SHORTAGE_SELECT, order="id.desc")
@@ -204,7 +225,7 @@ class handler(BaseHTTPRequestHandler):
 
     def do_GET(self):
         try:
-            rows = fetch_table("inventory_items", select=INVENTORY_SELECT, order="name.asc")
+            rows = fetch_all_inventory_items()
             shortage_totals, shortage_details = active_shortage_maps()
         except RuntimeError as error:
             return write_json(self, {"error": "Magazzino non disponibile", "detail": str(error)}, HTTPStatus.SERVICE_UNAVAILABLE)
