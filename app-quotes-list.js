@@ -12,7 +12,8 @@ function quoteListClone(value) {
 function quoteListNextId() {
   quoteListEnsureState();
   const numericIds = appState.savedQuotes
-    .map((quote) => Number(String(quote.id || "").replace(/\D/g, "")))
+    .map((quote) => /^P-(\d+)$/.exec(String(quote.id || "").trim()))
+    .map((match) => (match ? Number(match[1]) : Number.NaN))
     .filter((id) => Number.isFinite(id));
   return `P-${String((Math.max(0, ...numericIds) || 0) + 1).padStart(4, "0")}`;
 }
