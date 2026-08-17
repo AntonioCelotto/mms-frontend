@@ -87,15 +87,15 @@
     try {
       quoteListEnsureState();
       const payload = await quoteDatabaseRequest("GET");
-      const merged = quoteDatabaseMerge(appState.savedQuotes || [], payload.quotes || []);
-      if (merged.length) {
+      if (Array.isArray(payload.quotes)) {
+        const remoteQuotes = quoteDatabaseMerge([], payload.quotes);
         const before = (appState.savedQuotes || []).map((quote) => quote.id).join("|");
-        appState.savedQuotes = merged;
-        if (!appState.selectedQuoteId || !merged.some((quote) => quote.id === appState.selectedQuoteId)) {
-          appState.selectedQuoteId = merged[0].id;
+        appState.savedQuotes = remoteQuotes;
+        if (!appState.selectedQuoteId || !remoteQuotes.some((quote) => quote.id === appState.selectedQuoteId)) {
+          appState.selectedQuoteId = remoteQuotes[0]?.id || "";
         }
         quoteDatabaseWriteLocal();
-        if (rerender && before !== merged.map((quote) => quote.id).join("|") && document.getElementById("app")?.innerHTML) {
+        if (rerender && before !== remoteQuotes.map((quote) => quote.id).join("|") && document.getElementById("app")?.innerHTML) {
           renderApp();
         }
       }
