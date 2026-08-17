@@ -370,7 +370,7 @@ function renderQuotes() {
                               <td>${quoteListArticleCount(quote)}</td>
                               <td>${quoteMoney(quote.total)}</td>
                               <td><span class="table-status ${quoteListStatusClass(quote.status)}">${quoteHtml(quote.status)}</span></td>
-                              <td><button class="mini-btn" data-quote-pdf="${quote.id}" type="button">PDF</button></td>
+                              <td><div class="pill-row"><button class="mini-btn" data-quote-pdf="${quote.id}" type="button">PDF</button><button class="mini-btn" data-quote-convert="${quote.id}" type="button">Crea ordine</button></div></td>
                             </tr>
                           `
                         )
