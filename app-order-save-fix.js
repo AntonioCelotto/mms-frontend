@@ -35,6 +35,10 @@ function resolveCreatedOrderDbId(created) {
   return Number(created.db_id || created.internal_id || created.id);
 }
 
+function resolveCreatedOrderLabel(created) {
+  return String(created.source_quote_number || appState.draftOrder.sourceQuoteNumber || `#${resolveCreatedOrderNumber(created)}`);
+}
+
 function upsertCreatedOrderPreview(created, uploadedCount = 0) {
   const displayId = resolveCreatedOrderNumber(created);
   const dbId = resolveCreatedOrderDbId(created);
@@ -46,9 +50,13 @@ function upsertCreatedOrderPreview(created, uploadedCount = 0) {
 
   if (!appData || !Array.isArray(appData.orders)) return;
 
+  const sourceQuoteNumber = String(created.source_quote_number || appState.draftOrder.sourceQuoteNumber || "").trim();
   const preview = {
     db_id: dbId,
     id: displayId,
+    order_number: String(created.order_number || displayId),
+    sourceQuoteNumber,
+    source_quote_number: sourceQuoteNumber,
     client,
     category,
     department,
@@ -171,6 +179,14 @@ function shapeDirectOrders({ orders, clients, departments, tasks, payments, atta
     return {
       db_id: Number(order.id),
       id: displayId,
+      order_number: String(order.order_number || displayId),
+      sourceQuoteNumber: order.source_quote_number || "",
+      source_quote_number: order.source_quote_number || "",
+      subtotal: Number(order.subtotal || 0),
+      discountType: order.discount_type || "none",
+      discountValue: Number(order.discount_value || 0),
+      discountAmount: Number(order.discount_amount || 0),
+      total: Number(order.total || 0),
       client: client?.name || "Cliente",
       category: order.category || "Da definire",
       department,
@@ -291,6 +307,10 @@ saveDraftOrder = async function saveDraftOrderConfirmed() {
       p_client_visibility_note: "Cliente vede avanzamento base",
       p_internal_notes: appState.draftOrder.note || null,
       p_deposit_status: appState.draftOrder.deposit || null,
+      p_source_quote_number: appState.draftOrder.sourceQuoteNumber || null,
+      p_subtotal: Number(appState.draftOrder.subtotal || 0),
+      p_discount_type: appState.draftOrder.discountType || "none",
+      p_discount_value: Number(appState.draftOrder.discountValue || 0),
     });
     if (!created || !created.id) {
       throw new Error("Creazione ordine senza ID di conferma");
@@ -326,12 +346,13 @@ saveDraftOrder = async function saveDraftOrderConfirmed() {
     appState.currentView = uploaded.length ? "order-detail" : "orders";
 
     const orderVisible = appData.orders.some((order) => Number(order.id) === Number(createdOrderNumber));
+    const createdOrderLabel = resolveCreatedOrderLabel(createdOrder);
     const suffix = uploaded.length ? ` con ${uploaded.length} allegati` : "";
     const refreshSuffix = refreshError ? " L'archivio e' stato aggiornato localmente; ricarica se vuoi riallineare tutti i dati." : "";
     setFlashMessage(
       orderVisible
-        ? `Ordine #${createdOrderNumber} salvato${suffix}${uploaded.length ? " e aperto in Scheda ordine" : " e visibile in Archivio Ordini"}.${refreshSuffix}`
-        : `Ordine #${createdOrderNumber} salvato, ma l'archivio non si e' aggiornato: ricarica la pagina`
+        ? `Ordine ${createdOrderLabel} salvato${suffix}${uploaded.length ? " e aperto in Scheda ordine" : " e visibile in Archivio Ordini"}.${refreshSuffix}`
+        : `Ordine ${createdOrderLabel} salvato, ma l'archivio non si e' aggiornato: ricarica la pagina`
     );
   } catch (error) {
     if (createdOrder) {
@@ -339,7 +360,7 @@ saveDraftOrder = async function saveDraftOrderConfirmed() {
       appState.currentView = "orders";
       appState.selectedOrderId = createdOrderNumber;
       resetOrderFiltersForNewOrder();
-      setFlashMessage(`Ordine #${createdOrderNumber} creato, ma completamento non riuscito: ${error.message}`);
+      setFlashMessage(`Ordine ${resolveCreatedOrderLabel(createdOrder)} creato, ma completamento non riuscito: ${error.message}`);
     } else {
       setFlashMessage(error.message || "Errore durante il salvataggio dell'ordine");
     }
