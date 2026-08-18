@@ -287,6 +287,18 @@ saveDraftOrder = async function saveDraftOrderConfirmed() {
     return;
   }
 
+  const sourceQuoteNumber = String(appState.draftOrder.sourceQuoteNumber || "").trim();
+  const existingOrder = sourceQuoteNumber
+    ? (appData.orders || []).find((order) => String(order.sourceQuoteNumber || order.source_quote_number || "").trim() === sourceQuoteNumber)
+    : null;
+  if (existingOrder) {
+    appState.selectedOrderId = existingOrder.id;
+    appState.currentView = "orders";
+    setFlashMessage(`Il preventivo ${sourceQuoteNumber} e' gia' collegato a un ordine. Nessun duplicato creato.`);
+    renderApp();
+    return;
+  }
+
   const materials = getCleanDraftMaterials();
   const pendingAttachments = Array.isArray(appState.draftOrderAttachments) ? [...appState.draftOrderAttachments] : [];
   const department = resolveDraftDepartment();
