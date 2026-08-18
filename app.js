@@ -864,7 +864,7 @@ function renderDashboard() {
                   .map(
                     (order) => `
                   <tr data-order="${order.id}" class="clickable-row">
-                    <td>#${order.id}</td>
+                    <td>${order.sourceQuoteNumber || order.source_quote_number || `#${order.id}`}</td>
                     <td>${order.client}</td>
                     <td>${order.department}</td>
                     <td>${renderPriorityBadge(order.priority)}</td>
@@ -1042,7 +1042,7 @@ function renderOrders() {
                       .map(
                         (order) => `
                     <tr>
-                      <td>#${order.id}</td>
+                      <td>${order.sourceQuoteNumber || order.source_quote_number || `#${order.id}`}</td>
                       <td>${order.client}</td>
                       <td>${order.category}</td>
                       <td>${order.department}</td>
@@ -1080,7 +1080,7 @@ function renderOrderDetail() {
     <section class="view ${appState.currentView === "order-detail" ? "active" : ""}">
       <div class="screen-header">
         <div>
-          <h2>Ordine #${order.id} - ${order.client}</h2>
+          <h2>Ordine ${order.sourceQuoteNumber || order.source_quote_number || `#${order.id}`} - ${order.client}</h2>
           <p>L'ordine diventa il centro operativo dove produzione, amministrazione e file restano collegati.</p>
         </div>
         <div class="screen-actions">
@@ -1565,7 +1565,7 @@ function renderClient() {
                   .map(
                     (order) => `
                   <tr data-order="${order.id}" class="clickable-row">
-                    <td>#${order.id}</td>
+                    <td>${order.sourceQuoteNumber || order.source_quote_number || `#${order.id}`}</td>
                     <td>${order.category}</td>
                     <td><span class="table-status ${getStatusClass(order.status)}">${order.status}</span></td>
                     <td>${order.eta}</td>
