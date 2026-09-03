@@ -6,13 +6,35 @@ from urllib.parse import parse_qs, urlparse
 
 try:
     from _api import clean_text, read_json_body, write_json, write_options
-    from _supabase import delete_rows, fetch_table, supabase_request
+    from _supabase import delete_rows, supabase_request
 except ModuleNotFoundError:
     from api._api import clean_text, read_json_body, write_json, write_options
-    from api._supabase import delete_rows, fetch_table, supabase_request
+    from api._supabase import delete_rows, supabase_request
 
 
 QUOTE_SELECT = "id,quote_number,client_name,category,priority,quote_date,status,note,subtotal,discount_type,discount_value,discount_amount,taxable_amount,vat_rate,vat_amount,total,payload,created_at,updated_at"
+QUOTE_PAGE_SIZE = 1000
+
+
+def fetch_all_quotes():
+    """Load the complete quote archive beyond Supabase's 1,000-row response cap."""
+    rows = []
+    offset = 0
+
+    while True:
+        page = supabase_request(
+            "/rest/v1/quotes",
+            query={
+                "select": QUOTE_SELECT,
+                "order": "created_at.desc",
+                "limit": QUOTE_PAGE_SIZE,
+                "offset": offset,
+            },
+        ) or []
+        rows.extend(page)
+        if len(page) < QUOTE_PAGE_SIZE:
+            return rows
+        offset += QUOTE_PAGE_SIZE
 
 
 def quote_date(value):
@@ -132,7 +154,7 @@ class handler(BaseHTTPRequestHandler):
 
     def do_GET(self):
         try:
-            rows = fetch_table("quotes", select=QUOTE_SELECT, order="created_at.desc")
+            rows = fetch_all_quotes()
         except RuntimeError as error:
             return write_json(self, {"error": "Preventivi non disponibili", "detail": str(error)}, HTTPStatus.SERVICE_UNAVAILABLE)
 
