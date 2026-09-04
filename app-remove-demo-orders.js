@@ -5,8 +5,22 @@
     return Array.isArray(value) ? value : [];
   }
 
-  function isDemoOrder(order) {
-    return DEMO_ORDER_IDS.has(String(order?.id)) || DEMO_ORDER_IDS.has(String(order?.orderId)) || DEMO_ORDER_IDS.has(String(order?.order_id));
+  function orderRef(value) {
+    return String(value?.id ?? value?.orderId ?? value?.order_id ?? "");
+  }
+
+  function isPersistedOrder(order) {
+    return !!(
+      order?.db_id ||
+      order?.internal_id ||
+      order?.sourceQuoteNumber ||
+      order?.source_quote_number
+    );
+  }
+
+  function isDemoOrder(order, persistedIds = new Set()) {
+    const id = orderRef(order);
+    return DEMO_ORDER_IDS.has(id) && !persistedIds.has(id) && !isPersistedOrder(order);
   }
 
   function emptyMetrics(metrics) {
@@ -24,37 +38,45 @@
     };
   }
 
-  function scrubOrderMap(map) {
+  function scrubOrderMap(map, persistedIds) {
     const next = { ...(map || {}) };
-    DEMO_ORDER_IDS.forEach((id) => delete next[id]);
+    DEMO_ORDER_IDS.forEach((id) => {
+      if (!persistedIds.has(id)) delete next[id];
+    });
     return next;
   }
 
-  function scrubCalendar(calendar) {
+  function scrubCalendar(calendar, persistedIds) {
     return asArray(calendar).map((day) => ({
       ...day,
-      slots: asArray(day.slots).filter((slot) => !DEMO_ORDER_IDS.has(String(slot.orderId))),
+      slots: asArray(day.slots).filter((slot) => !isDemoOrder(slot, persistedIds)),
     }));
   }
 
-  function scrubClients(clients) {
+  function scrubClients(clients, persistedIds) {
     return asArray(clients).map((client) => ({
       ...client,
-      orders: asArray(client.orders).filter((id) => !DEMO_ORDER_IDS.has(String(id))),
+      orders: asArray(client.orders).filter((id) => !DEMO_ORDER_IDS.has(String(id)) || persistedIds.has(String(id))),
     }));
   }
 
   function scrubData(target) {
     if (!target || typeof target !== "object") return target;
-    target.orders = asArray(target.orders).filter((order) => !isDemoOrder(order));
-    target.payments = asArray(target.payments).filter((payment) => !isDemoOrder(payment));
-    target.alerts = asArray(target.alerts).filter((alert) => !isDemoOrder(alert));
-    target.calendar = scrubCalendar(target.calendar);
-    target.clients = scrubClients(target.clients);
-    target.orderTasks = scrubOrderMap(target.orderTasks);
-    target.orderMaterials = scrubOrderMap(target.orderMaterials);
-    target.orderTimeline = scrubOrderMap(target.orderTimeline);
-    target.metrics = emptyMetrics(target.metrics);
+    const persistedIds = new Set(
+      asArray(target.orders)
+        .filter(isPersistedOrder)
+        .map(orderRef)
+        .filter(Boolean)
+    );
+    target.orders = asArray(target.orders).filter((order) => !isDemoOrder(order, persistedIds));
+    target.payments = asArray(target.payments).filter((payment) => !isDemoOrder(payment, persistedIds));
+    target.alerts = asArray(target.alerts).filter((alert) => !isDemoOrder(alert, persistedIds));
+    target.calendar = scrubCalendar(target.calendar, persistedIds);
+    target.clients = scrubClients(target.clients, persistedIds);
+    target.orderTasks = scrubOrderMap(target.orderTasks, persistedIds);
+    target.orderMaterials = scrubOrderMap(target.orderMaterials, persistedIds);
+    target.orderTimeline = scrubOrderMap(target.orderTimeline, persistedIds);
+    if (!persistedIds.size && !target.orders.length) target.metrics = emptyMetrics(target.metrics);
     return target;
   }
 
@@ -62,7 +84,9 @@
     try {
       if (typeof fallbackAppData === "object") scrubData(fallbackAppData);
       if (typeof appData === "object") scrubData(appData);
-      if (typeof appState === "object" && DEMO_ORDER_IDS.has(String(appState.selectedOrderId))) {
+      const selected = String(appState?.selectedOrderId ?? "");
+      const selectedExists = asArray(appData?.orders).some((order) => orderRef(order) === selected);
+      if (!selectedExists && DEMO_ORDER_IDS.has(selected)) {
         appState.selectedOrderId = appData?.orders?.[0]?.id || null;
       }
     } catch (error) {
