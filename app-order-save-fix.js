@@ -182,6 +182,11 @@ function shapeDirectOrders({ orders, clients, departments, tasks, payments, atta
       order_number: String(order.order_number || displayId),
       sourceQuoteNumber: order.source_quote_number || "",
       source_quote_number: order.source_quote_number || "",
+      sourceQuotePayload: order.source_quote_payload || {},
+      statusKey: order.status || "da_avviare",
+      productionStartedAt: order.production_started_at || "",
+      completedAt: order.completed_at || "",
+      actualDeliveryDate: order.actual_delivery_date || "",
       subtotal: Number(order.subtotal || 0),
       discountType: order.discount_type || "none",
       discountValue: Number(order.discount_value || 0),
@@ -211,10 +216,10 @@ function refreshMetricsFromOrders(orders) {
   appData.metrics = {
     ...appData.metrics,
     openOrders: orders.length,
-    activeOrders: orders.filter((order) => order.status !== "Evaso").length,
-    toStart: orders.filter((order) => order.status === "Da Avviare").length,
+    activeOrders: orders.filter((order) => !["completato", "annullato"].includes(order.statusKey)).length,
+    toStart: orders.filter((order) => order.statusKey === "da_avviare").length,
     urgent: orders.filter((order) => order.priority === "Express").length,
-    completedMonth: orders.filter((order) => order.status === "Evaso").length,
+    completedMonth: orders.filter((order) => order.statusKey === "completato").length,
   };
 }
 
