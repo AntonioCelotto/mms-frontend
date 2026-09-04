@@ -173,11 +173,23 @@
     if (appState.currentView !== "orders") return;
     const section = document.querySelector("section.view.active");
     const table = section?.querySelector("table");
-    if (!table || table.dataset.orderAvailabilityMounted === "true") return;
+    if (!table) return;
     const actionHeader = Array.from(table.querySelectorAll("thead th")).find(
       (cell) => cell.textContent.trim() === "Azioni"
     );
     if (!actionHeader) return;
+
+    // Availability can be rendered before the inventory and the opened-order
+    // materials finish loading. Remove the previous snapshot and rebuild it
+    // from the latest in-memory data on every render.
+    const previousHeader = actionHeader.previousElementSibling;
+    if (previousHeader?.textContent.trim() === "Disponibilita' materiali") previousHeader.remove();
+    table.querySelectorAll("tbody tr").forEach((row) => {
+      const actionCell = row.querySelector("[data-detail]")?.closest("td");
+      if (actionCell?.previousElementSibling?.querySelector(".order-stock-badge")) {
+        actionCell.previousElementSibling.remove();
+      }
+    });
     actionHeader.insertAdjacentHTML("beforebegin", "<th>Disponibilita' materiali</th>");
 
     table.querySelectorAll("tbody tr").forEach((row) => {
