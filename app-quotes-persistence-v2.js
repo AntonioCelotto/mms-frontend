@@ -32,7 +32,9 @@ function quoteStorageWriteLight() {
     const lightweight = (appState.savedQuotes || []).map(quoteStorageLightCopy);
     window.localStorage.setItem(QUOTE_STORAGE_LIGHT_KEY, JSON.stringify(lightweight));
   } catch (error) {
-    setFlashMessage("Storico preventivi non salvato: controlla spazio o permessi del browser.");
+    // The complete quote archive is stored in the database. A full browser
+    // cache must never surface as an application error or hide other notices.
+    console.warn("Cache locale preventivi piena; uso archivio database", error);
   }
 }
 
