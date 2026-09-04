@@ -51,13 +51,29 @@ def supabase_request(path: str, *, method: str = "GET", query: dict | None = Non
         raise RuntimeError("Risposta Supabase non valida") from exc
 
 
-def fetch_table(table: str, *, select: str = "*", filters: dict | None = None, order: str | None = None):
-    query = {"select": select}
-    if filters:
-        query.update(filters)
-    if order:
-        query["order"] = order
-    return supabase_request(f"/rest/v1/{table}", query=query) or []
+def fetch_table(
+    table: str,
+    *,
+    select: str = "*",
+    filters: dict | None = None,
+    order: str | None = None,
+    page_size: int = 1000,
+):
+    rows = []
+    offset = 0
+    while True:
+        query = {"select": select, "limit": page_size, "offset": offset}
+        if filters:
+            query.update(filters)
+        if order:
+            query["order"] = order
+        page = supabase_request(f"/rest/v1/{table}", query=query) or []
+        if not isinstance(page, list):
+            raise RuntimeError(f"Risposta non valida dalla tabella {table}")
+        rows.extend(page)
+        if len(page) < page_size:
+            return rows
+        offset += len(page)
 
 
 def insert_rows(table: str, payload, *, returning: str = "representation"):
