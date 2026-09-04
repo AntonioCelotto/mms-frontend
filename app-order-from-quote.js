@@ -317,7 +317,7 @@ quoteListConvertToOrder = async function quoteListConvertToOperationalOrder(quot
     client: quote.client || "",
     category: quote.category || "",
     priority: quote.priority || "Standard",
-    orderDate: new Date().toISOString().slice(0, 10),
+    orderDate: quote.quoteDate || quote.quote_date || new Date().toISOString().slice(0, 10),
     estimatedDelivery: "",
     customerDelivery: "",
     paymentStatus: "Da incassare",
