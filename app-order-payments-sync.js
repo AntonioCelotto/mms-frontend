@@ -64,16 +64,16 @@
   }
 
   function autoPaymentBody(orderId, row, sourceLabel) {
-    const date = normalizeText(row.date);
-    const paid = normalizeText(row.paid_date);
+    const paymentDate = normalizeText(row.paid_date || row.paidDate || row.date);
+    const dueDate = normalizeText(row.due_date || row.dueDate);
     const status = normalizeText(row.status);
     return {
       order_id: orderId,
       payment_type: normalizePaymentType(row.type || row.payment_type),
       amount: parsePaymentAmount(row.amount),
-      due_date: date || null,
-      paid_date: paid || null,
-      status: status || (paid ? "pagato" : "da_pagare"),
+      due_date: dueDate || null,
+      paid_date: paymentDate || null,
+      status: status || (paymentDate ? "pagato" : "da_pagare"),
       notes: autoPaymentNote(sourceLabel, row),
     };
   }
