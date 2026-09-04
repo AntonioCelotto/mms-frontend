@@ -33,7 +33,7 @@ function upsertOrderPreviewFromQuote(quote) {
     summary: `Ordine in preparazione dal preventivo ${quote.id}`,
     notes: quote.note || "Ordine creato da preventivo, da completare e salvare.",
     customerWindow: appState.orderFromQuoteDraft?.customerDelivery || "Da definire",
-    orderDate: new Date().toISOString().slice(0, 10),
+    orderDate: appState.orderFromQuoteDraft?.orderDate || quote.quoteDate || quote.quote_date || new Date().toISOString().slice(0, 10),
     estimatedDelivery: appState.orderFromQuoteDraft?.estimatedDelivery || "Da definire",
     warehouseLinked: true,
     clientVisibility: "Ordine in preparazione dopo accettazione preventivo.",
