@@ -185,6 +185,7 @@ def build_bootstrap():
                 "warehouseLinked": bool(row.get("warehouse_linked")),
                 "clientVisibility": row.get("client_visibility_note") or "",
                 "sourceQuoteNumber": row.get("source_quote_number") or "",
+                "sourceQuotePayload": row.get("source_quote_payload") or {},
                 "subtotal": float(row.get("subtotal") or 0),
                 "discountType": row.get("discount_type") or "none",
                 "discountValue": float(row.get("discount_value") or 0),
@@ -301,6 +302,20 @@ def build_bootstrap():
         order_materials_payload[str(display_order_id)].append(
             {
                 "material": material["product_name"],
+                "product_name": material["product_name"],
+                "inventory_item_id": material.get("inventory_item_id"),
+                "inventoryItemId": material.get("inventory_item_id"),
+                "inventory_sku": inventory_item.get("sku") if inventory_item else "",
+                "sku": inventory_item.get("sku") if inventory_item else "",
+                "unit": inventory_item.get("unit") if inventory_item else "",
+                "quantity_required": material.get("quantity_required") or 1,
+                "reserved_quantity": material.get("reserved_quantity") or 0,
+                "missing_quantity": material.get("missing_quantity") or 0,
+                "source_type": material.get("source_type") or "cliente",
+                "delivery_status": material.get("delivery_status") or "non_consegnato",
+                "warehouse_status_note": material.get("warehouse_status_note") or "",
+                "preorder_note": material.get("preorder_note") or "",
+                "notes": material.get("notes") or "",
                 "source": "MMS" if material.get("source_type") == "mms" else "Cliente",
                 "warehouse": material.get("warehouse_status_note") or (f"SKU {inventory_item['sku']}" if inventory_item and inventory_item.get("sku") else "Inserimento manuale"),
                 "delivery": "Consegnato" if material.get("delivery_status") == "consegnato" else "Non consegnato",
@@ -337,13 +352,18 @@ def build_bootstrap():
 
     inventory_payload = [
         {
+            "id": row.get("id"),
             "sku": row.get("sku") or "",
             "product": row.get("name") or "",
+            "name": row.get("name") or "",
             "category": row.get("category") or "",
             "available": row.get("available_quantity") or 0,
             "reserved": row.get("reserved_quantity") or 0,
             "status": row.get("status") or "",
             "reorder": row.get("notes") or "Senza note",
+            "unit": row.get("unit") or "",
+            "item_type": row.get("item_type") or "materiale",
+            "material_origin": row.get("material_origin") or "mms",
         }
         for row in inventory_items
     ]
