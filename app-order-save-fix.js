@@ -318,7 +318,9 @@ saveDraftOrder = async function saveDraftOrderConfirmed() {
       p_warehouse_linked: (appState.draftOrder.warehouseLink || "").toLowerCase().includes("magazzino"),
       p_client_visibility_note: "Cliente vede avanzamento base",
       p_internal_notes: appState.draftOrder.note || null,
-      p_deposit_status: appState.draftOrder.deposit || null,
+      p_deposit_status: Array.isArray(appState.orderFromQuoteDraft?.payments)
+        ? null
+        : appState.draftOrder.deposit || null,
       p_source_quote_number: appState.draftOrder.sourceQuoteNumber || null,
       p_subtotal: Number(appState.draftOrder.subtotal || 0),
       p_discount_type: appState.draftOrder.discountType || "none",
