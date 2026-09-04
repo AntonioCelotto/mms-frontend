@@ -292,9 +292,10 @@ saveDraftOrder = async function saveDraftOrderConfirmed() {
     ? (appData.orders || []).find((order) => String(order.sourceQuoteNumber || order.source_quote_number || "").trim() === sourceQuoteNumber)
     : null;
   if (existingOrder) {
+    resetOrderFiltersForNewOrder();
     appState.selectedOrderId = existingOrder.id;
-    appState.currentView = "orders";
-    setFlashMessage(`Il preventivo ${sourceQuoteNumber} e' gia' collegato a un ordine. Nessun duplicato creato.`);
+    appState.currentView = "order-detail";
+    setFlashMessage(`Il preventivo ${sourceQuoteNumber} e' gia' collegato all'ordine esistente: scheda aperta.`);
     renderApp();
     return;
   }
