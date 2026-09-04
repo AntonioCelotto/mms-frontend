@@ -4,6 +4,7 @@ import json
 import os
 import socket
 from collections import defaultdict
+from datetime import datetime, timezone
 from urllib.error import HTTPError, URLError
 from urllib.parse import urlencode
 from urllib.request import Request, urlopen
@@ -234,16 +235,21 @@ def build_bootstrap():
             }
         )
 
+    current_month = datetime.now(timezone.utc).strftime("%Y-%m")
     metrics = {
         "openOrders": len(shaped_orders),
-        "activeOrders": sum(1 for row in shaped_orders if row["status"] != "Evaso"),
-        "toStart": sum(1 for row in shaped_orders if row["status"] == "Da Avviare"),
+        "activeOrders": sum(1 for row in shaped_orders if row["statusKey"] not in ("completato", "annullato")),
+        "toStart": sum(1 for row in shaped_orders if row["statusKey"] == "da_avviare"),
         "urgent": sum(1 for row in shaped_orders if row["priority"] == "Express"),
-        "delays": sum(1 for row in shaped_orders if row["status"] == "In Attesa"),
+        "delays": sum(1 for row in shaped_orders if row["statusKey"] == "sospeso"),
         "openPayments": sum(1 for row in payments_payload if row["state"] != "Pagato"),
         "paymentValue": f"{max(len(payments_payload) * 4, 16)}k",
         "activeTasks": sum(item["activeTasks"] for item in departments_payload),
-        "completedMonth": sum(1 for row in shaped_orders if row["status"] == "Evaso"),
+        "completedMonth": sum(
+            1
+            for row in shaped_orders
+            if row["statusKey"] == "completato" and str(row["completedAt"]).startswith(current_month)
+        ),
     }
 
     order_tasks_payload = defaultdict(list)
