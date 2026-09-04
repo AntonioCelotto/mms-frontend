@@ -34,7 +34,7 @@ function renderOrderFromQuoteV2PaymentPanel(draft) {
                       <input class="field-value" data-order-from-quote-payment-index="${index}" data-order-from-quote-payment-field="amount" value="${orderFromQuoteEscape(row.amount)}" placeholder="0,00" />
                     </div>
                     <div class="field">
-                      <label>Data</label>
+                      <label>Data pagamento</label>
                       <input class="field-value" type="date" data-order-from-quote-payment-index="${index}" data-order-from-quote-payment-field="date" value="${orderFromQuoteEscape(row.date)}" />
                     </div>
                     <div class="field">
