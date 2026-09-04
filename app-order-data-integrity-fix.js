@@ -22,12 +22,17 @@
       .replace(/'/g, "&#39;");
   }
 
-  function inventoryById() {
-    return new Map(
-      (Array.isArray(appData?.inventory) ? appData.inventory : [])
-        .map((item) => [Number(item.id || 0), item])
-        .filter(([id]) => id)
-    );
+  function inventoryMaps() {
+    const items = Array.isArray(appData?.inventory) ? appData.inventory : [];
+    const byId = new Map();
+    const bySku = new Map();
+    items.forEach((item) => {
+      const id = Number(item?.id || 0);
+      const sku = text(item?.sku || item?.mms_code || item?.supplier_material_code).toUpperCase();
+      if (id) byId.set(id, item);
+      if (sku) bySku.set(sku, item);
+    });
+    return { byId, bySku };
   }
 
   function materialsFromQuote(order) {
@@ -56,14 +61,15 @@
     return persisted.length ? persisted : materialsFromQuote(order);
   }
 
-  function availabilityFor(material, inventoryMap = inventoryById()) {
+  function availabilityFor(material, inventory = inventoryMaps()) {
     const source = text(material?.source_type || material?.source).toLowerCase();
     if (source === "cliente") {
       return { level: "client", missing: 0, label: "Materiale cliente", detail: "Fornitura cliente" };
     }
 
     const inventoryId = Number(material?.inventory_item_id || material?.inventoryItemId || 0);
-    const item = inventoryMap.get(inventoryId);
+    const inventorySku = text(material?.inventory_sku || material?.sku || material?.mms_code || material?.product_code).toUpperCase();
+    const item = inventory.byId.get(inventoryId) || inventory.bySku.get(inventorySku);
     const unit = text(material?.unit || item?.unit);
     const suffix = unit ? ` ${unit}` : "";
     const required = number(material?.quantity_required ?? material?.quantity, 1);
@@ -105,8 +111,8 @@
   function availabilitySummary(order) {
     const rows = materialsForOrder(order);
     if (!rows.length) return { level: "empty", label: "Nessun materiale", missingCount: 0 };
-    const inventoryMap = inventoryById();
-    const results = rows.map((row) => availabilityFor(row, inventoryMap));
+    const inventory = inventoryMaps();
+    const results = rows.map((row) => availabilityFor(row, inventory));
     const missing = results.filter((item) => item.level === "missing");
     const unlinked = results.filter((item) => item.level === "warning");
     const linked = results.filter((item) => item.level === "ok");
