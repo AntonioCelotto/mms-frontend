@@ -201,7 +201,17 @@
     if (appState.currentView !== "order-detail") return;
     const order = typeof getSelectedOrder === "function" ? getSelectedOrder() : null;
     const panel = document.querySelector(".order-detail-edit-panel .surface-inner");
-    if (!order || !panel || panel.querySelector("[data-order-stock-alert]")) return;
+    if (!order || !panel) return;
+
+    // The first render can still contain the quote fallback while the real
+    // order materials and the inventory are loading. Always discard the
+    // previous alert and calculate it again only from the completed state.
+    panel.querySelector("[data-order-stock-alert]")?.remove();
+    const materialsLoading =
+      (typeof orderDetailLiveNeedsLoad === "function" && orderDetailLiveNeedsLoad(order)) ||
+      !!document.querySelector(".order-detail-edit-panel .empty-state")?.textContent.includes("Caricamento materiali");
+    if (materialsLoading) return;
+
     const summary = availabilitySummary(order);
     if (summary.level !== "missing" && summary.level !== "warning") return;
     const materialSection = Array.from(panel.querySelectorAll(".order-detail-edit-section")).find(
