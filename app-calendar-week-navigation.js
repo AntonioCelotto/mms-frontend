@@ -5,6 +5,13 @@
     return String(value ?? "").trim();
   }
 
+  function normalize(value) {
+    return text(value)
+      .toLowerCase()
+      .normalize("NFKD")
+      .replace(/[\u0300-\u036f]/g, "");
+  }
+
   function escapeHtml(value) {
     return text(value)
       .replace(/&/g, "&amp;")
