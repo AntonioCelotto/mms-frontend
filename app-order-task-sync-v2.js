@@ -148,10 +148,44 @@ if (typeof orderDetailEditSave === "function") {
     const order = taskSyncOrder();
     const orderId = taskSyncOrderId(order);
     const draft = typeof orderDetailEditDraftFor === "function" ? orderDetailEditDraftFor(order) : null;
-    if (draft && orderId) {
-      appData.orderTasks[orderId] = draft.tasks.map((task, index) => taskSyncTaskFromDraft(task, index, orderId));
-    }
-    baseSave();
+    const tasks = draft && orderId
+      ? draft.tasks.map((task, index) => taskSyncTaskFromDraft(task, index, orderId))
+      : [];
+
+    if (draft && orderId) appData.orderTasks[orderId] = tasks;
+    const result = baseSave();
+
+    const persistAssignments = async () => {
+      const assignedTasks = tasks.filter((task) =>
+        Number(task.id) > 0 && task.assignedUserId
+      );
+      if (!assignedTasks.length || typeof taskAssignmentPatchTask !== "function") return 0;
+
+      for (const task of assignedTasks) {
+        await taskAssignmentPatchTask(
+          Number(task.id),
+          task.assignedUserId,
+          task.time,
+          "",
+          "Assegnazione aggiornata dalla scheda ordine"
+        );
+      }
+      if (typeof orderFlowLoadTasks === "function") await orderFlowLoadTasks(order);
+      return assignedTasks.length;
+    };
+
+    persistAssignments()
+      .then((count) => {
+        if (!count) return;
+        setFlashMessage(`${count} ${count === 1 ? "task assegnata" : "task assegnate"} e salvata nel database`);
+        renderApp();
+      })
+      .catch((error) => {
+        setFlashMessage(`Ordine salvato, ma assegnazione task non riuscita: ${error.message}`);
+        renderApp();
+      });
+
+    return result;
   };
 }
 
