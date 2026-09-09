@@ -291,6 +291,9 @@ def build_bootstrap():
                 "time": task.get("planned_date") or "Da pianificare",
                 "state": (task.get("status") or "").replace("_", " ").title(),
                 "calendarDay": task.get("calendar_day_label") or "Da pianificare",
+                "assignedUserId": task.get("assigned_user_id") or "",
+                "assigned_user_id": task.get("assigned_user_id") or None,
+                "externalSupplierName": task.get("external_supplier_name") or "",
             }
         )
         if task.get("calendar_day_label"):
