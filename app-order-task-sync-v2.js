@@ -102,10 +102,20 @@ function taskSyncDraft(order = taskSyncOrder(), draft = null) {
 if (typeof orderDetailEditApplyStoredToOrders === "function") {
   const baseApply = orderDetailEditApplyStoredToOrders;
   orderDetailEditApplyStoredToOrders = function taskSyncApplyStored() {
+    const databaseTasks = new Map(
+      Object.entries(appData.orderTasks || {}).map(([orderId, tasks]) => [
+        String(orderId),
+        Array.isArray(tasks) ? tasks.map((task) => ({ ...task })) : [],
+      ])
+    );
     baseApply();
-    const order = taskSyncOrder();
-    taskSyncEnsureOrderTasks(order);
-    taskSyncDraft(order);
+    databaseTasks.forEach((tasks, orderId) => {
+      appData.orderTasks[orderId] = tasks;
+      const draft = appState.orderDetailEdits?.[Number(orderId)] || appState.orderDetailEdits?.[orderId];
+      if (draft) {
+        draft.tasks = tasks.map((task, index) => taskSyncDraftFromTask(task, index, Number(orderId)));
+      }
+    });
   };
 }
 
