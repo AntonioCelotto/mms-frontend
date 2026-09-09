@@ -89,12 +89,12 @@
     const section = document.querySelector("section.view.active");
     if (!section || section.querySelector(".inventory-shortage-summary")) return;
     const target = Array.from(section.querySelectorAll(".section-title h3")).find((heading) =>
-      text(heading.textContent).toLowerCase().includes("materiali salvati")
+      text(heading.textContent).toLowerCase() === "articoli"
     );
     const markup = renderInventoryCommitmentsSummary();
     if (!markup) return;
     const container = target?.closest(".surface") || section.querySelector(".surface:last-of-type");
-    if (container) container.insertAdjacentHTML("beforebegin", markup);
+    if (container) container.insertAdjacentHTML("afterend", markup);
   }
 
   const style = document.createElement("style");
