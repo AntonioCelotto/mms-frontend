@@ -58,7 +58,21 @@
 
   function quoteSummary(order) {
     const payload = order?.sourceQuotePayload || order?.source_quote_payload || {};
-    const articles = Array.isArray(payload.articles) ? payload.articles : [];
+    const sourceArticles = Array.isArray(payload.articles) ? payload.articles : [];
+    const articles = sourceArticles.flatMap((article, index) => {
+      const raw = article && typeof article === "object" ? article : {};
+      const articleName = value(raw.name || raw.article || raw.title || raw.product_name);
+      const materials = Array.isArray(raw.materials) ? raw.materials : [];
+      const isGenericName = !articleName || /^articolo\s*\d*$/i.test(articleName);
+      if (!isGenericName || !materials.length) return [{ ...raw, name: articleName || `Articolo ${index + 1}` }];
+      return materials.map((material, materialIndex) => ({
+        name: value(material?.material || material?.product_name || material?.name || material?.title || material?.description)
+          || `Materiale ${materialIndex + 1}`,
+        quantity: material?.quantity ?? material?.qty ?? material?.quantity_required ?? raw.quantity ?? "1",
+        cost: material?.price ?? material?.cost ?? material?.unit_price ?? raw.cost ?? "",
+        materials: [],
+      }));
+    });
     const materials = Array.isArray(appData?.orderMaterials?.[Number(order?.id)])
       ? appData.orderMaterials[Number(order.id)]
       : [];
@@ -68,7 +82,7 @@
       total: payload.total ?? order?.total ?? "",
       articles,
       materials: articles.length ? [] : materials.map((row) => ({
-        name: value(row.product_name || row.material || row.name),
+        name: value(row.product_name || row.material || row.name || row.title || row.description),
         quantity: value(row.quantity_required || row.quantity || row.qty) || "1",
         price: value(row.price || row.cost || row.unit_price),
       })).filter((row) => row.name),
