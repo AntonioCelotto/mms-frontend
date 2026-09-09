@@ -101,7 +101,11 @@
     if (!rows.length) return `<strong>${escapeHtml(order?.payment || "Da pagare")}</strong><div class="muted">Importo e scadenza da definire</div>`;
     return rows.map((row) => {
       const status = value(row.status).toLowerCase() === "pagato" ? "Pagato" : "Da pagare";
-      return `<div class="order-payment-summary"><strong>${escapeHtml(status)} · ${escapeHtml(formatAmount(row.amount))}</strong><div class="muted">Scadenza ${escapeHtml(formatDate(row.due_date))}</div></div>`;
+      const type = value(row.payment_type || row.type || "Pagamento");
+      const typeLabel = type.charAt(0).toUpperCase() + type.slice(1).toLowerCase();
+      const paidDate = value(row.paid_date || row.paidDate);
+      const paidSuffix = status === "Pagato" && paidDate ? ` (${formatDate(paidDate)})` : "";
+      return `<div class="order-payment-summary"><strong>${escapeHtml(typeLabel)} ${escapeHtml(formatAmount(row.amount))} - ${escapeHtml(status)}${escapeHtml(paidSuffix)}</strong><div class="muted">Scadenza ${escapeHtml(formatDate(row.due_date || row.dueDate))}</div></div>`;
     }).join("");
   }
 
@@ -153,9 +157,13 @@
 
   async function loadPaymentDetails() {
     if (typeof fetchSupabaseRows !== "function" || !appData?.orders?.length) return;
+    if (appData.orders.every((order) => Array.isArray(order.paymentRows))) {
+      renderApp();
+      return;
+    }
     try {
       const rows = await fetchSupabaseRows("payments", {
-        select: "id,order_id,payment_type,amount,due_date,status",
+        select: "id,order_id,payment_type,amount,due_date,paid_date,status",
         order: "id.asc",
       });
       const byOrder = new Map();
