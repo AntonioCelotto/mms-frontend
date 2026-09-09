@@ -122,6 +122,53 @@
     };
   }
 
+  if (typeof orderDetailEditHandleClick === "function") {
+    const baseHandleClick = orderDetailEditHandleClick;
+    orderDetailEditHandleClick = function orderDetailEditHandleClickWithTaskDelete(target) {
+      const removeButton = target.closest?.("[data-order-detail-remove-task]");
+      if (!removeButton) return baseHandleClick(target);
+
+      const order = typeof getSelectedOrder === "function" ? getSelectedOrder() : null;
+      const displayOrderId = Number(order?.id || appState.selectedOrderId || 0);
+      const orderDbId = Number(order?.db_id || order?.internal_id || displayOrderId || 0);
+      const draft = typeof orderDetailEditDraftFor === "function" ? orderDetailEditDraftFor(order) : null;
+      const taskIndex = Number(removeButton.dataset.orderDetailRemoveTask);
+      const task = draft?.tasks?.[taskIndex];
+      if (!task || !isRealId(task.id)) return baseHandleClick(target);
+      if (!window.confirm(`Eliminare definitivamente la task "${task.name || "Task"}"?`)) return true;
+
+      removeButton.disabled = true;
+      Promise.resolve()
+        .then(async () => {
+          const session = await window.mmsSupabaseAuth?.auth?.getSession?.();
+          const token = session?.data?.session?.access_token;
+          if (!token) throw new Error("Sessione amministratore non disponibile");
+          return fetch("/api/order-task", {
+            method: "DELETE",
+            headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+            body: JSON.stringify({ task_id: Number(task.id), order_db_id: orderDbId }),
+          });
+        })
+        .then(async (response) => {
+          const payload = await response.json().catch(() => ({}));
+          if (!response.ok) throw new Error(payload.detail || payload.error || "Task non eliminata");
+          draft.tasks.splice(taskIndex, 1);
+          if (appData.orderTasks?.[displayOrderId]) {
+            appData.orderTasks[displayOrderId] = appData.orderTasks[displayOrderId].filter((row) => String(row.id) !== String(task.id));
+          }
+          if (typeof orderDetailEditWriteStored === "function") orderDetailEditWriteStored(displayOrderId, draft);
+          if (typeof refreshBootstrap === "function") await refreshBootstrap();
+          if (typeof setFlashMessage === "function") setFlashMessage("Task eliminata dall'ordine e dal calendario");
+          else if (typeof renderApp === "function") renderApp();
+        })
+        .catch((error) => {
+          removeButton.disabled = false;
+          if (typeof setFlashMessage === "function") setFlashMessage(`Task non eliminata: ${error.message}`);
+        });
+      return true;
+    };
+  }
+
   const baseRenderAppExtraTaskFix = renderApp;
   renderApp = function renderAppExtraTaskFix() {
     if (appState.currentView === "order-detail") {
