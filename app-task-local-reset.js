@@ -1,5 +1,5 @@
 (function () {
-  const RESET_MARKER = "mms_task_local_reset_20260909_1";
+  const RESET_MARKER = "mms_task_local_reset_20260909_2";
   const TASK_STORAGE_KEYS = [
     "mms_order_detail_edits_v1",
     "mms_order_task_plan_v1",
