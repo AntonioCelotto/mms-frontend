@@ -17,6 +17,24 @@ def parse_optional_hours(value):
     return parsed if parsed >= 0 else None
 
 
+def normalize_phase(value):
+    raw = clean_text(value).lower().replace(" ", "_")
+    if "cartamodello" in raw:
+        return "cartamodello"
+    if "taglio" in raw:
+        return "taglio"
+    if "confezione" in raw:
+        return "confezione"
+    return raw or None
+
+
+def normalize_status(value):
+    raw = clean_text(value).lower().replace(" ", "_")
+    aliases = {"da_confermare": "in_attesa", "stand_by": "in_attesa"}
+    raw = aliases.get(raw, raw)
+    return raw if raw in {"da_avviare", "in_corso", "in_attesa", "completato"} else None
+
+
 class handler(BaseHTTPRequestHandler):
     def do_PATCH(self):
         payload = read_json_body(self)
@@ -30,6 +48,9 @@ class handler(BaseHTTPRequestHandler):
         assigned_user_id = parse_optional_positive_int(payload.get("assigned_user_id"))
         external_supplier_name = clean_text(payload.get("external_supplier_name")) or None
         estimated_hours = parse_optional_hours(payload.get("estimated_hours"))
+        task_name = clean_text(payload.get("task_name")) or None
+        task_phase = normalize_phase(payload.get("task_phase"))
+        status = normalize_status(payload.get("status"))
         has_assignee_update = "assigned_user_id" in payload or "external_supplier_name" in payload
 
         if assigned_user_id is not None:
@@ -50,6 +71,12 @@ class handler(BaseHTTPRequestHandler):
             update_payload["external_supplier_name"] = external_supplier_name
         if estimated_hours is not None:
             update_payload["estimated_hours"] = estimated_hours
+        if task_name is not None:
+            update_payload["task_name"] = task_name
+        if task_phase is not None:
+            update_payload["task_phase"] = task_phase
+        if status is not None:
+            update_payload["status"] = status
 
         if not any(value is not None for value in update_payload.values()):
             return write_json(self, {"error": "Nessun dato da aggiornare"}, HTTPStatus.BAD_REQUEST)
