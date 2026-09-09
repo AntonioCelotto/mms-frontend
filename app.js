@@ -1074,7 +1074,6 @@ function renderOrders() {
 function renderOrderDetail() {
   const order = getSelectedOrder();
   const tasks = appData.orderTasks[order.id] || [];
-  const timeline = appData.orderTimeline[order.id] || [];
   const materials = getSelectedOrderMaterials();
   return `
     <section class="view ${appState.currentView === "order-detail" ? "active" : ""}">
@@ -1153,7 +1152,7 @@ function renderOrderDetail() {
                         (task) => `
                     <div class="task-item">
                       <div>
-                        <strong>${task.name}</strong>
+                        <strong>${String(task.name || "Task").replace(/\s+ordine\s+#?\d+\s*$/i, "").replace(/\s+ordine\s*$/i, "")}</strong>
                         <div class="muted">${task.team}</div>
                       </div>
                       <div>${task.hours}</div>
@@ -1181,36 +1180,6 @@ function renderOrderDetail() {
         </div>
 
         <div style="display:grid; gap:16px;">
-          <div class="surface">
-            <div class="surface-inner">
-              <div class="section-title">
-                <div>
-                  <h3>Timeline</h3>
-                  <p>Chi ha fatto cosa e quando.</p>
-                </div>
-              </div>
-              <div class="timeline">
-                ${
-                  timeline.length
-                    ? timeline
-                        .map(
-                          (item) => `
-                      <div class="timeline-item">
-                        <div class="timeline-time">${item.date}</div>
-                        <div class="timeline-body">
-                          <strong>${item.title}</strong>
-                          <span>${item.detail}</span>
-                        </div>
-                      </div>
-                    `
-                        )
-                        .join("")
-                    : `<div class="empty-state">Timeline non ancora disponibile per questo ordine.</div>`
-                }
-              </div>
-            </div>
-          </div>
-
           <div class="surface">
             <div class="surface-inner">
               <div class="section-title">
