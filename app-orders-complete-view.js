@@ -1,0 +1,181 @@
+(function () {
+  const SUMMARY_KEY = "mms_order_quote_summaries_v1";
+
+  function value(input) {
+    return String(input ?? "").trim();
+  }
+
+  function escapeHtml(input) {
+    return value(input)
+      .replace(/&/g, "&amp;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;")
+      .replace(/"/g, "&quot;")
+      .replace(/'/g, "&#39;");
+  }
+
+  function formatAmount(input) {
+    const amount = Number(input);
+    if (!Number.isFinite(amount)) return value(input) || "Importo da definire";
+    return new Intl.NumberFormat("it-IT", { style: "currency", currency: "EUR" }).format(amount);
+  }
+
+  function formatDate(input) {
+    const raw = value(input);
+    if (!raw) return "Scadenza da definire";
+    const parts = raw.slice(0, 10).split("-");
+    if (parts.length !== 3) return raw;
+    return `${parts[2]}/${parts[1]}/${parts[0]}`;
+  }
+
+  function orderNumber(order) {
+    return value(order?.sourceQuoteNumber || order?.source_quote_number || order?.orderNumber || order?.order_number || order?.id);
+  }
+
+  function orderDbId(order) {
+    return Number(order?.db_id || order?.internal_id || order?.id || 0);
+  }
+
+  function quoteSummary(order) {
+    const payload = order?.sourceQuotePayload || order?.source_quote_payload || {};
+    const articles = Array.isArray(payload.articles) ? payload.articles : [];
+    const materials = Array.isArray(appData?.orderMaterials?.[Number(order?.id)])
+      ? appData.orderMaterials[Number(order.id)]
+      : [];
+    return {
+      quoteId: value(payload.id || orderNumber(order)),
+      client: value(payload.client || order?.client),
+      total: payload.total ?? order?.total ?? "",
+      articles,
+      materials: articles.length ? [] : materials.map((row) => ({
+        name: value(row.product_name || row.material || row.name),
+        quantity: value(row.quantity_required || row.quantity || row.qty) || "1",
+        price: value(row.price || row.cost || row.unit_price),
+      })).filter((row) => row.name),
+    };
+  }
+
+  function seedQuoteSummaries() {
+    if (!appData?.orders?.length) return;
+    let stored = {};
+    try {
+      stored = JSON.parse(localStorage.getItem(SUMMARY_KEY) || "{}");
+    } catch (error) {
+      stored = {};
+    }
+    if (!appState.orderQuoteSummaries || typeof appState.orderQuoteSummaries !== "object") {
+      appState.orderQuoteSummaries = {};
+    }
+    appData.orders.forEach((order) => {
+      const summary = quoteSummary(order);
+      if (!summary.articles.length && !summary.materials.length) return;
+      const key = Number(order.id);
+      stored[key] = summary;
+      appState.orderQuoteSummaries[key] = summary;
+    });
+    try {
+      localStorage.setItem(SUMMARY_KEY, JSON.stringify(stored));
+    } catch (error) {
+      console.warn("Riepilogo articoli non memorizzato", error);
+    }
+  }
+
+  const baseFilterOrders = filterOrders;
+  filterOrders = function filterOrdersByCompleteNumber() {
+    const query = value(appState.search).toLowerCase();
+    if (!query) return baseFilterOrders();
+    const originalSearch = appState.search;
+    appState.search = "";
+    let filtered;
+    try {
+      filtered = baseFilterOrders();
+    } finally {
+      appState.search = originalSearch;
+    }
+    return filtered.filter((order) => {
+      const payments = Array.isArray(order.paymentRows) ? order.paymentRows : [];
+      return [
+        order.id,
+        order.db_id,
+        order.orderNumber,
+        order.order_number,
+        order.sourceQuoteNumber,
+        order.source_quote_number,
+        order.client,
+        order.department,
+        order.category,
+        order.payment,
+        order.status,
+        ...payments.flatMap((row) => [row.amount, row.due_date, row.status]),
+      ].join(" ").toLowerCase().includes(query);
+    });
+  };
+
+  function paymentMarkup(order) {
+    const rows = Array.isArray(order?.paymentRows) ? order.paymentRows : [];
+    if (!rows.length) return `<strong>${escapeHtml(order?.payment || "Da pagare")}</strong><div class="muted">Importo e scadenza da definire</div>`;
+    return rows.map((row) => {
+      const status = value(row.status).toLowerCase() === "pagato" ? "Pagato" : "Da pagare";
+      return `<div class="order-payment-summary"><strong>${escapeHtml(status)} · ${escapeHtml(formatAmount(row.amount))}</strong><div class="muted">Scadenza ${escapeHtml(formatDate(row.due_date))}</div></div>`;
+    }).join("");
+  }
+
+  const baseRenderOrders = renderOrders;
+  renderOrders = function renderOrdersWithPaymentDetails() {
+    const markup = baseRenderOrders();
+    const template = document.createElement("template");
+    template.innerHTML = markup;
+    const header = Array.from(template.content.querySelectorAll("th")).find((cell) => value(cell.textContent) === "Pagamento");
+    if (header) header.textContent = "Pagamento / scadenza";
+    template.content.querySelectorAll("tbody tr").forEach((row) => {
+      const detail = row.querySelector("[data-detail]");
+      if (!detail) return;
+      const order = appData.orders.find((item) => Number(item.id) === Number(detail.dataset.detail));
+      const cells = row.querySelectorAll("td");
+      if (order && cells[6]) cells[6].innerHTML = paymentMarkup(order);
+    });
+    return template.innerHTML;
+  };
+
+  function removeWarehousePicker() {
+    if (appState.currentView !== "order-detail") return;
+    document.querySelectorAll(".order-inventory-picker").forEach((node) => node.remove());
+  }
+
+  const baseRenderApp = renderApp;
+  renderApp = function renderAppWithCompleteOrders() {
+    seedQuoteSummaries();
+    baseRenderApp();
+    removeWarehousePicker();
+  };
+
+  async function loadPaymentDetails() {
+    if (typeof fetchSupabaseRows !== "function" || !appData?.orders?.length) return;
+    try {
+      const rows = await fetchSupabaseRows("payments", {
+        select: "id,order_id,payment_type,amount,due_date,status",
+        order: "id.asc",
+      });
+      const byOrder = new Map();
+      (Array.isArray(rows) ? rows : []).forEach((row) => {
+        const key = Number(row.order_id);
+        if (!byOrder.has(key)) byOrder.set(key, []);
+        byOrder.get(key).push(row);
+      });
+      appData.orders.forEach((order) => {
+        order.paymentRows = byOrder.get(orderDbId(order)) || [];
+      });
+      renderApp();
+    } catch (error) {
+      console.warn("Dettagli pagamenti ordini non caricati", error);
+    }
+  }
+
+  const style = document.createElement("style");
+  style.textContent = ".order-payment-summary+.order-payment-summary{margin-top:8px;padding-top:8px;border-top:1px solid rgba(0,0,0,.08)}";
+  document.head.appendChild(style);
+
+  seedQuoteSummaries();
+  removeWarehousePicker();
+  void loadPaymentDetails();
+})();
