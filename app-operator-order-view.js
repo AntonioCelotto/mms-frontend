@@ -70,7 +70,46 @@
   }
 
   function materialNote(row) {
-    return text(row.preorder || row.preorder_note || row.note || row.notes || row.description);
+    return text(row.preorder || row.preorder_note || row.note || row.notes || row.description)
+      .replace(/\s*[-–—]?\s*(?:prezzo|costo)\s*[:€]?\s*[\d.,]+(?:\s*€)?\s*$/i, "")
+      .trim();
+  }
+
+  function displayOrderNumber(order) {
+    return text(
+      order?.sourceQuoteNumber ||
+        order?.source_quote_number ||
+        order?.quoteNumber ||
+        order?.quote_number ||
+        order?.orderNumber ||
+        order?.order_number ||
+        order?.id
+    );
+  }
+
+  function displayTaskTitle(value) {
+    return text(value || "Task ordine")
+      .replace(/\s+ordine\s+#?\d+\s*$/i, "")
+      .replace(/\s+ordine\s*$/i, "")
+      .trim();
+  }
+
+  function operatorTaskId(order, task, index) {
+    if (task?.id) return String(task.id);
+    if (typeof calendarWorklogTaskId === "function") return String(calendarWorklogTaskId(order.id, task, index));
+    return String(task?.taskId || task?.task_id || `operator-task-${order.id}-${index + 1}`);
+  }
+
+  function renderTaskAction(taskId, status) {
+    const normalized = text(status).toLowerCase();
+    if (normalized.includes("complet")) return `<span class="table-status done">Completata</span>`;
+    if (normalized.includes("corso")) {
+      return `<div class="operator-task-controls"><button class="mini-btn" data-operator-worklog-action="pause" data-operator-worklog-task="${escapeHtml(taskId)}" type="button">Pausa</button><button class="mini-btn operator-worklog-btn" data-operator-worklog-action="finish" data-operator-worklog-task="${escapeHtml(taskId)}" type="button">Termina</button></div>`;
+    }
+    if (normalized.includes("pausa")) {
+      return `<button class="mini-btn operator-worklog-btn" data-operator-worklog-action="start" data-operator-worklog-task="${escapeHtml(taskId)}" type="button">Riprendi</button>`;
+    }
+    return `<button class="mini-btn operator-worklog-btn" data-operator-worklog-action="start" data-operator-worklog-task="${escapeHtml(taskId)}" type="button">Avvia lavorazione</button>`;
   }
 
   function summaryMaterials(orderId) {
@@ -218,19 +257,22 @@
       <div class="calendar-task-list operator-task-list">
         ${tasks
           .map(
-            (task) => `
+            (task, index) => {
+              const taskId = operatorTaskId(order, task, index);
+              const session = typeof calendarWorklogSessionFor === "function" ? calendarWorklogSessionFor(taskId) : null;
+              const status = session?.status || task.state || task.status || "Da avviare";
+              return `
           <div class="calendar-task-row">
             <div>
-              <strong>${escapeHtml(task.name || task.task_name || "Task ordine")}</strong>
+              <strong>${escapeHtml(displayTaskTitle(task.name || task.task_name))}</strong>
               <span>${escapeHtml(task.phase || task.task_phase || "Lavorazione")}</span>
             </div>
             <div>${escapeHtml(task.team || task.owner || "Non assegnato")}</div>
             <div>${escapeHtml(task.time || task.planned_date || "Da pianificare")}</div>
-            <div><span class="table-status ${typeof getStatusClass === "function" ? getStatusClass(task.state || task.status || "Da avviare") : ""}">${escapeHtml(
-              task.state || task.status || "Da avviare"
-            )}</span></div>
+            <div class="operator-task-action">${renderTaskAction(taskId, status)}</div>
           </div>
-        `
+        `;
+            }
           )
           .join("")}
       </div>
@@ -259,7 +301,7 @@
       <section class="view ${appState.currentView === "operator-order" ? "active" : ""}">
         <div class="screen-header">
           <div>
-            <h2>Scheda lavorazione #${escapeHtml(order.id)}</h2>
+            <h2>Scheda lavorazione ${escapeHtml(displayOrderNumber(order))}</h2>
             <p>Vista operatore con note, foto e materiali necessari alla produzione.</p>
           </div>
           <div class="screen-actions">
@@ -339,6 +381,9 @@
       .operator-photo span{font-size:12px;color:var(--muted);padding:9px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
       .operator-order-table-wrap{overflow-x:auto}
       .operator-task-list .calendar-task-row{grid-template-columns:minmax(0,1fr) minmax(110px,.7fr) minmax(100px,.6fr) auto}
+      .operator-task-action{display:flex;justify-content:flex-end}
+      .operator-task-controls{display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end}
+      .operator-worklog-btn{font-weight:700;color:#fff;background:#e50c39;border-color:#e50c39}
       @media(max-width:980px){.operator-order-grid{grid-template-columns:1fr}.operator-task-list .calendar-task-row{grid-template-columns:1fr;gap:6px}.operator-photo-grid{grid-template-columns:repeat(auto-fill,minmax(140px,1fr))}}
     `;
     document.head.appendChild(style);
@@ -370,6 +415,21 @@
         event.preventDefault();
         event.stopImmediatePropagation();
         navigate("calendar");
+        return;
+      }
+
+      const worklogButton = event.target.closest?.("[data-operator-worklog-action]");
+      if (worklogButton && appState.currentView === "operator-order") {
+        event.preventDefault();
+        event.stopImmediatePropagation();
+        const taskId = worklogButton.dataset.operatorWorklogTask;
+        if (!taskId || typeof calendarWorklogUpdate !== "function") {
+          setFlashMessage("Task non disponibile per questa lavorazione");
+          renderApp();
+          return;
+        }
+        calendarWorklogUpdate(taskId, worklogButton.dataset.operatorWorklogAction);
+        renderApp();
         return;
       }
 
