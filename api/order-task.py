@@ -1,10 +1,13 @@
 from __future__ import annotations
 
+import json
 from http import HTTPStatus
 from http.server import BaseHTTPRequestHandler
+from urllib.error import HTTPError, URLError
+from urllib.request import Request, urlopen
 
 from _api import clean_text, parse_optional_positive_int, parse_positive_int, read_json_body, write_json, write_options
-from _supabase import fetch_table, insert_rows, resolve_order
+from _supabase import SUPABASE_KEY, SUPABASE_URL, delete_rows, fetch_table, insert_rows, resolve_order
 
 
 CORE_PHASES = {"cartamodello", "taglio", "confezione"}
@@ -44,6 +47,30 @@ def default_department_id(order_id):
         return rows[0]["department_id"]
     departments = fetch_table("departments", select="id", order="id.asc")
     return departments[0]["id"] if departments else None
+
+
+def authenticated_admin(handler):
+    authorization = clean_text(handler.headers.get("Authorization"))
+    if not authorization.lower().startswith("bearer "):
+        return False
+    token = authorization.split(" ", 1)[1].strip()
+    if not token or token == SUPABASE_KEY:
+        return False
+    request = Request(
+        f"{SUPABASE_URL}/auth/v1/user",
+        headers={"apikey": SUPABASE_KEY, "Authorization": f"Bearer {token}"},
+        method="GET",
+    )
+    try:
+        with urlopen(request, timeout=5) as response:
+            auth_user = json.loads(response.read().decode("utf-8"))
+    except (HTTPError, URLError, TimeoutError, json.JSONDecodeError):
+        return False
+    auth_user_id = clean_text(auth_user.get("id"))
+    if not auth_user_id:
+        return False
+    profiles = fetch_table("users", select="role,is_active", filters={"auth_user_id": f"eq.{auth_user_id}"})
+    return bool(profiles and profiles[0].get("role") == "admin" and profiles[0].get("is_active", True))
 
 
 class handler(BaseHTTPRequestHandler):
@@ -98,6 +125,33 @@ class handler(BaseHTTPRequestHandler):
             return write_json(self, {"error": "Task non salvato", "detail": str(error)}, HTTPStatus.INTERNAL_SERVER_ERROR)
 
         return write_json(self, created[0] if created else {"ok": True}, HTTPStatus.CREATED)
+
+    def do_DELETE(self):
+        if not authenticated_admin(self):
+            return write_json(self, {"error": "Operazione consentita solo agli amministratori"}, HTTPStatus.FORBIDDEN)
+
+        payload = read_json_body(self)
+        if payload is None:
+            return write_json(self, {"error": "JSON non valido"}, HTTPStatus.BAD_REQUEST)
+
+        task_id = parse_positive_int(payload.get("task_id") or payload.get("id"))
+        order_id = parse_optional_positive_int(payload.get("order_db_id") or payload.get("order_id"))
+        if not task_id:
+            return write_json(self, {"error": "Task non valida"}, HTTPStatus.BAD_REQUEST)
+
+        try:
+            filters = {"id": f"eq.{task_id}"}
+            if order_id:
+                filters["order_id"] = f"eq.{order_id}"
+            existing = fetch_table("order_tasks", select="id,order_id", filters=filters)
+            if not existing:
+                return write_json(self, {"error": "Task non trovata nell'ordine"}, HTTPStatus.NOT_FOUND)
+            delete_rows("calendar_worklogs", filters={"task_id": f"eq.{task_id}"})
+            delete_rows("order_tasks", filters=filters)
+        except RuntimeError as error:
+            return write_json(self, {"error": "Task non eliminata", "detail": str(error)}, HTTPStatus.INTERNAL_SERVER_ERROR)
+
+        return write_json(self, {"ok": True, "deleted_task_id": task_id})
 
     def log_message(self, format, *args):
         return
