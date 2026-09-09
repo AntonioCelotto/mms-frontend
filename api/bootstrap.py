@@ -9,7 +9,8 @@ from _supabase import build_bootstrap
 
 class handler(BaseHTTPRequestHandler):
     def do_GET(self):
-        if self.path not in ("/api/bootstrap", "/api/bootstrap/"):
+        request_path = self.path.split("?", 1)[0]
+        if request_path not in ("/api/bootstrap", "/api/bootstrap/"):
             return write_json(self, {"error": "Not found"}, HTTPStatus.NOT_FOUND)
 
         try:
