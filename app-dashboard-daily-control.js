@@ -143,9 +143,9 @@
     const style = document.createElement("style");
     style.id = "dashboard-daily-control-styles";
     style.textContent = `
-      .daily-control-kpis{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:12px;margin-bottom:18px}
+      .daily-control-kpis{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:12px;margin-bottom:18px}
       .daily-control-kpis .kpi{min-height:126px}.daily-control-kpis .kpi strong{font-size:34px}
-      .daily-control-grid{display:grid;grid-template-columns:minmax(0,1.55fr) minmax(330px,.85fr);gap:18px;align-items:start}
+      .daily-control-grid{display:grid;grid-template-columns:1fr;gap:18px;align-items:start}
       .daily-control-column{display:grid;gap:18px}.daily-task-list,.urgent-order-list{display:grid;gap:9px}
       .daily-task-row,.urgent-order-row{width:100%;border:1px solid var(--line);background:rgba(255,255,255,.72);border-radius:9px;padding:13px 14px;text-align:left;display:grid;grid-template-columns:minmax(230px,1.5fr) minmax(150px,.8fr) auto;gap:14px;align-items:center;cursor:pointer}
       .daily-task-row:hover,.urgent-order-row:hover{border-color:#e50c39;box-shadow:0 8px 24px rgba(17,24,39,.07)}
@@ -168,7 +168,6 @@
     const completedToday = rows.filter((row) => row.finishedDate === today || (row.plannedDate === today && isCompleted(row)));
     const lateRows = rows.filter((row) => row.plannedDate && row.plannedDate < today && !isCompleted(row));
     const toStart = todayRows.filter((row) => !isActive(row) && !isCompleted(row));
-    const urgent = urgentOrders(rows);
     const plannedHours = todayRows.reduce((sum, row) => sum + row.hours, 0);
     const productionRows = [...activeRows, ...toStart.filter((row) => !activeRows.some((active) => active.taskId === row.taskId))];
 
@@ -185,7 +184,6 @@
           <div class="kpi surface"><small>Finite oggi</small><strong>${completedToday.length}</strong><span>lavorazioni completate</span></div>
           <div class="kpi surface"><small>Task in ritardo</small><strong>${lateRows.length}</strong><span>da recuperare nel planning</span></div>
           <div class="kpi surface"><small>Ore pianificate oggi</small><strong>${String(plannedHours).replace(".", ",")}</strong><span>ore complessive assegnate</span></div>
-          <div class="kpi surface"><small>Ordini urgenti</small><strong>${urgent.length}</strong><span>priorità, consegne vicine o ritardi</span></div>
         </div>
 
         <div class="daily-control-grid">
@@ -199,10 +197,6 @@
               <div class="daily-task-list">${completedToday.length ? completedToday.map(taskCard).join("") : emptyState("Nessuna task completata oggi.")}</div>
             </div></div>
           </div>
-          <div class="surface"><div class="surface-inner">
-            <div class="section-title"><div><h3>Ordini urgenti</h3><p>Priorità Express, consegne vicine e task in ritardo.</p></div><div class="ghost-pill">${urgent.length} attenzioni</div></div>
-            <div class="urgent-order-list">${urgent.length ? urgent.map(urgentCard).join("") : emptyState("Nessun ordine urgente in questo momento.")}</div>
-          </div></div>
         </div>
       </section>
     `;
