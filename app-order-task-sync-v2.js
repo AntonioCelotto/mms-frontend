@@ -86,7 +86,15 @@ function taskSyncDraft(order = taskSyncOrder(), draft = null) {
   const byKey = new Map(currentDraft.tasks.map((task) => [taskSyncKey(task), task]));
   taskSyncEnsureOrderTasks(order).forEach((task, index) => {
     const key = taskSyncKey(task);
-    if (key && !byKey.has(key)) currentDraft.tasks.push(taskSyncDraftFromTask(task, index, orderId));
+    const existing = key ? byKey.get(key) : null;
+    if (existing) {
+      if (Number(task.id) > 0) {
+        existing.id = task.id;
+        existing.localOnly = false;
+      }
+      return;
+    }
+    if (key) currentDraft.tasks.push(taskSyncDraftFromTask(task, index, orderId));
   });
   return currentDraft;
 }
@@ -167,7 +175,13 @@ if (typeof orderDetailEditSave === "function") {
           task.assignedUserId,
           task.time,
           "",
-          "Assegnazione aggiornata dalla scheda ordine"
+          "Assegnazione aggiornata dalla scheda ordine",
+          {
+            task_name: task.name,
+            task_phase: task.phase,
+            estimated_hours: task.hours,
+            status: task.state,
+          }
         );
       }
       if (typeof orderFlowLoadTasks === "function") await orderFlowLoadTasks(order);
