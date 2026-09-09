@@ -187,7 +187,7 @@
   }
 
   function matchesWeek(row, dates) {
-    if (row.unscheduled) return true;
+    if (row.unscheduled) return false;
     return dates.some((item) => item.iso === row.iso);
   }
 
