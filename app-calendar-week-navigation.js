@@ -87,6 +87,20 @@
     return task.owner || task.externalSupplierName || task.external_supplier_name || team || "Non assegnato";
   }
 
+  function isOperatorProfile() {
+    const role = normalize(window.mmsAuthProfile?.access_profile || window.mmsAuthProfile?.role || "");
+    return role === "operator" || role === "operatore";
+  }
+
+  function operatorCanSeeTask(task, owner) {
+    if (!isOperatorProfile()) return true;
+    const profile = window.mmsAuthProfile || {};
+    const assignedId = task?.assignedUserId || task?.assigned_user_id || "";
+    if (assignedId && profile.id) return String(assignedId) === String(profile.id);
+    const profileName = normalize(profile.name || [profile.first_name, profile.last_name].filter(Boolean).join(" "));
+    return Boolean(profileName && normalize(owner) === profileName && normalize(owner) !== "non assegnato");
+  }
+
   function taskId(orderId, task, index) {
     if (task.id) return String(task.id);
     const phase = text(task.phase || task.task_phase || task.name || task.task_name || "task")
@@ -116,8 +130,19 @@
         const parsed = taskDate(task);
         const order = (appData.orders || []).find((item) => Number(item.id) === Number(orderId)) || {};
         const owner = taskOwner(task);
+        const displayOrderNumber =
+          order.sourceQuoteNumber ||
+          order.source_quote_number ||
+          order.quoteNumber ||
+          order.quote_number ||
+          order.orderNumber ||
+          order.order_number ||
+          orderId;
         return {
           orderId,
+          displayOrderNumber,
+          assignedUserId: task.assignedUserId || task.assigned_user_id || "",
+          canSee: operatorCanSeeTask(task, owner),
           taskId: taskId(orderId, task, index),
           title: task.name || task.task_name || "Task ordine",
           phase: task.phase || task.task_phase || "Lavorazione",
@@ -145,8 +170,9 @@
     const query = text(appState.calendarFilters.orderQuery).toLowerCase();
     const employee = appState.calendarFilters.employee || "all";
     const phase = appState.calendarFilters.phase || "all";
-    const haystack = [row.orderId, row.title, row.phase, row.owner, row.client].join(" ").toLowerCase();
+    const haystack = [row.orderId, row.displayOrderNumber, row.title, row.phase, row.owner, row.client].join(" ").toLowerCase();
     return (
+      row.canSee &&
       (employee === "all" || row.owner === employee) &&
       (phase === "all" || text(row.phase).toLowerCase() === text(phase).toLowerCase()) &&
       (!query || haystack.includes(query))
@@ -177,7 +203,7 @@
     return `
       <div class="calendar-event" data-detail="${escapeHtml(row.orderId)}" style="--owner-color:${colorFor(row.owner)}" role="button" tabindex="0">
         <span class="calendar-event-time">${escapeHtml(row.time)}</span>
-        <strong>#${escapeHtml(row.orderId)} - ${escapeHtml(row.title)}</strong>
+        <strong>${escapeHtml(row.displayOrderNumber)} - ${escapeHtml(row.title)}</strong>
         <span>${escapeHtml(row.client)} · ${escapeHtml(row.phase)}</span>
         <small>${escapeHtml(row.owner)}</small>
         <div class="calendar-event-actions">
@@ -226,7 +252,7 @@
               <select class="filter-chip" data-calendar-filter="phase">
                 ${phaseOptions.map((phase) => `<option value="${escapeHtml(phase)}" ${appState.calendarFilters.phase === phase ? "selected" : ""}>${phase === "all" ? "Tutte le lavorazioni" : escapeHtml(phase)}</option>`).join("")}
               </select>
-              <div class="filter-chip">Ordine selezionato: #${escapeHtml(appState.selectedOrderId)}</div>
+              <div class="filter-chip">Ordine selezionato: ${escapeHtml((rows.find((row) => String(row.orderId) === String(appState.selectedOrderId)) || {}).displayOrderNumber || appState.selectedOrderId)}</div>
             </div>
           </div>
         </div>
