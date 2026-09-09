@@ -185,7 +185,7 @@ function taskAssignmentDateTime(dateValue, timeValue) {
   return date ? (time ? `${date} ${time}` : date) : null;
 }
 
-async function taskAssignmentPatchTask(taskId, assigneeValue, plannedDate, plannedTime, notes) {
+async function taskAssignmentPatchTask(taskId, assigneeValue, plannedDate, plannedTime, notes, extra = {}) {
   const assignee = taskAssignmentAssigneePayload(assigneeValue);
   if (!taskId || (!assignee.assigned_user_id && !assignee.external_supplier_name)) throw new Error("Dipendente non valido");
   const planned = taskAssignmentDateTime(plannedDate, plannedTime);
@@ -197,6 +197,10 @@ async function taskAssignmentPatchTask(taskId, assigneeValue, plannedDate, plann
     planned_date: planned || null,
     calendar_day_label: calendarDay && calendarDay !== "Da pianificare" ? calendarDay : null,
     notes: notes || "Assegnazione task",
+    task_name: extra.task_name || undefined,
+    task_phase: extra.task_phase || undefined,
+    estimated_hours: extra.estimated_hours ?? undefined,
+    status: extra.status || undefined,
   };
 
   try {
@@ -219,6 +223,10 @@ async function taskAssignmentPatchTask(taskId, assigneeValue, plannedDate, plann
       planned_date: planned || null,
       calendar_day_label: payload.calendar_day_label,
       notes: payload.notes,
+      task_name: payload.task_name,
+      task_phase: payload.task_phase,
+      estimated_hours: payload.estimated_hours,
+      status: payload.status,
     }),
   });
   return true;
