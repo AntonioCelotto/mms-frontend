@@ -130,6 +130,19 @@
     return DAYS.find((day) => day.toLowerCase() === raw.toLowerCase()) || "Lunedi'";
   }
 
+  function displayTaskTitle(value) {
+    return text(value || "Task")
+      .replace(/\s+ordine\s+#?\d+\s*$/i, "")
+      .replace(/\s+ordine\s*$/i, "")
+      .trim();
+  }
+
+  function taskWorkHours(task) {
+    const raw = text(task.hours || task.estimated_hours || task.estimatedHours || "").replace(/\s*h$/i, "");
+    if (!raw) return "Ore lavoro da definire";
+    return `Ore lavoro: ${raw.replace(".", ",")} h`;
+  }
+
   function taskRows() {
     if (typeof calendarOrderSyncEnsureOrderTasks === "function") calendarOrderSyncEnsureOrderTasks();
     return Object.entries(appData.orderTasks || {}).flatMap(([orderId, tasks]) =>
@@ -151,13 +164,13 @@
           assignedUserId: task.assignedUserId || task.assigned_user_id || "",
           canSee: operatorCanSeeTask(task, owner),
           taskId: taskId(orderId, task, index),
-          title: task.name || task.task_name || "Task ordine",
+          title: displayTaskTitle(task.name || task.task_name || "Task"),
           phase: task.phase || task.task_phase || "Lavorazione",
           owner,
           client: order.client || "Cliente",
           status: task.state || task.status || "Da avviare",
           iso: parsed?.iso || "",
-          time: parsed?.time || "Orario da definire",
+          time: parsed?.time && parsed.time !== "Orario da definire" ? parsed.time : taskWorkHours(task),
           day: taskDay(task, parsed),
           unscheduled: !parsed,
         };
