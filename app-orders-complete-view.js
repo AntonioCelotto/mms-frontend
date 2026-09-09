@@ -1,6 +1,4 @@
 (function () {
-  const SUMMARY_KEY = "mms_order_quote_summaries_v1";
-
   function value(input) {
     return String(input ?? "").trim();
   }
@@ -56,28 +54,15 @@
   }
 
   function seedQuoteSummaries() {
-    if (!appData?.orders?.length) return;
-    let stored = {};
-    try {
-      stored = JSON.parse(localStorage.getItem(SUMMARY_KEY) || "{}");
-    } catch (error) {
-      stored = {};
-    }
+    if (appState.currentView !== "order-detail") return;
+    const order = typeof getSelectedOrder === "function" ? getSelectedOrder() : null;
+    if (!order) return;
     if (!appState.orderQuoteSummaries || typeof appState.orderQuoteSummaries !== "object") {
       appState.orderQuoteSummaries = {};
     }
-    appData.orders.forEach((order) => {
-      const summary = quoteSummary(order);
-      if (!summary.articles.length && !summary.materials.length) return;
-      const key = Number(order.id);
-      stored[key] = summary;
-      appState.orderQuoteSummaries[key] = summary;
-    });
-    try {
-      localStorage.setItem(SUMMARY_KEY, JSON.stringify(stored));
-    } catch (error) {
-      console.warn("Riepilogo articoli non memorizzato", error);
-    }
+    const summary = quoteSummary(order);
+    if (!summary.articles.length && !summary.materials.length) return;
+    appState.orderQuoteSummaries[Number(order.id)] = summary;
   }
 
   const baseFilterOrders = filterOrders;
@@ -142,11 +127,28 @@
     document.querySelectorAll(".order-inventory-picker").forEach((node) => node.remove());
   }
 
+  function ensureArticlePanel() {
+    if (appState.currentView !== "order-detail") return;
+    const section = document.querySelector("section.view.active");
+    if (!section || section.querySelector(".order-quote-summary")) return;
+    const editPanel = section.querySelector(".order-detail-edit-panel");
+    if (!editPanel) return;
+    editPanel.insertAdjacentHTML("beforebegin", `
+      <div class="order-quote-summary surface order-detail-edit-panel">
+        <div class="surface-inner">
+          <div class="section-title"><div><h3>Articoli e prodotti da preventivo</h3><p>Riepilogo commerciale collegato all'ordine.</p></div></div>
+          <div class="empty-state">Nessun articolo o prodotto registrato per questo ordine.</div>
+        </div>
+      </div>
+    `);
+  }
+
   const baseRenderApp = renderApp;
   renderApp = function renderAppWithCompleteOrders() {
     seedQuoteSummaries();
     baseRenderApp();
     removeWarehousePicker();
+    ensureArticlePanel();
   };
 
   async function loadPaymentDetails() {
