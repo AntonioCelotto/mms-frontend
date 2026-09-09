@@ -101,16 +101,18 @@
     orderDetailEditSave = function orderDetailEditSaveWithExtraTasks() {
       const order = typeof getSelectedOrder === "function" ? getSelectedOrder() : null;
       const orderId = Number(order?.id || appState.selectedOrderId || 0);
+      const orderDbId = Number(order?.db_id || order?.internal_id || orderId || 0);
       const draft = typeof orderDetailEditDraftFor === "function" ? orderDetailEditDraftFor(order) : null;
       const pending = (draft?.tasks || []).filter((task) => !isRealId(task.id));
 
       baseSave();
 
-      if (!orderId || !pending.length) return;
-      Promise.all(pending.map((task) => saveTaskToDatabase(orderId, task).then((created) => applyCreatedTask(orderId, task, created))))
+      if (!orderId || !orderDbId || !pending.length) return;
+      Promise.all(pending.map((task) => saveTaskToDatabase(orderDbId, task).then((created) => applyCreatedTask(orderId, task, created))))
         .then(() => {
           if (typeof orderDetailEditWriteStored === "function") orderDetailEditWriteStored(orderId, draft);
-          if (typeof setFlashMessage === "function") setFlashMessage(`Task ordine #${orderId} salvati`);
+          const displayNumber = order?.sourceQuoteNumber || order?.source_quote_number || orderId;
+          if (typeof setFlashMessage === "function") setFlashMessage(`Task ordine ${displayNumber} salvati`);
           if (typeof renderApp === "function") renderApp();
         })
         .catch((error) => {
