@@ -1,6 +1,18 @@
 (function () {
   let paymentsLoading = false;
   let paymentsLoaded = false;
+  let paymentRetryTimer = 0;
+  let paymentRetryAttempts = 0;
+  const maxPaymentRetryAttempts = 30;
+
+  function schedulePaymentLoad(delay = 300) {
+    if (paymentsLoaded || paymentsLoading || paymentRetryTimer || paymentRetryAttempts >= maxPaymentRetryAttempts) return;
+    paymentRetryTimer = window.setTimeout(() => {
+      paymentRetryTimer = 0;
+      paymentRetryAttempts += 1;
+      void loadPaymentDetails();
+    }, delay);
+  }
   function value(input) {
     return String(input ?? "").trim();
   }
@@ -158,16 +170,19 @@
   };
 
   async function loadPaymentDetails() {
-    if (paymentsLoading || paymentsLoaded || !appData?.orders?.length) return;
-    if (appData.orders.every((order) => Array.isArray(order.paymentRows))) {
-      renderApp();
+    if (paymentsLoading || paymentsLoaded) return;
+    if (!appData?.orders?.length) {
+      schedulePaymentLoad();
       return;
     }
     paymentsLoading = true;
     try {
       const session = await window.mmsSupabaseAuth?.auth?.getSession?.();
       const token = session?.data?.session?.access_token;
-      if (!token) return;
+      if (!token) {
+        schedulePaymentLoad();
+        return;
+      }
       const response = await fetch("/api/order-payment-details", {
         headers: { Authorization: `Bearer ${token}` },
       });
@@ -184,6 +199,7 @@
         order.paymentRows = byOrder.get(orderDbId(order)) || [];
       });
       paymentsLoaded = true;
+      paymentRetryAttempts = 0;
       renderApp();
     } catch (error) {
       console.warn("Dettagli pagamenti ordini non caricati", error);
@@ -198,6 +214,11 @@
 
   seedQuoteSummaries();
   removeWarehousePicker();
-  window.addEventListener("mms-auth-profile", () => void loadPaymentDetails());
+  window.addEventListener("mms-auth-profile", () => {
+    paymentRetryAttempts = 0;
+    void loadPaymentDetails();
+    schedulePaymentLoad();
+  });
   void loadPaymentDetails();
+  schedulePaymentLoad();
 })();
