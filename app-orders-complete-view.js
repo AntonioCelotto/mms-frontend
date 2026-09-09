@@ -4,9 +4,10 @@
   let paymentRetryTimer = 0;
   let paymentRetryAttempts = 0;
   const maxPaymentRetryAttempts = 30;
+  const paymentRowsByOrder = new Map();
 
   function schedulePaymentLoad(delay = 300) {
-    if (paymentsLoaded || paymentsLoading || paymentRetryTimer || paymentRetryAttempts >= maxPaymentRetryAttempts) return;
+    if (paymentsLoaded || paymentRetryTimer || paymentRetryAttempts >= maxPaymentRetryAttempts) return;
     paymentRetryTimer = window.setTimeout(() => {
       paymentRetryTimer = 0;
       paymentRetryAttempts += 1;
@@ -46,6 +47,13 @@
 
   function orderDbId(order) {
     return Number(order?.db_id || order?.internal_id || order?.id || 0);
+  }
+
+  function applyCachedPaymentDetails() {
+    if (!paymentRowsByOrder.size || !Array.isArray(appData?.orders)) return;
+    appData.orders.forEach((order) => {
+      order.paymentRows = paymentRowsByOrder.get(orderDbId(order)) || [];
+    });
   }
 
   function quoteSummary(order) {
@@ -125,6 +133,7 @@
 
   const baseRenderOrders = renderOrders;
   renderOrders = function renderOrdersWithPaymentDetails() {
+    applyCachedPaymentDetails();
     const markup = baseRenderOrders();
     const template = document.createElement("template");
     template.innerHTML = markup;
@@ -163,6 +172,7 @@
 
   const baseRenderApp = renderApp;
   renderApp = function renderAppWithCompleteOrders() {
+    applyCachedPaymentDetails();
     seedQuoteSummaries();
     baseRenderApp();
     removeWarehousePicker();
@@ -187,24 +197,28 @@
         headers: { Authorization: `Bearer ${token}` },
       });
       const payload = await response.json().catch(() => ({}));
-      if (!response.ok) throw new Error(payload.error || `HTTP ${response.status}`);
+      if (!response.ok) {
+        const error = new Error(payload.error || `HTTP ${response.status}`);
+        error.status = response.status;
+        throw error;
+      }
       const rows = payload.payments;
-      const byOrder = new Map();
+      paymentRowsByOrder.clear();
       (Array.isArray(rows) ? rows : []).forEach((row) => {
         const key = Number(row.order_id);
-        if (!byOrder.has(key)) byOrder.set(key, []);
-        byOrder.get(key).push(row);
+        if (!paymentRowsByOrder.has(key)) paymentRowsByOrder.set(key, []);
+        paymentRowsByOrder.get(key).push(row);
       });
-      appData.orders.forEach((order) => {
-        order.paymentRows = byOrder.get(orderDbId(order)) || [];
-      });
+      applyCachedPaymentDetails();
       paymentsLoaded = true;
       paymentRetryAttempts = 0;
       renderApp();
     } catch (error) {
       console.warn("Dettagli pagamenti ordini non caricati", error);
+      if (Number(error?.status) === 403) paymentsLoaded = true;
     } finally {
       paymentsLoading = false;
+      if (!paymentsLoaded) schedulePaymentLoad(500);
     }
   }
 
