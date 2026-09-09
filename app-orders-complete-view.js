@@ -1,4 +1,6 @@
 (function () {
+  let paymentsLoading = false;
+  let paymentsLoaded = false;
   function value(input) {
     return String(input ?? "").trim();
   }
@@ -156,16 +158,22 @@
   };
 
   async function loadPaymentDetails() {
-    if (typeof fetchSupabaseRows !== "function" || !appData?.orders?.length) return;
+    if (paymentsLoading || paymentsLoaded || !appData?.orders?.length) return;
     if (appData.orders.every((order) => Array.isArray(order.paymentRows))) {
       renderApp();
       return;
     }
+    paymentsLoading = true;
     try {
-      const rows = await fetchSupabaseRows("payments", {
-        select: "id,order_id,payment_type,amount,due_date,paid_date,status",
-        order: "id.asc",
+      const session = await window.mmsSupabaseAuth?.auth?.getSession?.();
+      const token = session?.data?.session?.access_token;
+      if (!token) return;
+      const response = await fetch("/api/order-payment-details", {
+        headers: { Authorization: `Bearer ${token}` },
       });
+      const payload = await response.json().catch(() => ({}));
+      if (!response.ok) throw new Error(payload.error || `HTTP ${response.status}`);
+      const rows = payload.payments;
       const byOrder = new Map();
       (Array.isArray(rows) ? rows : []).forEach((row) => {
         const key = Number(row.order_id);
@@ -175,9 +183,12 @@
       appData.orders.forEach((order) => {
         order.paymentRows = byOrder.get(orderDbId(order)) || [];
       });
+      paymentsLoaded = true;
       renderApp();
     } catch (error) {
       console.warn("Dettagli pagamenti ordini non caricati", error);
+    } finally {
+      paymentsLoading = false;
     }
   }
 
@@ -187,5 +198,6 @@
 
   seedQuoteSummaries();
   removeWarehousePicker();
+  window.addEventListener("mms-auth-profile", () => void loadPaymentDetails());
   void loadPaymentDetails();
 })();
