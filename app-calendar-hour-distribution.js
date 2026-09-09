@@ -2,6 +2,9 @@
   const DAY_KEYS = ["domenica", "lunedi", "martedi", "mercoledi", "giovedi", "venerdi", "sabato"];
   const DEFAULT_WORKING_DAYS = ["lunedi", "martedi", "mercoledi", "giovedi", "venerdi"];
   const DEFAULT_DAILY_HOURS = 8;
+  const WORK_START_HOUR = 8;
+  const BREAK_START_OFFSET = 4;
+  const BREAK_HOURS = 1;
   let accountScheduleLoadStarted = false;
 
   function text(value) {
@@ -23,7 +26,10 @@
   }
 
   function isoDate(date) {
-    return date.toISOString().slice(0, 10);
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, "0");
+    const day = String(date.getDate()).padStart(2, "0");
+    return `${year}-${month}-${day}`;
   }
 
   function addDays(date, days) {
@@ -32,15 +38,12 @@
     return copy;
   }
 
-  function normalizeDay(value) {
-    return text(value)
-      .toLowerCase()
-      .normalize("NFKD")
-      .replace(/[\u0300-\u036f]/g, "");
+  function normalize(value) {
+    return text(value).toLowerCase().normalize("NFKD").replace(/[\u0300-\u036f]/g, "");
   }
 
   function accountName(account) {
-    return account?.name || [account?.first_name, account?.last_name].filter(Boolean).join(" ") || account?.email || "";
+    return account?.name || account?.displayName || [account?.first_name, account?.last_name].filter(Boolean).join(" ") || account?.email || "";
   }
 
   function taskOwnerName(task) {
@@ -55,14 +58,18 @@
       const byId = (appData.accounts || []).find((account) => String(account.id) === String(assigned));
       if (byId) return byId;
     }
-    const owner = normalizeDay(taskOwnerName(task));
+    const owner = normalize(taskOwnerName(task));
     if (!owner) return null;
-    return (appData.accounts || []).find((account) => normalizeDay(accountName(account)) === owner) || null;
+    return (appData.accounts || []).find((account) => normalize(accountName(account)) === owner) || null;
+  }
+
+  function accountKey(task, account) {
+    return String(account?.id || task?.assignedUserId || task?.assigned_user_id || normalize(taskOwnerName(task)) || "non-assegnato");
   }
 
   function workingDaysFor(account) {
     const raw = account?.working_days || account?.workingDays;
-    const days = Array.isArray(raw) ? raw.map(normalizeDay).filter(Boolean) : text(raw).split(",").map(normalizeDay).filter(Boolean);
+    const days = Array.isArray(raw) ? raw.map(normalize).filter(Boolean) : text(raw).split(",").map(normalize).filter(Boolean);
     return new Set((days.length ? days : DEFAULT_WORKING_DAYS).filter(Boolean));
   }
 
@@ -83,30 +90,54 @@
     return days.has(DAY_KEYS[date.getDay()]);
   }
 
-  function distributionDates(dueDate, totalHours, dailyHours, workingDays) {
-    const dates = [];
-    let remainingCapacity = totalHours;
-    let cursor = dueDate;
+  function clockForOffset(offset, startsAfterBreak = false) {
+    const adjusted = offset > BREAK_START_OFFSET || (startsAfterBreak && offset === BREAK_START_OFFSET) ? offset + BREAK_HOURS : offset;
+    const totalMinutes = Math.round((WORK_START_HOUR + adjusted) * 60);
+    return `${String(Math.floor(totalMinutes / 60)).padStart(2, "0")}:${String(totalMinutes % 60).padStart(2, "0")}`;
+  }
+
+  function segmentTimeLabel(startOffset, hours) {
+    const endOffset = startOffset + hours;
+    if (startOffset < BREAK_START_OFFSET && endOffset > BREAK_START_OFFSET) {
+      return `${clockForOffset(startOffset, true)}–12:00 / 13:00–${clockForOffset(endOffset)}`;
+    }
+    return `${clockForOffset(startOffset, true)}–${clockForOffset(endOffset)}`;
+  }
+
+  function allocateTask(task, occupancy) {
+    const planned = parseDate(task.time || task.planned_date || "");
+    const totalHours = taskHours(task);
+    if (!planned || totalHours <= 0) return [task];
+
+    const account = accountForTask(task);
+    const dailyHours = dailyHoursFor(account);
+    const workingDays = workingDaysFor(account);
+    const ownerKey = accountKey(task, account);
+    const segments = [];
+    let remaining = totalHours;
+    let cursor = planned.date;
     let guard = 0;
 
-    while (remainingCapacity > 0 && guard < 120) {
+    while (remaining > 0.0001 && guard < 366) {
       if (isWorkingDay(cursor, workingDays)) {
-        dates.push(cursor);
-        remainingCapacity -= dailyHours;
+        const iso = isoDate(cursor);
+        const capacityKey = `${ownerKey}:${iso}`;
+        const used = Number(occupancy.get(capacityKey) || 0);
+        const available = Math.max(0, dailyHours - used);
+        if (available > 0) {
+          const hours = Math.min(available, remaining);
+          segments.push({ iso, hours, timeLabel: segmentTimeLabel(used, hours) });
+          occupancy.set(capacityKey, used + hours);
+          remaining -= hours;
+        }
       }
-      cursor = addDays(cursor, -1);
+      cursor = addDays(cursor, 1);
       guard += 1;
     }
 
-    return dates.reverse();
-  }
-
-  function cloneForSegment(task, segment, index, count, totalHours) {
-    const planned = parseDate(task.time || task.planned_date || "");
-    const time = planned?.time || "";
+    if (!segments.length) return [task];
     const baseName = (task.name || task.task_name || "Task ordine").replace(/\s+\([\d,.]+\s*h\)$/i, "");
-    const plannedValue = `${segment.iso} ${time}`.trim();
-    return {
+    return segments.map((segment, index) => ({
       ...task,
       id: task.id,
       taskId: task.taskId || task.id,
@@ -115,46 +146,33 @@
       hours: formatHours(totalHours),
       estimated_hours: totalHours,
       estimatedHours: totalHours,
-      planned_date: plannedValue,
-      time: plannedValue,
+      planned_date: segment.iso,
+      time: segment.iso,
       calendarDay: null,
       calendar_day_label: null,
       calendarSegmentIndex: index + 1,
-      calendarSegmentCount: count,
+      calendarSegmentCount: segments.length,
       calendarSegmentHours: segment.hours,
+      calendarSegmentTimeLabel: segment.timeLabel,
       calendarDistributed: true,
-    };
-  }
-
-  function splitTask(task) {
-    const planned = parseDate(task.time || task.planned_date || "");
-    const totalHours = taskHours(task);
-    const account = accountForTask(task);
-    const dailyHours = dailyHoursFor(account);
-    const workingDays = workingDaysFor(account);
-
-    if (!planned || totalHours <= dailyHours || dailyHours <= 0) return [task];
-
-    const dates = distributionDates(planned.date, totalHours, dailyHours, workingDays);
-    if (dates.length <= 1) return [task];
-
-    let remaining = totalHours;
-    const segments = dates.map((date) => {
-      const hours = Math.min(dailyHours, remaining);
-      remaining = Math.max(0, remaining - hours);
-      return { iso: isoDate(date), hours };
-    });
-
-    return segments.map((segment, index) => cloneForSegment(task, segment, index, segments.length, totalHours));
+    }));
   }
 
   function distributedOrderTasks(source) {
-    return Object.fromEntries(
-      Object.entries(source || {}).map(([orderId, tasks]) => [
-        orderId,
-        (Array.isArray(tasks) ? tasks : []).flatMap(splitTask),
-      ])
+    const rows = Object.entries(source || {}).flatMap(([orderId, tasks]) =>
+      (Array.isArray(tasks) ? tasks : []).map((task, index) => ({ orderId, task, index, planned: parseDate(task.time || task.planned_date || "") }))
     );
+    rows.sort((a, b) => {
+      const dateOrder = String(a.planned?.iso || "9999-12-31").localeCompare(String(b.planned?.iso || "9999-12-31"));
+      if (dateOrder) return dateOrder;
+      const idOrder = Number(a.task?.id || 0) - Number(b.task?.id || 0);
+      return idOrder || a.index - b.index;
+    });
+
+    const occupancy = new Map();
+    const result = Object.fromEntries(Object.keys(source || {}).map((orderId) => [orderId, []]));
+    rows.forEach(({ orderId, task }) => result[orderId].push(...allocateTask(task, occupancy)));
+    return result;
   }
 
   function hasAccountSchedules() {
