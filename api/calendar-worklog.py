@@ -3,9 +3,14 @@ from __future__ import annotations
 from http import HTTPStatus
 from http.server import BaseHTTPRequestHandler
 
-from _api import clean_text, read_json_body, write_json, write_options
-from _supabase import fetch_table, supabase_request
-from _task_planner import reschedule_tasks
+try:
+    from _api import clean_text, read_json_body, write_json, write_options
+    from _supabase import fetch_table, supabase_request
+    from _task_planner import reschedule_tasks
+except ModuleNotFoundError:
+    from api._api import clean_text, read_json_body, write_json, write_options
+    from api._supabase import fetch_table, supabase_request
+    from api._task_planner import reschedule_tasks
 
 
 WORKLOG_SELECT = "task_id,order_id,status,elapsed_ms,started_at,finished_at,pauses,payload,created_at,updated_at"
