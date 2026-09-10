@@ -11,7 +11,7 @@ from urllib.request import Request, urlopen
 
 
 DEFAULT_SUPABASE_URL = "https://fzdqemzowxjuotqalaol.supabase.co"
-DEFAULT_SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZ6ZHFlbXpvd3hqdW90cWFsYW9sIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzk5Njg3NzYsImV4cCI6MjA5NTU0NDc3Nn0.fmZ9RThFxnaJGQsOYeu_ZjjUNHThlRX87qz9sX4N6Mk"
+DEFAULT_SUPABASE_KEY = ""
 SUPABASE_URL = os.environ.get("SUPABASE_URL", DEFAULT_SUPABASE_URL).rstrip("/")
 SUPABASE_KEY = os.environ.get("SUPABASE_ANON_KEY", DEFAULT_SUPABASE_KEY)
 SUPABASE_TIMEOUT_SECONDS = 5
@@ -294,6 +294,12 @@ def build_bootstrap():
                 "assignedUserId": task.get("assigned_user_id") or "",
                 "assigned_user_id": task.get("assigned_user_id") or None,
                 "externalSupplierName": task.get("external_supplier_name") or "",
+                "articleKey": task.get("article_key") or "",
+                "articleName": task.get("article_name") or "",
+                "dueDate": str(task.get("due_date") or ""),
+                "sequenceOrder": task.get("sequence_order") or 99,
+                "scheduleWarning": task.get("schedule_warning") or "",
+                "actualHours": task.get("actual_hours") or 0,
             }
         )
         if task.get("calendar_day_label"):

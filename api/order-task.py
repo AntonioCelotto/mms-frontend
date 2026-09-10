@@ -41,6 +41,10 @@ def parse_hours(value):
     return parsed if parsed >= 0 else None
 
 
+def sequence_for_phase(phase):
+    return {"cartamodello": 1, "taglio": 2, "confezione": 3}.get(phase, 99)
+
+
 def default_department_id(order_id):
     rows = fetch_table("order_tasks", select="department_id", filters={"order_id": f"eq.{order_id}"}, order="id.asc")
     if rows and rows[0].get("department_id"):
@@ -95,6 +99,8 @@ class handler(BaseHTTPRequestHandler):
 
         task_name = clean_text(payload.get("task_name") or payload.get("name")) or "Nuovo task ordine"
         task_phase = normalize_phase(payload.get("task_phase") or payload.get("phase"))
+        article_key = clean_text(payload.get("article_key") or payload.get("articleKey")) or None
+        article_name = clean_text(payload.get("article_name") or payload.get("articleName")) or None
         department_id = parse_optional_positive_int(payload.get("department_id"))
         assigned_user_id = parse_optional_positive_int(payload.get("assigned_user_id"))
         external_supplier_name = clean_text(payload.get("external_supplier_name")) or None
@@ -119,6 +125,10 @@ class handler(BaseHTTPRequestHandler):
                     "planned_date": clean_text(payload.get("planned_date") or payload.get("time")) or None,
                     "estimated_hours": parse_hours(payload.get("estimated_hours") or payload.get("hours")),
                     "notes": clean_text(payload.get("notes")) or None,
+                    "article_key": article_key,
+                    "article_name": article_name,
+                    "due_date": clean_text(payload.get("due_date") or payload.get("dueDate")) or None,
+                    "sequence_order": sequence_for_phase(task_phase),
                 },
             )
         except RuntimeError as error:

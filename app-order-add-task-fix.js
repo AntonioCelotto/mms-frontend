@@ -23,6 +23,10 @@
       time: "",
       state: "Da avviare",
       localOnly: true,
+      articleKey: "",
+      articleName: "",
+      dueDate: "",
+      sequenceOrder: 0,
     });
 
     if (typeof renderApp === "function") renderApp();

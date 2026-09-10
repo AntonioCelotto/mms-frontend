@@ -5,6 +5,7 @@ from http.server import BaseHTTPRequestHandler
 
 from _api import clean_text, read_json_body, write_json, write_options
 from _supabase import fetch_table, supabase_request
+from _task_planner import reschedule_tasks
 
 
 WORKLOG_SELECT = "task_id,order_id,status,elapsed_ms,started_at,finished_at,pauses,payload,created_at,updated_at"
@@ -99,7 +100,24 @@ class handler(BaseHTTPRequestHandler):
             return write_json(self, {"error": "Lavorazione non salvata", "detail": str(error)}, HTTPStatus.INTERNAL_SERVER_ERROR)
 
         row = rows[0] if isinstance(rows, list) and rows else None
-        return write_json(self, {"worklog": shape_worklog(row) if row else raw}, HTTPStatus.CREATED)
+        schedule = None
+        task_id = optional_int(row_payload.get("task_id"))
+        if task_id:
+            task_status = str(row_payload.get("status") or "").lower()
+            task_update = {"status": "completato" if "complet" in task_status else ("in_corso" if "corso" in task_status else "da_avviare")}
+            if "complet" in task_status:
+                task_update["actual_hours"] = round(row_payload.get("elapsed_ms", 0) / 3600000, 2)
+                task_update["completed_date"] = (row_payload.get("finished_at") or "")[:10] or None
+            supabase_request(
+                "/rest/v1/order_tasks",
+                method="PATCH",
+                query={"id": f"eq.{task_id}"},
+                payload=task_update,
+                prefer="return=minimal",
+            )
+            if "complet" in task_status:
+                schedule = reschedule_tasks(apply=True)
+        return write_json(self, {"worklog": shape_worklog(row) if row else raw, "schedule": schedule}, HTTPStatus.CREATED)
 
     def log_message(self, format, *args):
         return

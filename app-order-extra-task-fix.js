@@ -19,6 +19,18 @@
 
   function normalizeTasksWithExtras(tasks) {
     const rows = Array.isArray(tasks) ? tasks : [];
+    // Once tasks are linked to order articles, every article owns its own
+    // Cartamodello -> Taglio -> Confezione chain. Never collapse equal phases
+    // belonging to different articles.
+    if (rows.some((task) => task.articleKey || task.article_key)) {
+      return rows.map((task, index) => ({
+        ...task,
+        name: task.name || task.task_name || "Nuovo task ordine",
+        phase: task.phase || task.task_phase || "altro",
+        state: task.state || task.status || "Da avviare",
+        sortIndex: index,
+      }));
+    }
     const used = new Set();
     const coreRows = CORE_PHASES.map((core, index) => {
       const existingIndex = rows.findIndex((task) => key(task.phase || task.task_phase || task.name || task.task_name) === core.phase);
@@ -74,6 +86,9 @@
         planned_date: task.time || task.planned_date || null,
         estimated_hours: task.hours || task.estimated_hours || null,
         status: task.state || task.status || "Da avviare",
+        article_key: task.articleKey || task.article_key || null,
+        article_name: task.articleName || task.article_name || null,
+        due_date: task.dueDate || task.due_date || task.time || null,
       }),
     });
     const payload = await response.json().catch(() => ({}));
@@ -114,6 +129,7 @@
           const displayNumber = order?.sourceQuoteNumber || order?.source_quote_number || orderId;
           if (typeof setFlashMessage === "function") setFlashMessage(`Task ordine ${displayNumber} salvati`);
           if (typeof renderApp === "function") renderApp();
+          if (typeof window.productionPlannerSchedule === "function") window.productionPlannerSchedule();
         })
         .catch((error) => {
           console.error("Salvataggio task ordine non riuscito", error);

@@ -201,6 +201,10 @@ async function taskAssignmentPatchTask(taskId, assigneeValue, plannedDate, plann
     task_phase: extra.task_phase || undefined,
     estimated_hours: extra.estimated_hours ?? undefined,
     status: extra.status || undefined,
+    article_key: extra.article_key || undefined,
+    article_name: extra.article_name || undefined,
+    due_date: extra.due_date || undefined,
+    sequence_order: extra.sequence_order || undefined,
   };
 
   try {
@@ -227,6 +231,10 @@ async function taskAssignmentPatchTask(taskId, assigneeValue, plannedDate, plann
       task_phase: payload.task_phase,
       estimated_hours: payload.estimated_hours,
       status: payload.status,
+      article_key: payload.article_key,
+      article_name: payload.article_name,
+      due_date: payload.due_date,
+      sequence_order: payload.sequence_order,
     }),
   });
   return true;

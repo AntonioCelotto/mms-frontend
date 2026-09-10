@@ -77,6 +77,16 @@ class handler(BaseHTTPRequestHandler):
             update_payload["task_phase"] = task_phase
         if status is not None:
             update_payload["status"] = status
+        if "article_key" in payload:
+            update_payload["article_key"] = clean_text(payload.get("article_key")) or None
+        if "article_name" in payload:
+            update_payload["article_name"] = clean_text(payload.get("article_name")) or None
+        if "due_date" in payload:
+            update_payload["due_date"] = clean_text(payload.get("due_date")) or None
+        if "sequence_order" in payload:
+            update_payload["sequence_order"] = parse_optional_positive_int(payload.get("sequence_order"))
+        if task_phase is not None:
+            update_payload["sequence_order"] = {"cartamodello": 1, "taglio": 2, "confezione": 3}.get(task_phase, 99)
 
         if not any(value is not None for value in update_payload.values()):
             return write_json(self, {"error": "Nessun dato da aggiornare"}, HTTPStatus.BAD_REQUEST)

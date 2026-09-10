@@ -48,6 +48,10 @@ function taskSyncDraftFromTask(task, index, orderId) {
     hours: String(task.hours || task.estimated_hours || "").replace(" h", "").replace(",", "."),
     time: String(task.time || task.planned_date || "").match(/^\d{4}-\d{2}-\d{2}/)?.[0] || "",
     state: task.state || task.status || "Da avviare",
+    articleKey: task.articleKey || task.article_key || "",
+    articleName: task.articleName || task.article_name || "",
+    dueDate: task.dueDate || task.due_date || String(task.time || task.planned_date || "").slice(0, 10),
+    sequenceOrder: Number(task.sequenceOrder || task.sequence_order || 0),
   };
 }
 
@@ -65,6 +69,10 @@ function taskSyncTaskFromDraft(task, index, orderId) {
     assignedUserId,
     externalSupplierName: String(assignedUserId).startsWith("external:") ? decodeURIComponent(String(assignedUserId).slice(9)) : "",
     localOnly: String(task.id || "").startsWith(TASK_SYNC_LOCAL_PREFIX),
+    articleKey: task.articleKey || "",
+    articleName: task.articleName || "",
+    dueDate: task.dueDate || task.time || "",
+    sequenceOrder: Number(task.sequenceOrder || 0),
   };
 }
 
@@ -191,6 +199,10 @@ if (typeof orderDetailEditSave === "function") {
             task_phase: task.phase,
             estimated_hours: task.hours,
             status: task.state,
+            article_key: task.articleKey || null,
+            article_name: task.articleName || null,
+            due_date: task.dueDate || task.time || null,
+            sequence_order: task.sequenceOrder || null,
           }
         );
       }
