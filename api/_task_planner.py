@@ -3,7 +3,10 @@ from __future__ import annotations
 from collections import defaultdict
 from datetime import date, datetime, timedelta
 
-from _supabase import fetch_table, patch_rows
+try:
+    from _supabase import fetch_table, patch_rows
+except ModuleNotFoundError:
+    from api._supabase import fetch_table, patch_rows
 
 
 PHASE_ORDER = {"cartamodello": 1, "taglio": 2, "confezione": 3}
