@@ -3,9 +3,14 @@ from __future__ import annotations
 from http import HTTPStatus
 from http.server import BaseHTTPRequestHandler
 
-from _api import read_json_body, write_json, write_options
-from _task_planner import reschedule_tasks
-from accounts import require_admin
+try:
+    from _api import read_json_body, write_json, write_options
+    from _task_planner import reschedule_tasks
+    from accounts import require_admin
+except ModuleNotFoundError:
+    from api._api import read_json_body, write_json, write_options
+    from api._task_planner import reschedule_tasks
+    from api.accounts import require_admin
 
 
 class handler(BaseHTTPRequestHandler):
