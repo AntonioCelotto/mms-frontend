@@ -111,32 +111,71 @@
     if (match) Object.assign(match, draftTask, { id: created.id, localOnly: false });
   }
 
+  let activeSaveKey = "";
+  let activeSavePromise = null;
+
+  function pendingTaskSaveContext() {
+    const order = typeof getSelectedOrder === "function" ? getSelectedOrder() : null;
+    const orderId = Number(order?.id || appState.selectedOrderId || 0);
+    const orderDbId = Number(order?.db_id || order?.internal_id || orderId || 0);
+    const draft = typeof orderDetailEditDraftFor === "function" ? orderDetailEditDraftFor(order) : null;
+    const pending = (draft?.tasks || []).filter((task) => !isRealId(task.id));
+    return { order, orderId, orderDbId, draft, pending };
+  }
+
+  function persistPendingTasks() {
+    const context = pendingTaskSaveContext();
+    const { order, orderId, orderDbId, draft, pending } = context;
+    if (!orderId || !orderDbId || !draft || !pending.length) return Promise.resolve([]);
+
+    const saveKey = `${orderDbId}:${pending.map((task) => String(task.id || task.name || "new")).join("|")}`;
+    if (activeSavePromise && activeSaveKey === saveKey) return activeSavePromise;
+
+    activeSaveKey = saveKey;
+    activeSavePromise = Promise.all(
+      pending.map((task) => saveTaskToDatabase(orderDbId, task).then((created) => {
+        applyCreatedTask(orderId, task, created);
+        return created;
+      }))
+    )
+      .then((createdTasks) => {
+        if (typeof orderDetailEditWriteStored === "function") orderDetailEditWriteStored(orderId, draft);
+        const displayNumber = order?.sourceQuoteNumber || order?.source_quote_number || orderId;
+        if (typeof setFlashMessage === "function") setFlashMessage(`Task ordine ${displayNumber} salvati`);
+        if (typeof renderApp === "function") renderApp();
+        if (typeof window.productionPlannerSchedule === "function") window.productionPlannerSchedule();
+        return createdTasks;
+      })
+      .catch((error) => {
+        console.error("Salvataggio task ordine non riuscito", error);
+        if (typeof setFlashMessage === "function") setFlashMessage(`Task non salvata: ${error.message}`);
+        throw error;
+      })
+      .finally(() => {
+        activeSaveKey = "";
+        activeSavePromise = null;
+      });
+    return activeSavePromise;
+  }
+
+  window.orderTaskPersistPending = persistPendingTasks;
+
   if (typeof orderDetailEditSave === "function") {
     const baseSave = orderDetailEditSave;
     orderDetailEditSave = function orderDetailEditSaveWithExtraTasks() {
-      const order = typeof getSelectedOrder === "function" ? getSelectedOrder() : null;
-      const orderId = Number(order?.id || appState.selectedOrderId || 0);
-      const orderDbId = Number(order?.db_id || order?.internal_id || orderId || 0);
-      const draft = typeof orderDetailEditDraftFor === "function" ? orderDetailEditDraftFor(order) : null;
-      const pending = (draft?.tasks || []).filter((task) => !isRealId(task.id));
-
-      baseSave();
-
-      if (!orderId || !orderDbId || !pending.length) return;
-      Promise.all(pending.map((task) => saveTaskToDatabase(orderDbId, task).then((created) => applyCreatedTask(orderId, task, created))))
-        .then(() => {
-          if (typeof orderDetailEditWriteStored === "function") orderDetailEditWriteStored(orderId, draft);
-          const displayNumber = order?.sourceQuoteNumber || order?.source_quote_number || orderId;
-          if (typeof setFlashMessage === "function") setFlashMessage(`Task ordine ${displayNumber} salvati`);
-          if (typeof renderApp === "function") renderApp();
-          if (typeof window.productionPlannerSchedule === "function") window.productionPlannerSchedule();
-        })
-        .catch((error) => {
-          console.error("Salvataggio task ordine non riuscito", error);
-          if (typeof setFlashMessage === "function") setFlashMessage(`Ordine salvato, ma una task non e' stata salvata: ${error.message}`);
-        });
+      const result = baseSave();
+      persistPendingTasks().catch(() => {});
+      return result;
     };
   }
+
+  // Il salvataggio delle task deve funzionare anche quando un altro modulo
+  // blocca il salvataggio generale dell'ordine (per esempio un materiale non
+  // ancora collegato al Magazzino). Il deduplicatore evita doppi inserimenti.
+  document.addEventListener("click", (event) => {
+    if (!event.target.closest?.("[data-order-detail-save]")) return;
+    persistPendingTasks().catch(() => {});
+  });
 
   if (typeof orderDetailEditHandleClick === "function") {
     const baseHandleClick = orderDetailEditHandleClick;
