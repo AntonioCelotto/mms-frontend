@@ -47,8 +47,9 @@
     const baseClick = orderDetailEditHandleClick;
     orderDetailEditHandleClick = function productionTaskClick(target) {
       if (!target.closest?.("[data-order-detail-add-task]")) return baseClick(target);
-      const order = typeof getSelectedOrder === "function" ? getSelectedOrder() : null;
-      const orderId = Number(order?.id || appState?.selectedOrderId || 0);
+      const selectedOrderId = Number(appState?.selectedOrderId || 0);
+      const order = (appData?.orders || []).find((row) => Number(row?.id) === selectedOrderId) || null;
+      const orderId = Number(order?.id || 0);
       const draft = typeof orderDetailEditDraftFor === "function" ? orderDetailEditDraftFor(order) : null;
       if (!orderId || !draft) return false;
       if (!Array.isArray(draft.tasks)) draft.tasks = [];
