@@ -95,10 +95,23 @@
       const draft = typeof orderDetailEditCurrentDraft === "function" ? orderDetailEditCurrentDraft() : null;
       const missing = (draft?.materials || []).find((row) => row._requiresInventoryLink && row.source_type === "mms" && !Number(row.inventory_item_id || row.inventoryItemId));
       if (missing) {
+        // Materials and tasks are independent sections. A material row still
+        // being completed must not prevent a newly added task from reaching
+        // the selected order in the database.
+        if (typeof window.orderTaskPersistPending === "function") {
+          window.orderTaskPersistPending().catch(() => {});
+        }
         if (typeof setFlashMessage === "function") setFlashMessage("Seleziona il materiale dal Magazzino prima di salvare l'ordine");
         return;
       }
-      return baseSave();
+      const result = baseSave();
+      // This is the last save wrapper loaded by the page. Calling the task
+      // persistence explicitly here guarantees it cannot be skipped by a
+      // later validator; the task module deduplicates concurrent saves.
+      if (typeof window.orderTaskPersistPending === "function") {
+        window.orderTaskPersistPending().catch(() => {});
+      }
+      return result;
     };
   }
 })();
