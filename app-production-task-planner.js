@@ -48,11 +48,31 @@
     orderDetailEditHandleClick = function productionTaskClick(target) {
       if (!target.closest?.("[data-order-detail-add-task]")) return baseClick(target);
       const order = typeof getSelectedOrder === "function" ? getSelectedOrder() : null;
+      const orderId = Number(order?.id || appState?.selectedOrderId || 0);
       const draft = typeof orderDetailEditDraftFor === "function" ? orderDetailEditDraftFor(order) : null;
-      if (!draft) return false;
-      const article = currentArticles()[0] || { key: "", name: "" };
-      const phase = "cartamodello";
-      draft.tasks.push({ id: `local-task-${order?.id || 0}-${Date.now()}`, articleKey: article.key, articleName: article.name, name: `${phaseLabel(phase)} - ${article.name || "articolo"}`, phase, sequenceOrder: 1, assignedUserId: "", team: "Da assegnare", hours: "", time: "", dueDate: "", state: "Da avviare", localOnly: true });
+      if (!orderId || !draft) return false;
+      if (!Array.isArray(draft.tasks)) draft.tasks = [];
+
+      // Keep the new row neutral until the administrator chooses its article
+      // and phase. Defaulting to Cartamodello made the legacy normalizer merge
+      // the row with an existing core task, so the freshly added row vanished.
+      const createdAt = Date.now();
+      draft.tasks.push({
+        id: `local-task-${orderId}-manual-${createdAt}`,
+        orderId,
+        articleKey: "",
+        articleName: "",
+        name: "Nuova task",
+        phase: "altro",
+        sequenceOrder: phaseOrder.altro,
+        assignedUserId: "",
+        team: "Da assegnare",
+        hours: "",
+        time: "",
+        dueDate: "",
+        state: "Da avviare",
+        localOnly: true,
+      });
       renderApp();
       return true;
     };
