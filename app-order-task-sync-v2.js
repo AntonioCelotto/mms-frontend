@@ -121,7 +121,23 @@ if (typeof orderDetailEditApplyStoredToOrders === "function") {
       appData.orderTasks[orderId] = tasks;
       const draft = appState.orderDetailEdits?.[Number(orderId)] || appState.orderDetailEdits?.[orderId];
       if (draft) {
-        draft.tasks = tasks.map((task, index) => taskSyncDraftFromTask(task, index, Number(orderId)));
+        const currentRows = Array.isArray(draft.tasks) ? draft.tasks : [];
+        const currentById = new Map(
+          currentRows
+            .filter((task) => /^\d+$/.test(String(task?.id || "")))
+            .map((task) => [String(task.id), task])
+        );
+        const pendingRows = currentRows.filter((task) => !/^\d+$/.test(String(task?.id || "")));
+        const databaseRows = tasks.map((task, index) => {
+          const fresh = taskSyncDraftFromTask(task, index, Number(orderId));
+          const edited = currentById.get(String(fresh.id));
+          // Preserve fields currently being edited. The database remains the
+          // source for identity, while the open form owns unsaved values.
+          return edited ? { ...fresh, ...edited, id: fresh.id, localOnly: false } : fresh;
+        });
+        // Never discard a row created with + Task just because it has not
+        // reached the database yet. It belongs only to this order's draft.
+        draft.tasks = [...databaseRows, ...pendingRows];
       }
     });
   };
