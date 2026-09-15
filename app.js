@@ -707,7 +707,12 @@ function navigate(view, orderId) {
 }
 
 function getSelectedOrder() {
-  return appData.orders.find((order) => order.id === appState.selectedOrderId) || appData.orders[0];
+  const selectedId = Number(appState.selectedOrderId || 0);
+  if (!selectedId) return null;
+  // API and DOM values can arrive once as strings and once as numbers. The
+  // previous strict comparison silently fell back to the first order, causing
+  // edits (including new tasks) to be attached to the wrong order.
+  return appData.orders.find((order) => Number(order.id) === selectedId) || null;
 }
 
 function getSelectedOrderMaterials() {
