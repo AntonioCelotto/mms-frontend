@@ -167,11 +167,11 @@
     const info = typeof quoteListClientInfo === "function" ? quoteListClientInfo(quote) : {};
     const totals = quoteTotals(quote);
     const paymentText = text(info.paymentTerms) || "Il pagamento e' dovuto entro 15 giorni";
-    const advanceTerm = Object.prototype.hasOwnProperty.call(quote, "_pdfAdvanceTerm")
-      ? text(quote._pdfAdvanceTerm)
+    const advanceTerm = Object.prototype.hasOwnProperty.call(quote, "pdfAdvanceTerm")
+      ? text(quote.pdfAdvanceTerm)
       : "50% di anticipo per avvio del progetto";
-    const deliveryTerm = Object.prototype.hasOwnProperty.call(quote, "_pdfDeliveryTerm")
-      ? text(quote._pdfDeliveryTerm)
+    const deliveryTerm = Object.prototype.hasOwnProperty.call(quote, "pdfDeliveryTerm")
+      ? text(quote.pdfDeliveryTerm)
       : "Consegna 10 / 15 giorni, salvo rallentamenti di produzione";
     const vatLabel = totals.vatRate ? `IVA ${String(Math.round(totals.vatRate * 100) / 100).replace(".", ",")}%` : "IVA";
     const notes = text(quote.note);
@@ -314,6 +314,12 @@
     quoteListDownloadPdf = function quoteListDownloadPdfWithEditableTerms(quoteId) {
       const quote = typeof quoteListFind === "function" ? quoteListFind(quoteId) : null;
       if (!quote) return;
+      const savedAdvanceTerm = Object.prototype.hasOwnProperty.call(quote, "pdfAdvanceTerm")
+        ? text(quote.pdfAdvanceTerm)
+        : "50% di anticipo per avvio del progetto";
+      const savedDeliveryTerm = Object.prototype.hasOwnProperty.call(quote, "pdfDeliveryTerm")
+        ? text(quote.pdfDeliveryTerm)
+        : "Consegna 10 / 15 giorni, salvo rallentamenti di produzione";
 
       const previous = document.querySelector("[data-pdf-terms-dialog]");
       if (previous) previous.remove();
@@ -331,9 +337,9 @@
             <button data-pdf-terms-cancel type="button" aria-label="Chiudi" style="border:0;background:#f1f1f1;border-radius:50%;width:36px;height:36px;font-size:21px;cursor:pointer;">&times;</button>
           </div>
           <label style="display:block;font-weight:700;margin-bottom:7px;">Condizione di anticipo</label>
-          <textarea data-pdf-advance style="width:100%;min-height:78px;resize:vertical;border:1px solid #d7d7d7;border-radius:12px;padding:12px;font:inherit;line-height:1.4;margin-bottom:17px;">${quoteHtml("50% di anticipo per avvio del progetto")}</textarea>
+          <textarea data-pdf-advance style="width:100%;min-height:78px;resize:vertical;border:1px solid #d7d7d7;border-radius:12px;padding:12px;font:inherit;line-height:1.4;margin-bottom:17px;">${quoteHtml(savedAdvanceTerm)}</textarea>
           <label style="display:block;font-weight:700;margin-bottom:7px;">Tempi di consegna</label>
-          <textarea data-pdf-delivery style="width:100%;min-height:78px;resize:vertical;border:1px solid #d7d7d7;border-radius:12px;padding:12px;font:inherit;line-height:1.4;">${quoteHtml("Consegna 10 / 15 giorni, salvo rallentamenti di produzione")}</textarea>
+          <textarea data-pdf-delivery style="width:100%;min-height:78px;resize:vertical;border:1px solid #d7d7d7;border-radius:12px;padding:12px;font:inherit;line-height:1.4;">${quoteHtml(savedDeliveryTerm)}</textarea>
           <div style="display:flex;justify-content:flex-end;gap:10px;margin-top:22px;">
             <button data-pdf-terms-cancel type="button" style="border:1px solid #d7d7d7;background:#fff;border-radius:999px;padding:11px 18px;font-weight:700;cursor:pointer;">Annulla</button>
             <button data-pdf-terms-generate type="button" style="border:0;background:#171717;color:#fff;border-radius:999px;padding:11px 20px;font-weight:700;cursor:pointer;">Genera PDF</button>
@@ -348,16 +354,14 @@
         event.preventDefault();
         closePdfTermsDialog(dialog);
       });
-      dialog.querySelector("[data-pdf-terms-generate]").addEventListener("click", () => {
-        quote._pdfAdvanceTerm = dialog.querySelector("[data-pdf-advance]").value;
-        quote._pdfDeliveryTerm = dialog.querySelector("[data-pdf-delivery]").value;
+      dialog.querySelector("[data-pdf-terms-generate]").addEventListener("click", async () => {
+        quote.pdfAdvanceTerm = dialog.querySelector("[data-pdf-advance]").value;
+        quote.pdfDeliveryTerm = dialog.querySelector("[data-pdf-delivery]").value;
+        if (typeof quoteHistoryRecoveryWrite === "function") quoteHistoryRecoveryWrite(appState.savedQuotes || []);
+        if (typeof quoteStorageWrite === "function") quoteStorageWrite();
         closePdfTermsDialog(dialog);
-        try {
-          baseQuoteListDownloadPdfTerms(quoteId);
-        } finally {
-          delete quote._pdfAdvanceTerm;
-          delete quote._pdfDeliveryTerm;
-        }
+        baseQuoteListDownloadPdfTerms(quoteId);
+        if (typeof quoteDatabaseSave === "function") await quoteDatabaseSave(quote);
       });
 
       document.body.appendChild(dialog);
