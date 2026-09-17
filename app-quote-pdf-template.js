@@ -167,6 +167,12 @@
     const info = typeof quoteListClientInfo === "function" ? quoteListClientInfo(quote) : {};
     const totals = quoteTotals(quote);
     const paymentText = text(info.paymentTerms) || "Il pagamento e' dovuto entro 15 giorni";
+    const advanceTerm = Object.prototype.hasOwnProperty.call(quote, "_pdfAdvanceTerm")
+      ? text(quote._pdfAdvanceTerm)
+      : "50% di anticipo per avvio del progetto";
+    const deliveryTerm = Object.prototype.hasOwnProperty.call(quote, "_pdfDeliveryTerm")
+      ? text(quote._pdfDeliveryTerm)
+      : "Consegna 10 / 15 giorni, salvo rallentamenti di produzione";
     const vatLabel = totals.vatRate ? `IVA ${String(Math.round(totals.vatRate * 100) / 100).replace(".", ",")}%` : "IVA";
     const notes = text(quote.note);
     return `
@@ -284,8 +290,8 @@
             ${summaryTable(totals, vatLabel, paymentText)}
 
             <div class="terms">
-              <p>50% di anticipo per avvio del progetto</p>
-              <p>Consegna 10 / 15 giorni, salvo rallentamenti di produzione</p>
+              <p>${quoteHtml(advanceTerm)}</p>
+              <p>${quoteHtml(deliveryTerm)}</p>
             </div>
             ${notes ? `<div class="note"><strong>NOTE</strong><br />${quoteHtml(notes)}</div>` : ""}
 
@@ -295,4 +301,68 @@
       </html>
     `;
   };
+
+  const baseQuoteListDownloadPdfTerms = typeof quoteListDownloadPdf === "function" ? quoteListDownloadPdf : null;
+
+  function closePdfTermsDialog(dialog) {
+    if (!dialog) return;
+    dialog.close();
+    dialog.remove();
+  }
+
+  if (baseQuoteListDownloadPdfTerms) {
+    quoteListDownloadPdf = function quoteListDownloadPdfWithEditableTerms(quoteId) {
+      const quote = typeof quoteListFind === "function" ? quoteListFind(quoteId) : null;
+      if (!quote) return;
+
+      const previous = document.querySelector("[data-pdf-terms-dialog]");
+      if (previous) previous.remove();
+
+      const dialog = document.createElement("dialog");
+      dialog.setAttribute("data-pdf-terms-dialog", "");
+      dialog.style.cssText = "width:min(620px,calc(100vw - 32px));border:0;border-radius:22px;padding:0;box-shadow:0 24px 70px rgba(0,0,0,.28);";
+      dialog.innerHTML = `
+        <form method="dialog" style="padding:26px;font-family:Arial,Helvetica,sans-serif;color:#171717;">
+          <div style="display:flex;justify-content:space-between;gap:18px;align-items:flex-start;margin-bottom:20px;">
+            <div>
+              <h2 style="margin:0 0 7px;font-size:22px;">Testo rosso del PDF</h2>
+              <p style="margin:0;color:#666;line-height:1.45;">Modifica le condizioni per questo PDF oppure lascia i testi predefiniti.</p>
+            </div>
+            <button data-pdf-terms-cancel type="button" aria-label="Chiudi" style="border:0;background:#f1f1f1;border-radius:50%;width:36px;height:36px;font-size:21px;cursor:pointer;">&times;</button>
+          </div>
+          <label style="display:block;font-weight:700;margin-bottom:7px;">Condizione di anticipo</label>
+          <textarea data-pdf-advance style="width:100%;min-height:78px;resize:vertical;border:1px solid #d7d7d7;border-radius:12px;padding:12px;font:inherit;line-height:1.4;margin-bottom:17px;">${quoteHtml("50% di anticipo per avvio del progetto")}</textarea>
+          <label style="display:block;font-weight:700;margin-bottom:7px;">Tempi di consegna</label>
+          <textarea data-pdf-delivery style="width:100%;min-height:78px;resize:vertical;border:1px solid #d7d7d7;border-radius:12px;padding:12px;font:inherit;line-height:1.4;">${quoteHtml("Consegna 10 / 15 giorni, salvo rallentamenti di produzione")}</textarea>
+          <div style="display:flex;justify-content:flex-end;gap:10px;margin-top:22px;">
+            <button data-pdf-terms-cancel type="button" style="border:1px solid #d7d7d7;background:#fff;border-radius:999px;padding:11px 18px;font-weight:700;cursor:pointer;">Annulla</button>
+            <button data-pdf-terms-generate type="button" style="border:0;background:#171717;color:#fff;border-radius:999px;padding:11px 20px;font-weight:700;cursor:pointer;">Genera PDF</button>
+          </div>
+        </form>
+      `;
+
+      dialog.querySelectorAll("[data-pdf-terms-cancel]").forEach((button) => {
+        button.addEventListener("click", () => closePdfTermsDialog(dialog));
+      });
+      dialog.addEventListener("cancel", (event) => {
+        event.preventDefault();
+        closePdfTermsDialog(dialog);
+      });
+      dialog.querySelector("[data-pdf-terms-generate]").addEventListener("click", () => {
+        quote._pdfAdvanceTerm = dialog.querySelector("[data-pdf-advance]").value;
+        quote._pdfDeliveryTerm = dialog.querySelector("[data-pdf-delivery]").value;
+        closePdfTermsDialog(dialog);
+        try {
+          baseQuoteListDownloadPdfTerms(quoteId);
+        } finally {
+          delete quote._pdfAdvanceTerm;
+          delete quote._pdfDeliveryTerm;
+        }
+      });
+
+      document.body.appendChild(dialog);
+      dialog.showModal();
+      dialog.querySelector("[data-pdf-advance]").focus();
+    };
+  }
 })();
