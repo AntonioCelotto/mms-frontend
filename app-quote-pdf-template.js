@@ -219,8 +219,8 @@
             .summary .payment { width: auto; text-align: center !important; padding: 6mm 7mm 6mm 0 !important; line-height: 1.55; vertical-align: middle; }
             .summary .payment .bank { font-weight: 400; text-transform: uppercase; }
             .summary tr.total td { font-weight: 700; }
-            .terms { width: 58%; margin: 6mm 0 0 auto; color: #ff2029; font-size: 10pt; font-weight: 700; line-height: 1.55; text-transform: uppercase; }
-            .terms p { margin: 0 0 2mm; }
+            .terms { width: 58%; margin: 4.5mm 0 0 auto; color: #ff2029; font-size: 9.5pt; font-weight: 700; line-height: 1.4; text-transform: uppercase; break-inside: avoid; page-break-inside: avoid; }
+            .terms p { margin: 0 0 1.5mm; break-inside: avoid; page-break-inside: avoid; }
             .note { width: 58%; margin: 4mm 0 0 auto; font-size: 9pt; line-height: 1.45; }
             .note strong { color: #ff2029; }
             .header-logo { width: 24mm; height: auto; display: block; margin: 0 0 5mm; object-fit: contain; }
