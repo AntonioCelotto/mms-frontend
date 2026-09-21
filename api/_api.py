@@ -11,7 +11,7 @@ from urllib.request import Request, urlopen
 MAX_JSON_BODY_BYTES = 128 * 1024
 ALLOWED_HEADERS = "Content-Type, Authorization"
 SUPABASE_URL = os.environ.get("SUPABASE_URL", "https://fzdqemzowxjuotqalaol.supabase.co").rstrip("/")
-SUPABASE_ANON_KEY = os.environ.get("SUPABASE_ANON_KEY", "")
+SUPABASE_ANON_KEY = os.environ.get("SUPABASE_ANON_KEY", "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZ6ZHFlbXpvd3hqdW90cWFsYW9sIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzk5Njg3NzYsImV4cCI6MjA5NTU0NDc3Nn0.fmZ9RThFxnaJGQsOYeu_ZjjUNHThlRX87qz9sX4N6Mk")
 SUPABASE_REST_KEY = os.environ.get("SUPABASE_SERVICE_ROLE_KEY") or SUPABASE_ANON_KEY
 AUTH_TIMEOUT_SECONDS = 8
 ALLOWED_ORIGINS = {

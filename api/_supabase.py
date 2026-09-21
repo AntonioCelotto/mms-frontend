@@ -11,7 +11,7 @@ from urllib.request import Request, urlopen
 
 
 DEFAULT_SUPABASE_URL = "https://fzdqemzowxjuotqalaol.supabase.co"
-DEFAULT_SUPABASE_KEY = ""
+DEFAULT_SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZ6ZHFlbXpvd3hqdW90cWFsYW9sIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzk5Njg3NzYsImV4cCI6MjA5NTU0NDc3Nn0.fmZ9RThFxnaJGQsOYeu_ZjjUNHThlRX87qz9sX4N6Mk"
 SUPABASE_URL = os.environ.get("SUPABASE_URL", DEFAULT_SUPABASE_URL).rstrip("/")
 SUPABASE_KEY = os.environ.get("SUPABASE_SERVICE_ROLE_KEY") or os.environ.get("SUPABASE_ANON_KEY", DEFAULT_SUPABASE_KEY)
 SUPABASE_TIMEOUT_SECONDS = 5
