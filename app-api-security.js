@@ -8,19 +8,31 @@
     window.mmsSupabaseAuth = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
   }
 
-  function isProtectedApi(input) {
+  function requestUrl(input) {
     const raw = typeof input === "string" ? input : input?.url;
-    if (!raw) return false;
+    if (!raw) return null;
     try {
-      const url = new URL(raw, window.location.origin);
-      return url.origin === window.location.origin && url.pathname.startsWith("/api/") && url.pathname !== "/api/health";
+      return new URL(raw, window.location.origin);
     } catch (_) {
-      return false;
+      return null;
     }
   }
 
+  function needsAuthenticatedToken(url) {
+    if (!url) return false;
+    const protectedApi =
+      url.origin === window.location.origin &&
+      url.pathname.startsWith("/api/") &&
+      url.pathname !== "/api/health";
+    const protectedSupabaseData =
+      url.origin === SUPABASE_URL &&
+      (url.pathname.startsWith("/rest/v1/") || url.pathname.startsWith("/graphql/v1"));
+    return protectedApi || protectedSupabaseData;
+  }
+
   window.fetch = async function authenticatedFetch(input, init = {}) {
-    if (!isProtectedApi(input)) return nativeFetch(input, init);
+    const url = requestUrl(input);
+    if (!needsAuthenticatedToken(url)) return nativeFetch(input, init);
     const session = await window.mmsSupabaseAuth?.auth?.getSession?.();
     const token = session?.data?.session?.access_token;
     const headers = new Headers(input instanceof Request ? input.headers : undefined);
