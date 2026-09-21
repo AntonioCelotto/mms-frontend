@@ -33,10 +33,15 @@
   window.fetch = async function authenticatedFetch(input, init = {}) {
     const url = requestUrl(input);
     if (!needsAuthenticatedToken(url)) return nativeFetch(input, init);
-    const session = await window.mmsSupabaseAuth?.auth?.getSession?.();
-    const token = session?.data?.session?.access_token;
     const headers = new Headers(input instanceof Request ? input.headers : undefined);
     new Headers(init.headers || {}).forEach((value, key) => headers.set(key, value));
+    // Authentication calls already carry the user's token. Reuse it directly:
+    // asking Supabase for the session inside an auth-state callback can block login.
+    if (headers.has("Authorization")) {
+      return nativeFetch(input, { ...init, headers });
+    }
+    const session = await window.mmsSupabaseAuth?.auth?.getSession?.();
+    const token = session?.data?.session?.access_token;
     if (token) headers.set("Authorization", `Bearer ${token}`);
     return nativeFetch(input, { ...init, headers });
   };
