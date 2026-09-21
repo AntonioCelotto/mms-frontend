@@ -5,10 +5,10 @@ from http.server import BaseHTTPRequestHandler
 from urllib.parse import parse_qs, urlparse
 
 try:
-    from _api import clean_text, read_json_body, write_json, write_options
+    from _api import clean_text, read_json_body, require_access, write_json, write_options
     from _supabase import delete_rows, supabase_request
 except ModuleNotFoundError:
-    from api._api import clean_text, read_json_body, write_json, write_options
+    from api._api import clean_text, read_json_body, require_access, write_json, write_options
     from api._supabase import delete_rows, supabase_request
 
 
@@ -153,6 +153,8 @@ class handler(BaseHTTPRequestHandler):
         return write_options(self)
 
     def do_GET(self):
+        if not require_access(self, {"admin", "commerce"}):
+            return
         try:
             rows = fetch_all_quotes()
         except RuntimeError as error:
@@ -161,6 +163,8 @@ class handler(BaseHTTPRequestHandler):
         return write_json(self, {"quotes": [shape_quote(row) for row in rows]})
 
     def do_POST(self):
+        if not require_access(self, {"admin", "commerce"}):
+            return
         payload = read_json_body(self)
         if payload is None:
             return write_json(self, {"error": "JSON non valido"}, HTTPStatus.BAD_REQUEST)
@@ -194,6 +198,8 @@ class handler(BaseHTTPRequestHandler):
         return write_json(self, {"quote": shape_quote(row) if row else raw_quote}, HTTPStatus.CREATED)
 
     def do_PATCH(self):
+        if not require_access(self, {"admin", "commerce"}):
+            return
         payload = read_json_body(self)
         if payload is None:
             return write_json(self, {"error": "JSON non valido"}, HTTPStatus.BAD_REQUEST)
@@ -237,6 +243,8 @@ class handler(BaseHTTPRequestHandler):
         return write_json(self, {"quote": shape_quote(rows[0])})
 
     def do_DELETE(self):
+        if not require_access(self, {"admin", "commerce"}):
+            return
         quote_number = query_value(self.path, "id") or query_value(self.path, "quote_number")
         if not quote_number:
             return write_json(self, {"error": "Preventivo non valido"}, HTTPStatus.BAD_REQUEST)

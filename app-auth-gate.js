@@ -287,6 +287,7 @@
         const profile = await syncProfile(data.session);
         completed = true;
         renderAuthenticated(profile);
+        window.location.reload();
         return;
       }
       const { data, error } = await client.auth.signInWithPassword({ email, password });
@@ -294,6 +295,7 @@
       const profile = await syncProfile(data.session);
       completed = true;
       renderAuthenticated(profile);
+      window.location.reload();
     } catch (error) {
       await client.auth.signOut().catch(() => {});
       authState.message = error.message || "Accesso non riuscito";

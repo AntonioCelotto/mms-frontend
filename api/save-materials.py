@@ -3,7 +3,7 @@ from __future__ import annotations
 from http import HTTPStatus
 from http.server import BaseHTTPRequestHandler
 
-from _api import clean_text, normalize_choice, parse_positive_int, read_json_body, write_json
+from _api import clean_text, normalize_choice, parse_positive_int, read_json_body, require_access, write_json
 from _supabase import fetch_table, resolve_order, supabase_request
 
 
@@ -67,6 +67,8 @@ def resolve_order_for_materials(payload):
 
 class handler(BaseHTTPRequestHandler):
     def do_POST(self):
+        if not require_access(self, {"admin", "commerce"}):
+            return
         payload = read_json_body(self)
         if payload is None:
             return write_json(self, {"error": "JSON non valido"}, HTTPStatus.BAD_REQUEST)

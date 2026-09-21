@@ -4,12 +4,15 @@ from http import HTTPStatus
 from http.server import BaseHTTPRequestHandler
 from urllib.parse import parse_qs, urlparse
 
-from _api import write_json, write_options
+from _api import profile_can_access_order, require_access, write_json, write_options
 from _supabase import fetch_table, resolve_order
 
 
 class handler(BaseHTTPRequestHandler):
     def do_GET(self):
+        profile = require_access(self, {"admin", "commerce", "operator"})
+        if not profile:
+            return
         query = parse_qs(urlparse(self.path).query)
         order_ref = (query.get("order_id") or [""])[0]
         try:
@@ -18,6 +21,8 @@ class handler(BaseHTTPRequestHandler):
             order = None
         if not order:
             return write_json(self, {"error": "Ordine non trovato"}, HTTPStatus.NOT_FOUND)
+        if not profile_can_access_order(profile, order.get("id")):
+            return write_json(self, {"error": "Operazione non autorizzata"}, HTTPStatus.FORBIDDEN)
 
         rows = fetch_table(
             "attachments",

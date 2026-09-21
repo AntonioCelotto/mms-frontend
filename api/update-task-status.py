@@ -3,7 +3,7 @@ from __future__ import annotations
 from http import HTTPStatus
 from http.server import BaseHTTPRequestHandler
 
-from _api import clean_text, normalize_choice, parse_optional_number, parse_positive_int, read_json_body, write_json
+from _api import clean_text, normalize_choice, parse_optional_number, parse_positive_int, profile_can_access_task, read_json_body, require_access, write_json
 from _supabase import patch_rows
 
 
@@ -12,6 +12,9 @@ ALLOWED_STATUSES = {"da_avviare", "in_corso", "in_attesa", "completato"}
 
 class handler(BaseHTTPRequestHandler):
     def do_PATCH(self):
+        profile = require_access(self, {"admin", "operator"})
+        if not profile:
+            return
         payload = read_json_body(self)
         if payload is None:
             return write_json(self, {"error": "JSON non valido"}, HTTPStatus.BAD_REQUEST)
@@ -19,6 +22,8 @@ class handler(BaseHTTPRequestHandler):
         task_id = parse_positive_int(payload.get("task_id"))
         if not task_id:
             return write_json(self, {"error": "Task non valido"}, HTTPStatus.BAD_REQUEST)
+        if not profile_can_access_task(profile, task_id):
+            return write_json(self, {"error": "Task non autorizzato"}, HTTPStatus.FORBIDDEN)
 
         status = normalize_choice(payload.get("status"), ALLOWED_STATUSES)
         if not status:

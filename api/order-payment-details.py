@@ -6,7 +6,7 @@ from http.server import BaseHTTPRequestHandler
 from urllib.error import HTTPError, URLError
 from urllib.request import Request, urlopen
 
-from _api import clean_text, write_json, write_options
+from _api import clean_text, require_access, write_json, write_options
 from _supabase import SUPABASE_KEY, SUPABASE_URL, fetch_table
 
 
@@ -41,8 +41,8 @@ class handler(BaseHTTPRequestHandler):
         return write_options(self)
 
     def do_GET(self):
-        if not authenticated_admin(self):
-            return write_json(self, {"error": "Dati disponibili solo agli amministratori"}, HTTPStatus.FORBIDDEN)
+        if not require_access(self, {"admin"}):
+            return
         try:
             rows = fetch_table(
                 "payments",

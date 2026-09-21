@@ -13,7 +13,7 @@ from urllib.request import Request, urlopen
 DEFAULT_SUPABASE_URL = "https://fzdqemzowxjuotqalaol.supabase.co"
 DEFAULT_SUPABASE_KEY = ""
 SUPABASE_URL = os.environ.get("SUPABASE_URL", DEFAULT_SUPABASE_URL).rstrip("/")
-SUPABASE_KEY = os.environ.get("SUPABASE_ANON_KEY", DEFAULT_SUPABASE_KEY)
+SUPABASE_KEY = os.environ.get("SUPABASE_SERVICE_ROLE_KEY") or os.environ.get("SUPABASE_ANON_KEY", DEFAULT_SUPABASE_KEY)
 SUPABASE_TIMEOUT_SECONDS = 5
 
 
@@ -144,7 +144,7 @@ def infer_production_mode(department_name: str) -> str:
     return "interno"
 
 
-def build_bootstrap():
+def build_bootstrap(profile=None):
     clients = fetch_table("clients", order="name.asc")
     departments = fetch_table("departments", order="name.asc")
     users = fetch_table("users", order="id.asc")
@@ -155,6 +155,21 @@ def build_bootstrap():
     order_materials = fetch_table("order_materials", order="id.asc")
     payments = fetch_table("payments", order="id.desc")
     attachments = fetch_table("attachments", select="id,order_id", order="id.asc")
+
+    operator_mode = (profile or {}).get("access_profile") == "operator"
+    if operator_mode:
+        user_id = (profile or {}).get("id")
+        order_tasks = [row for row in order_tasks if row.get("assigned_user_id") == user_id]
+        allowed_order_ids = {row.get("order_id") for row in order_tasks}
+        orders = [row for row in orders if row.get("id") in allowed_order_ids]
+        allowed_client_ids = {row.get("client_id") for row in orders}
+        clients = [row for row in clients if row.get("id") in allowed_client_ids]
+        users = [row for row in users if row.get("id") == user_id]
+        user_skills = [row for row in user_skills if row.get("user_id") == user_id]
+        attachments = [row for row in attachments if row.get("order_id") in allowed_order_ids]
+        order_materials = []
+        payments = []
+        inventory_items = []
 
     client_map = {row["id"]: row for row in clients}
     department_map = {row["id"]: row for row in departments}
@@ -214,6 +229,19 @@ def build_bootstrap():
                 "total": float(row.get("total") or 0),
             }
         )
+        if operator_mode:
+            shaped_orders[-1].update(
+                {
+                    "payment": "",
+                    "clientVisibility": "",
+                    "sourceQuotePayload": {},
+                    "subtotal": 0,
+                    "discountType": "none",
+                    "discountValue": 0,
+                    "discountAmount": 0,
+                    "total": 0,
+                }
+            )
 
     payments_payload = []
     for row in payments[:20]:
@@ -384,6 +412,8 @@ def build_bootstrap():
                 "tags": ["Portale cliente" if client.get("visibility_enabled") else "Uso interno"],
             }
         )
+        if operator_mode:
+            clients_payload[-1].update({"email": "", "phone": "", "paymentRule": "", "note": ""})
 
     inventory_payload = [
         {

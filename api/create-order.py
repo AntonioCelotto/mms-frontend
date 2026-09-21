@@ -3,7 +3,7 @@ from __future__ import annotations
 from http import HTTPStatus
 from http.server import BaseHTTPRequestHandler
 
-from _api import clean_text, normalize_choice, read_json_body, write_json
+from _api import clean_text, normalize_choice, read_json_body, require_access, write_json
 from _supabase import supabase_request
 
 
@@ -12,6 +12,8 @@ ALLOWED_PRIORITIES = {"standard", "express"}
 
 class handler(BaseHTTPRequestHandler):
     def do_POST(self):
+        if not require_access(self, {"admin", "commerce"}):
+            return
         try:
             payload = read_json_body(self)
             if payload is None:

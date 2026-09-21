@@ -4,11 +4,11 @@ from http import HTTPStatus
 from http.server import BaseHTTPRequestHandler
 
 try:
-    from _api import clean_text, read_json_body, write_json, write_options
+    from _api import clean_text, profile_can_access_task, read_json_body, require_access, write_json, write_options
     from _supabase import fetch_table, supabase_request
     from _task_planner import reschedule_tasks
 except ModuleNotFoundError:
-    from api._api import clean_text, read_json_body, write_json, write_options
+    from api._api import clean_text, profile_can_access_task, read_json_body, require_access, write_json, write_options
     from api._supabase import fetch_table, supabase_request
     from api._task_planner import reschedule_tasks
 
@@ -78,13 +78,26 @@ class handler(BaseHTTPRequestHandler):
         return write_options(self)
 
     def do_GET(self):
+        profile = require_access(self, {"admin", "commerce", "operator"})
+        if not profile:
+            return
         try:
-            rows = fetch_table("calendar_worklogs", select=WORKLOG_SELECT, order="updated_at.desc")
+            filters = None
+            if profile.get("access_profile") == "operator":
+                tasks = fetch_table("order_tasks", select="id", filters={"assigned_user_id": f"eq.{profile.get('id')}"})
+                task_ids = [str(row.get("id")) for row in tasks if row.get("id")]
+                if not task_ids:
+                    return write_json(self, {"worklogs": []})
+                filters = {"task_id": f"in.({','.join(task_ids)})"}
+            rows = fetch_table("calendar_worklogs", select=WORKLOG_SELECT, filters=filters, order="updated_at.desc")
         except RuntimeError as error:
             return write_json(self, {"error": "Registro lavorazioni non disponibile", "detail": str(error)}, HTTPStatus.SERVICE_UNAVAILABLE)
         return write_json(self, {"worklogs": [shape_worklog(row) for row in rows]})
 
     def do_POST(self):
+        profile = require_access(self, {"admin", "operator"})
+        if not profile:
+            return
         body = read_json_body(self)
         if body is None:
             return write_json(self, {"error": "JSON non valido"}, HTTPStatus.BAD_REQUEST)
@@ -92,6 +105,8 @@ class handler(BaseHTTPRequestHandler):
         raw = body.get("worklog") if isinstance(body.get("worklog"), dict) else body
         try:
             row_payload = normalize_worklog(raw)
+            if not profile_can_access_task(profile, optional_int(row_payload.get("task_id"))):
+                return write_json(self, {"error": "Task non autorizzato"}, HTTPStatus.FORBIDDEN)
             rows = supabase_request(
                 "/rest/v1/calendar_worklogs",
                 method="POST",

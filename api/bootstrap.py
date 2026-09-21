@@ -3,18 +3,21 @@ from __future__ import annotations
 from http import HTTPStatus
 from http.server import BaseHTTPRequestHandler
 
-from _api import write_json
+from _api import require_access, write_json
 from _supabase import build_bootstrap
 
 
 class handler(BaseHTTPRequestHandler):
     def do_GET(self):
+        profile = require_access(self, {"admin", "commerce", "operator"})
+        if not profile:
+            return
         request_path = self.path.split("?", 1)[0]
         if request_path not in ("/api/bootstrap", "/api/bootstrap/"):
             return write_json(self, {"error": "Not found"}, HTTPStatus.NOT_FOUND)
 
         try:
-            payload = build_bootstrap()
+            payload = build_bootstrap(profile)
         except RuntimeError as error:
             return write_json(
                 self,

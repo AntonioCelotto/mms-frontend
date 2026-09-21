@@ -10,6 +10,8 @@ from urllib.error import HTTPError, URLError
 from urllib.parse import urlencode
 from urllib.request import Request, urlopen
 
+from _api import _write_cors_headers
+
 
 SUPABASE_URL = os.environ.get("SUPABASE_URL", "https://fzdqemzowxjuotqalaol.supabase.co").rstrip("/")
 SUPABASE_ANON_KEY = os.environ.get(
@@ -97,7 +99,7 @@ def write_json(handler, payload, status=HTTPStatus.OK):
     handler.send_response(status)
     handler.send_header("Content-Type", "application/json; charset=utf-8")
     handler.send_header("Cache-Control", "no-store")
-    handler.send_header("Access-Control-Allow-Origin", "*")
+    _write_cors_headers(handler)
     handler.send_header("Access-Control-Allow-Methods", "GET, POST, PATCH, DELETE, OPTIONS")
     handler.send_header("Access-Control-Allow-Headers", ALLOWED_HEADERS)
     handler.send_header("Content-Length", str(len(body)))
@@ -107,7 +109,7 @@ def write_json(handler, payload, status=HTTPStatus.OK):
 
 def write_options(handler):
     handler.send_response(HTTPStatus.NO_CONTENT)
-    handler.send_header("Access-Control-Allow-Origin", "*")
+    _write_cors_headers(handler)
     handler.send_header("Access-Control-Allow-Methods", "GET, POST, PATCH, DELETE, OPTIONS")
     handler.send_header("Access-Control-Allow-Headers", ALLOWED_HEADERS)
     handler.send_header("Cache-Control", "no-store")

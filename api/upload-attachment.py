@@ -12,7 +12,7 @@ from urllib.error import HTTPError, URLError
 from urllib.parse import quote
 from urllib.request import Request, urlopen
 
-from _api import clean_text, write_json
+from _api import clean_text, require_access, write_json
 from _supabase import SUPABASE_KEY, SUPABASE_TIMEOUT_SECONDS, SUPABASE_URL, insert_rows, resolve_order
 
 
@@ -71,6 +71,8 @@ def upload_to_storage(path: str, content_type: str, data: bytes):
 
 class handler(BaseHTTPRequestHandler):
     def do_POST(self):
+        if not require_access(self, {"admin", "commerce"}):
+            return
         payload = read_upload_body(self)
         if payload is None:
             return write_json(self, {"error": "Payload allegato non valido o troppo grande"}, HTTPStatus.BAD_REQUEST)

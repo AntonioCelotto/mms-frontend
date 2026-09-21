@@ -6,7 +6,7 @@ from http.server import BaseHTTPRequestHandler
 from urllib.error import HTTPError, URLError
 from urllib.request import Request, urlopen
 
-from _api import clean_text, parse_optional_positive_int, parse_positive_int, read_json_body, write_json, write_options
+from _api import clean_text, parse_optional_positive_int, parse_positive_int, read_json_body, require_access, write_json, write_options
 from _supabase import SUPABASE_KEY, SUPABASE_URL, delete_rows, fetch_table, insert_rows, resolve_order
 
 
@@ -82,6 +82,8 @@ class handler(BaseHTTPRequestHandler):
         return write_options(self)
 
     def do_POST(self):
+        if not require_access(self, {"admin"}):
+            return
         payload = read_json_body(self)
         if payload is None:
             return write_json(self, {"error": "JSON non valido"}, HTTPStatus.BAD_REQUEST)
@@ -137,8 +139,8 @@ class handler(BaseHTTPRequestHandler):
         return write_json(self, created[0] if created else {"ok": True}, HTTPStatus.CREATED)
 
     def do_DELETE(self):
-        if not authenticated_admin(self):
-            return write_json(self, {"error": "Operazione consentita solo agli amministratori"}, HTTPStatus.FORBIDDEN)
+        if not require_access(self, {"admin"}):
+            return
 
         payload = read_json_body(self)
         if payload is None:

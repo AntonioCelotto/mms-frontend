@@ -7,10 +7,10 @@ from time import time
 from urllib.parse import parse_qs, urlparse
 
 try:
-    from _api import clean_text, parse_optional_number, parse_positive_int, read_json_body, write_json, write_options
+    from _api import clean_text, parse_optional_number, parse_positive_int, read_json_body, require_access, write_json, write_options
     from _supabase import delete_rows, fetch_table, supabase_request
 except ModuleNotFoundError:
-    from api._api import clean_text, parse_optional_number, parse_positive_int, read_json_body, write_json, write_options
+    from api._api import clean_text, parse_optional_number, parse_positive_int, read_json_body, require_access, write_json, write_options
     from api._supabase import delete_rows, fetch_table, supabase_request
 
 
@@ -224,6 +224,8 @@ class handler(BaseHTTPRequestHandler):
         return write_options(self)
 
     def do_GET(self):
+        if not require_access(self, {"admin", "commerce"}):
+            return
         try:
             rows = fetch_all_inventory_items()
             shortage_totals, shortage_details = active_shortage_maps()
@@ -232,6 +234,8 @@ class handler(BaseHTTPRequestHandler):
         return write_json(self, {"items": [shape_inventory_item(row, shortage_totals, shortage_details) for row in rows]})
 
     def do_POST(self):
+        if not require_access(self, {"admin", "commerce"}):
+            return
         body = read_json_body(self)
         if body is None:
             return write_json(self, {"error": "JSON non valido"}, HTTPStatus.BAD_REQUEST)
@@ -266,6 +270,8 @@ class handler(BaseHTTPRequestHandler):
         return write_json(self, {"items": shaped, "item": shaped[0] if shaped else None}, HTTPStatus.CREATED)
 
     def do_PATCH(self):
+        if not require_access(self, {"admin", "commerce"}):
+            return
         body = read_json_body(self)
         if body is None:
             return write_json(self, {"error": "JSON non valido"}, HTTPStatus.BAD_REQUEST)
@@ -294,6 +300,8 @@ class handler(BaseHTTPRequestHandler):
         return write_json(self, {"item": shape_inventory_item(rows[0], shortage_totals, shortage_details)})
 
     def do_DELETE(self):
+        if not require_access(self, {"admin", "commerce"}):
+            return
         item_id = parse_positive_int(query_value(self.path, "id"))
         if not item_id:
             return write_json(self, {"error": "Elemento magazzino non valido"}, HTTPStatus.BAD_REQUEST)
