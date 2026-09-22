@@ -69,6 +69,29 @@ def upload_to_storage(path: str, content_type: str, data: bytes):
         raise RuntimeError(f"Storage non raggiungibile: {exc}") from exc
 
 
+def signed_storage_url(path: str, expires_in: int = 3600) -> str:
+    encoded_path = quote(path, safe="/")
+    request = Request(
+        f"{SUPABASE_URL}/storage/v1/object/sign/{BUCKET}/{encoded_path}",
+        data=json.dumps({"expiresIn": expires_in}).encode("utf-8"),
+        method="POST",
+        headers={
+            "apikey": SUPABASE_KEY,
+            "Authorization": f"Bearer {SUPABASE_KEY}",
+            "Content-Type": "application/json",
+        },
+    )
+    try:
+        with urlopen(request, timeout=SUPABASE_TIMEOUT_SECONDS) as response:
+            payload = json.loads(response.read().decode("utf-8") or "{}")
+    except (HTTPError, URLError, TimeoutError, socket.timeout, json.JSONDecodeError) as exc:
+        raise RuntimeError("Impossibile autorizzare il download dell'allegato") from exc
+    signed_path = payload.get("signedURL") or payload.get("signedUrl") or ""
+    if not signed_path:
+        raise RuntimeError("Collegamento allegato non disponibile")
+    return signed_path if signed_path.startswith("http") else f"{SUPABASE_URL}{signed_path}"
+
+
 class handler(BaseHTTPRequestHandler):
     def do_POST(self):
         if not require_access(self, {"admin", "commerce"}):
@@ -106,8 +129,6 @@ class handler(BaseHTTPRequestHandler):
         path = f"orders/{order['id']}/{uuid.uuid4().hex}-{file_name}"
         if "." not in path.rsplit("/", 1)[-1]:
             path = f"{path}.{extension}"
-        public_url = f"{SUPABASE_URL}/storage/v1/object/public/{BUCKET}/{quote(path, safe='/')}"
-
         try:
             upload_to_storage(path, mime_type, binary)
             created = insert_rows(
@@ -116,7 +137,7 @@ class handler(BaseHTTPRequestHandler):
                     "order_id": order["id"],
                     "file_type": "foto",
                     "file_name": file_name,
-                    "file_url": public_url,
+                    "file_url": None,
                     "storage_bucket": BUCKET,
                     "storage_path": path,
                     "mime_type": mime_type,
@@ -124,6 +145,7 @@ class handler(BaseHTTPRequestHandler):
                     "notes": "Caricato da Nuovo ordine",
                 },
             )
+            private_url = signed_storage_url(path)
         except RuntimeError as error:
             return write_json(self, {"error": "Upload allegato non riuscito", "detail": str(error)}, HTTPStatus.INTERNAL_SERVER_ERROR)
 
@@ -135,7 +157,7 @@ class handler(BaseHTTPRequestHandler):
                     "id": row["id"],
                     "order_id": int(order_ref),
                     "name": row["file_name"],
-                    "url": row["file_url"],
+                    "url": private_url,
                     "mime_type": row.get("mime_type") or mime_type,
                     "size": row.get("file_size") or len(binary),
                 }
