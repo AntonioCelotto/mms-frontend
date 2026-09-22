@@ -253,60 +253,35 @@ async function readAttachmentJson(response, fallbackMessage) {
   return payload;
 }
 
-async function uploadAttachmentObject(path, file) {
-  const response = await fetch(
-    `${ATTACHMENT_SUPABASE_URL}/storage/v1/object/${ATTACHMENT_STORAGE_BUCKET}/${encodeStoragePath(path)}`,
-    {
-      method: "POST",
-      headers: {
-        apikey: ATTACHMENT_SUPABASE_ANON_KEY,
-        Authorization: `Bearer ${ATTACHMENT_SUPABASE_ANON_KEY}`,
-        "Content-Type": file.type || "application/octet-stream",
-        "x-upsert": "false",
-      },
-      body: file,
-    }
-  );
-  await readAttachmentJson(response, "Upload file non riuscito");
-}
-
-async function insertAttachmentRow(orderId, attachment, path, publicUrl) {
-  const response = await fetch(`${ATTACHMENT_SUPABASE_URL}/rest/v1/attachments`, {
-    method: "POST",
-    headers: {
-      apikey: ATTACHMENT_SUPABASE_ANON_KEY,
-      Authorization: `Bearer ${ATTACHMENT_SUPABASE_ANON_KEY}`,
-      "Content-Type": "application/json",
-      Prefer: "return=representation",
-    },
-    body: JSON.stringify({
-      order_id: orderId,
-      file_type: "foto",
-      file_name: safeAttachmentFileName(attachment.name),
-      file_url: publicUrl,
-      storage_bucket: ATTACHMENT_STORAGE_BUCKET,
-      storage_path: path,
-      mime_type: attachment.type || "application/octet-stream",
-      file_size: attachment.size || 0,
-      notes: "Caricato dalla scheda ordine",
-    }),
+function attachmentFileDataUrl(file) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(String(reader.result || ""));
+    reader.onerror = () => reject(new Error("Lettura del file non riuscita"));
+    reader.readAsDataURL(file);
   });
-  const payload = await readAttachmentJson(response, "Registrazione allegato non riuscita");
-  return Array.isArray(payload) ? payload[0] : payload;
 }
 
 async function uploadAttachmentFile(orderId, attachment) {
   if (!attachment.file) return null;
-  const path = buildAttachmentStoragePath(orderId, attachment.file);
-  await uploadAttachmentObject(path, attachment.file);
-  const publicUrl = `${ATTACHMENT_SUPABASE_URL}/storage/v1/object/public/${ATTACHMENT_STORAGE_BUCKET}/${encodeStoragePath(path)}`;
-  const row = await insertAttachmentRow(orderId, attachment, path, publicUrl);
+  const response = await fetch("/api/upload-attachment", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      order_id: orderId,
+      file_name: safeAttachmentFileName(attachment.name || attachment.file.name),
+      file_type: attachment.type || attachment.file.type || "application/octet-stream",
+      data: await attachmentFileDataUrl(attachment.file),
+    }),
+  });
+  const payload = await readAttachmentJson(response, "Upload file non riuscito");
+  const row = payload?.attachment || {};
   return normalizePersistedAttachment({
-    id: row?.id,
-    name: row?.file_name || attachment.name,
-    url: row?.file_url || publicUrl,
-    mime_type: row?.mime_type || attachment.type,
-    size: row?.file_size || attachment.size,
+    id: row.id,
+    name: row.name || attachment.name,
+    url: row.url || "",
+    mime_type: row.mime_type || attachment.type,
+    size: row.size || attachment.size,
   });
 }
 
