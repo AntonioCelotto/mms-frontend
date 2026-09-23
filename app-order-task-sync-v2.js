@@ -189,6 +189,9 @@ if (typeof orderDetailEditSave === "function") {
   orderDetailEditSave = function taskSyncSave() {
     const order = taskSyncOrder();
     const orderId = taskSyncOrderId(order);
+    const previousTasks = new Map((appData.orderTasks?.[orderId] || [])
+      .filter((task) => Number(task.id) > 0)
+      .map((task) => [Number(task.id), task]));
     const draft = typeof orderDetailEditDraftFor === "function" ? orderDetailEditDraftFor(order) : null;
     const tasks = draft && orderId
       ? draft.tasks.map((task, index) => taskSyncTaskFromDraft(task, index, orderId))
@@ -197,14 +200,24 @@ if (typeof orderDetailEditSave === "function") {
     if (draft && orderId) appData.orderTasks[orderId] = tasks;
     const result = baseSave();
 
-    const persistAssignments = async () => {
-      const assignedTasks = tasks.filter((task) =>
-        Number(task.id) > 0 && task.assignedUserId
-      );
-      if (!assignedTasks.length || typeof taskAssignmentPatchTask !== "function") return 0;
+    const persistedStatus = (value) => {
+      const key = String(value || "").trim().toLowerCase().replace(/\s+/g, "_");
+      return ({ da_confermare: "in_attesa", stand_by: "in_attesa" })[key] || key;
+    };
+    const validDate = (value) => /^\d{4}-\d{2}-\d{2}(?:$|[T ])/.test(String(value || "")) ? value : null;
+    const changedFields = (task, previous) => ["name", "phase", "assignedUserId", "time", "hours", "articleKey", "articleName", "dueDate"]
+      .some((field) => String(task[field] || "") !== String(previous[field] || ""));
 
-      for (const task of assignedTasks) {
-        await taskAssignmentPatchTask(
+    const persistAssignments = async () => {
+      let saved = 0;
+      for (const task of tasks.filter((row) => Number(row.id) > 0)) {
+        const previous = previousTasks.get(Number(task.id));
+        const oldTask = previous ? taskSyncTaskFromDraft(taskSyncDraftFromTask(previous, 0, orderId), 0, orderId) : null;
+        const detailsChanged = !oldTask || changedFields(task, oldTask);
+        const stateChanged = !oldTask || persistedStatus(task.state) !== persistedStatus(oldTask.state);
+        if (!detailsChanged && !stateChanged) continue;
+        if (detailsChanged && task.assignedUserId && typeof taskAssignmentPatchTask === "function") {
+          await taskAssignmentPatchTask(
           Number(task.id),
           task.assignedUserId,
           task.time,
@@ -217,19 +230,38 @@ if (typeof orderDetailEditSave === "function") {
             status: task.state,
             article_key: task.articleKey || null,
             article_name: task.articleName || null,
-            due_date: task.dueDate || task.time || null,
+            due_date: validDate(task.dueDate) || validDate(task.time),
             sequence_order: task.sequenceOrder || null,
           }
         );
+        } else {
+          // A task can have no assignee. Its status still belongs in the database.
+          const payload = detailsChanged ? {
+            task_name: task.name,
+            task_phase: task.phase,
+            planned_date: validDate(task.time),
+            due_date: validDate(task.dueDate) || validDate(task.time),
+            estimated_hours: Number(String(task.hours || "").replace(" h", "").replace(",", ".")) || 0,
+            article_key: task.articleKey || null,
+            article_name: task.articleName || null,
+          } : {};
+          if (stateChanged) payload.status = persistedStatus(task.state);
+          await orderFlowRequest(`/rest/v1/order_tasks?id=eq.${Number(task.id)}&select=id`, {
+            method: "PATCH",
+            headers: { "Content-Type": "application/json", Prefer: "return=representation" },
+            body: JSON.stringify(payload),
+          }).then((rows) => { if (!rows?.length) throw new Error("Task non aggiornata nel database"); });
+        }
+        saved += 1;
       }
-      if (typeof orderFlowLoadTasks === "function") await orderFlowLoadTasks(order);
-      return assignedTasks.length;
+      if (saved && typeof orderFlowLoadTasks === "function") await orderFlowLoadTasks(order);
+      return saved;
     };
 
     persistAssignments()
       .then((count) => {
         if (!count) return;
-        setFlashMessage(`${count} ${count === 1 ? "task assegnata" : "task assegnate"} e salvata nel database`);
+        setFlashMessage(`${count} ${count === 1 ? "task aggiornata" : "task aggiornate"} nel database`);
         renderApp();
       })
       .catch((error) => {

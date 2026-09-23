@@ -246,7 +246,6 @@
     if (payload.profile?.is_active === false) {
       throw new Error("Account disattivato. Contatta l'amministratore.");
     }
-    publishProfile(payload.profile);
     return payload.profile;
   }
 
@@ -322,7 +321,13 @@
       authState.message = "Modulo accesso non disponibile. Ricarica la pagina.";
       return renderAuth();
     }
-    const { data } = await client.auth.getSession();
+    let data;
+    try {
+      ({ data } = await client.auth.getSession());
+    } catch (error) {
+      authState.message = "Sessione non disponibile. Ricarica la pagina oppure accedi di nuovo.";
+      return renderAuth();
+    }
     if (!data.session) {
       return renderAuth();
     }

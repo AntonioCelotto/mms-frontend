@@ -352,8 +352,14 @@
       const order = getSelectedOrder?.();
       const draft = order && typeof orderDetailEditDraftFor === "function" ? orderDetailEditDraftFor(order) : null;
       const materials = (draft?.materials || []).map((row) => ({ ...row }));
+      const signature = (rows) => JSON.stringify((rows || []).map((item) => {
+        const row = normalizeOrderMaterial(item);
+        return [row.product_name, row.quantity_required, row.inventory_item_id, row.inventory_sku,
+          row.source_type, row.delivery_status, row.warehouse_status_note, row.preorder_note, row.notes];
+      }).filter((row) => row[0]));
+      const materialsChanged = !!order && signature(materials) !== signature(appData.orderMaterials?.[Number(order.id)]);
       const result = baseOrderDetailSave();
-      if (order) {
+      if (materialsChanged) {
         saveMaterialsReliably(order, materials)
           .then((saved) => {
             state.detailLoaded.delete(Number(order.db_id || 0));
@@ -377,5 +383,7 @@
     if (appState.currentView === "order-detail") void loadOrderContext(getSelectedOrder?.());
   };
 
-  void loadCompleteInventory();
+  window.addEventListener("mms-auth-profile", (event) => {
+    if (event.detail?.profile) void loadCompleteInventory();
+  });
 })();

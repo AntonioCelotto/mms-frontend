@@ -266,6 +266,7 @@
       order.priority = text(row.priority).toLowerCase() === "express" ? "Express" : "Standard";
       order.notes = row.internal_notes || "";
       order.statusKey = row.status || order.statusKey;
+      order.status = ({ da_avviare: "Da avviare", in_produzione: "In produzione", completato: "Completato", sospeso: "Sospeso", annullato: "Annullato" })[order.statusKey] || order.status;
       order.productionStartedAt = row.production_started_at || "";
       order.completedAt = row.completed_at || "";
       order.actualDeliveryDate = row.actual_delivery_date || "";
@@ -277,6 +278,7 @@
         draft.category = order.category;
         draft.priority = order.priority;
         draft.notes = order.notes;
+        draft.status = order.status;
         if (typeof orderDetailEditWriteStored === "function") {
           orderDetailEditWriteStored(Number(order.id), draft);
         }
