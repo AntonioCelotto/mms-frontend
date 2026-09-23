@@ -10,6 +10,29 @@
     message: "",
     profile: null,
   };
+  let appLoadPromise = null;
+
+  function loadApp() {
+    if (appLoadPromise) return appLoadPromise;
+    appLoadPromise = (async () => {
+      const template = document.getElementById("mms-app-scripts");
+      if (!template) throw new Error("Moduli del gestionale non disponibili. Ricarica la pagina.");
+      for (const source of template.content.querySelectorAll("script[src]")) {
+        if (!authState.profile) throw new Error("Sessione non autorizzata");
+        await new Promise((resolve, reject) => {
+          const script = document.createElement("script");
+          script.src = source.src;
+          script.onload = resolve;
+          script.onerror = () => reject(new Error("Caricamento del gestionale non riuscito. Ricarica la pagina."));
+          document.body.appendChild(script);
+        });
+      }
+    })().catch((error) => {
+      appLoadPromise = null;
+      throw error;
+    });
+    return appLoadPromise;
+  }
 
   function getClient() {
     if (!window.supabase?.createClient) return null;
@@ -195,20 +218,26 @@
 
   function renderAuth() {
     ensureStyles();
+    authState.profile = null;
     publishProfile(null);
+    document.documentElement.classList.remove("auth-ready");
     document.documentElement.classList.add("auth-locked");
     document.documentElement.classList.remove("auth-checking");
+    if (root()) root().replaceChildren();
     overlay().innerHTML = formMarkup();
     const bar = document.getElementById("mms-auth-userbar");
     if (bar) bar.remove();
     attachAuthEvents();
   }
 
-  function renderAuthenticated(profile) {
-    publishProfile(profile);
-    document.documentElement.classList.remove("auth-checking", "auth-locked");
-    overlay().innerHTML = "";
+  async function renderAuthenticated(profile) {
     authState.profile = profile;
+    await loadApp();
+    if (authState.profile !== profile) return;
+    document.documentElement.classList.remove("auth-checking", "auth-locked");
+    document.documentElement.classList.add("auth-ready");
+    publishProfile(profile);
+    overlay().innerHTML = "";
     const name = profile?.name || profile?.email || "Utente";
     const role = authRoleLabel(profile);
     const bar = userbar();
@@ -285,7 +314,6 @@
         }
         const profile = await syncProfile(data.session);
         completed = true;
-        renderAuthenticated(profile);
         window.location.reload();
         return;
       }
@@ -293,7 +321,6 @@
       if (error) throw error;
       const profile = await syncProfile(data.session);
       completed = true;
-      renderAuthenticated(profile);
       window.location.reload();
     } catch (error) {
       await client.auth.signOut().catch(() => {});
@@ -312,6 +339,7 @@
     authState.profile = null;
     authState.message = "";
     renderAuth();
+    window.location.reload();
   }
 
   async function boot() {
@@ -333,20 +361,22 @@
     }
     try {
       const profile = await syncProfile(data.session);
-      renderAuthenticated(profile);
+      await renderAuthenticated(profile);
     } catch (error) {
-      await client.auth.signOut();
+      await client.auth.signOut().catch(() => {});
       authState.message = error.message || "Sessione scaduta. Accedi di nuovo.";
       renderAuth();
     }
     client.auth.onAuthStateChange(async (event, session) => {
+      if (event === "INITIAL_SESSION") return;
       if (event === "SIGNED_OUT" || !session) {
         renderAuth();
+        window.location.reload();
         return;
       }
       try {
         const profile = await syncProfile(session);
-        renderAuthenticated(profile);
+        await renderAuthenticated(profile);
       } catch (error) {
         window.setTimeout(() => client.auth.signOut().catch(() => {}), 0);
         authState.message = error.message || "Sessione non valida";
