@@ -99,7 +99,7 @@
 
   async function fetchExistingAutoPayments(orderId) {
     if (typeof paymentRequest !== "function") return [];
-    const rows = await paymentRequest(`/rest/v1/payments?select=id,notes&order_id=eq.${Number(orderId)}`);
+    const rows = await paymentRequest(`/rest/v1/payments?select=id,notes,payment_type,amount,due_date,paid_date,status&order_id=eq.${Number(orderId)}&order=id.asc`);
     return (Array.isArray(rows) ? rows : []).filter(isAutoPayment);
   }
 
@@ -132,6 +132,9 @@
     validatePaymentRows(rows);
     const meaningfulRows = (Array.isArray(rows) ? rows : []).filter(isMeaningfulPaymentRow);
     const previousRows = await fetchExistingAutoPayments(dbOrderId);
+    const comparable = (row) => [row.payment_type, Number(row.amount), row.due_date || null, row.paid_date || null, row.status, normalizeText(row.notes).replace(/^(Da ordine:|Da ordine da preventivo:|Da scheda ordine:)\s*/, "")];
+    if (previousRows.length === meaningfulRows.length && previousRows.every((row, index) =>
+      JSON.stringify(comparable(row)) === JSON.stringify(comparable(autoPaymentBody(dbOrderId, meaningfulRows[index], sourceLabel))))) return;
     const insertedRows = [];
     try {
       for (const row of meaningfulRows) {

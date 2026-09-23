@@ -15,7 +15,7 @@
   <body>
     <div id="app"></div>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <script src="./app-api-security.js?v=20260921-login-unblock-1"></script>
+    <script src="./app-api-security.js?v=20260923-session-fix-1"></script>
     <script src="./app-task-local-reset.js?v=20260915-reset-p0837-p0838-1"></script>
     <script src="./app.js?v=20260915-selected-order-identity-1"></script>
     <script src="./app-remove-demo-orders.js?v=20260904-real-order-284-1"></script>
@@ -24,7 +24,7 @@
     <script src="./app-calendar-fix.js"></script>
     <script src="./app-operations-cleanup.js?v=20260615-clean-2"></script>
     <script src="./app-order-enhancements.js?v=20260922-private-attachments-1"></script>
-    <script src="./app-order-save-fix.js?v=20260904-existing-order-open-2"></script>
+    <script src="./app-order-save-fix.js?v=20260923-auth-bootstrap-1"></script>
     <script src="./app-payments-enhancements.js?v=20260610-payments-2"></script>
     <script src="./app-clients-enhancements.js?v=20260610-clients-4"></script>
     <script src="./app-clients-dom-fix.js?v=20260610-clients-4"></script>
@@ -44,7 +44,7 @@
     <script src="./app-inventory-shortage-summary.js?v=20260703-inventory-shortage-1"></script>
     <script src="./app-order-completion-fix-v2.js?v=20260610-order-flow-1"></script>
     <script src="./app-order-materials-atomic-save.js?v=20260701-order-materials-atomic-1"></script>
-    <script src="./app-task-assignment-guard.js?v=20260909-task-save-4"></script>
+    <script src="./app-task-assignment-guard.js?v=20260923-task-date-1"></script>
     <script src="./app-calendar-task-fix.js?v=20260615-calendar-task-2"></script>
     <script src="./app-calendar-planning-fix.js?v=20260615-planning-2"></script>
     <script src="./app-accounts-workspace.js?v=20260810-account-approval-1"></script>
@@ -70,20 +70,20 @@
     <script src="./app-quote-pdf-template.js?v=20260813-discount-flow-1"></script>
     <script src="./app-order-quote-preview.js?v=20260904-quote-date-1"></script>
     <script src="./app-order-from-quote-stable-fields.js?v=20260630-order-fields-1"></script>
-    <script src="./app-order-detail-edit.js?v=20260630-order-detail-edit-1"></script>
+    <script src="./app-order-detail-edit.js?v=20260923-server-status-1"></script>
     <script src="./app-order-quote-summary-bridge.js?v=20260703-order-quote-summary-2"></script>
     <script src="./app-order-from-quote-materials-fix.js?v=20260703-order-quote-materials-fix-1"></script>
     <script src="./app-order-task-completeness.js?v=20260701-order-tasks-1"></script>
-    <script src="./app-order-task-sync-v2.js?v=20260915-preserve-order-draft-1"></script>
+    <script src="./app-order-task-sync-v2.js?v=20260923-task-persist-1"></script>
     <script src="./app-order-core-tasks.js?v=20260701-order-core-tasks-1"></script>
-    <script src="./app-order-extra-task-fix.js?v=20260910-task-save-1"></script>
+    <script src="./app-order-extra-task-fix.js?v=20260923-task-date-1"></script>
     <script src="./app-order-task-save-unblock.js?v=20260701-order-task-save-unblock-1"></script>
     <script src="./app-order-from-quote-task-plan-fix.js?v=20260702-quote-task-plan-fix-2"></script>
     <script src="./app-order-quote-photos-bridge.js?v=20260810-order-quote-photos-upload-1"></script>
     <script src="./app-operator-order-view.js?v=20260909-operator-start-clean-2"></script>
-    <script src="./app-order-payments-sync.js?v=20260904-payment-fields-2"></script>
+    <script src="./app-order-payments-sync.js?v=20260923-payment-diff-1"></script>
     <script src="./app-payment-fields-fix.js?v=20260904-payment-fields-2"></script>
-    <script src="./app-order-inventory-link-fix.js?v=20260904-order-inventory-link-1"></script>
+    <script src="./app-order-inventory-link-fix.js?v=20260923-auth-inventory-1"></script>
     <script src="./app-order-status-workflow.js?v=20260904-order-status-workflow-1"></script>
     <script src="./app-calendar-worklog.js?v=20260701-calendar-worklog-2"></script>
     <script src="./app-calendar-worklog-database.js?v=20260810-worklog-notes-1"></script>
@@ -105,15 +105,15 @@
     <script src="./app-ai-reporting.js?v=20260702-ai-reporting-5"></script>
     <script src="./app-worklog-history-report.js?v=20260810-worklog-history-1"></script>
     <script src="./app-dashboard-payments-ai.js?v=20260703-dashboard-payments-ai-1"></script>
-    <script src="./app-auth-gate.js?v=20260810-account-approval-2"></script>
+    <script src="./app-auth-gate.js?v=20260923-session-error-1"></script>
     <script src="./app-role-permissions.js?v=20260810-commerce-order-create-1"></script>
     <script src="./app-delete-clients-orders.js?v=20260810-client-delete-feedback-1"></script>
     <script src="./app-order-delete-fast-guard.js?v=20260729-order-delete-fast-1"></script>
     <script src="./app-quote-final-save.js?v=20260811-materials-save-2"></script>
     <script src="./app-discount-workflow.js?v=20260816-discount-input-1"></script>
     <script src="./app-order-warehouse-warning-fix.js?v=20260904-loading-guard-1"></script>
-    <script src="./app-order-data-integrity-fix.js?v=20260904-inventory-status-refresh-3"></script>
-    <script src="./app-production-task-planner.js?v=20260915-selected-order-add-task-2"></script>
+    <script src="./app-order-data-integrity-fix.js?v=20260923-server-status-1"></script>
+    <script src="./app-production-task-planner.js?v=20260923-planner-1"></script>
     <script src="./app-order-material-row-picker.js?v=20260915-independent-task-save-1"></script>
     <script src="./app-excel-exports.js?v=20260917-excel-export-1"></script>
   </body>

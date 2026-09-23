@@ -74,6 +74,7 @@
   }
 
   async function saveTaskToDatabase(orderId, task) {
+    const validDate = (value) => /^\d{4}-\d{2}-\d{2}(?:$|[T ])/.test(String(value || "")) ? value : null;
     const response = await fetch("/api/order-task", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -83,12 +84,12 @@
         task_phase: task.phase || task.task_phase || "altro",
         assigned_user_id: task.assignedUserId || task.assigned_user_id || null,
         external_supplier_name: task.externalSupplierName || task.external_supplier_name || null,
-        planned_date: task.time || task.planned_date || null,
+        planned_date: validDate(task.time) || validDate(task.planned_date),
         estimated_hours: task.hours || task.estimated_hours || null,
         status: task.state || task.status || "Da avviare",
         article_key: task.articleKey || task.article_key || null,
         article_name: task.articleName || task.article_name || null,
-        due_date: task.dueDate || task.due_date || task.time || null,
+        due_date: validDate(task.dueDate) || validDate(task.due_date) || validDate(task.time),
       }),
     });
     const payload = await response.json().catch(() => ({}));

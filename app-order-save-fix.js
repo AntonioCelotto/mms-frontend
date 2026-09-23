@@ -390,6 +390,9 @@ saveDraftOrder = async function saveDraftOrderConfirmed() {
   }
 };
 
-refreshBootstrap()
-  .then(() => renderApp())
-  .catch((error) => console.warn("Archivio ordini reale non disponibile", error));
+window.addEventListener("mms-auth-profile", (event) => {
+  if (!event.detail?.profile) return;
+  refreshBootstrap()
+    .then(() => renderApp())
+    .catch((error) => console.warn("Archivio ordini reale non disponibile", error));
+});

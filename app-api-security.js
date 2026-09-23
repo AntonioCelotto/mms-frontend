@@ -37,12 +37,16 @@
     new Headers(init.headers || {}).forEach((value, key) => headers.set(key, value));
     // Authentication calls already carry the user's token. Reuse it directly:
     // asking Supabase for the session inside an auth-state callback can block login.
-    if (headers.has("Authorization")) {
+    const authorization = headers.get("Authorization") || "";
+    if (authorization && authorization !== `Bearer ${SUPABASE_ANON_KEY}`) {
       return nativeFetch(input, { ...init, headers });
     }
     const session = await window.mmsSupabaseAuth?.auth?.getSession?.();
     const token = session?.data?.session?.access_token;
+    // Legacy REST callers include the public anon key as Authorization.
+    // Replace it with the signed-in user's token; RLS must never see anon here.
     if (token) headers.set("Authorization", `Bearer ${token}`);
+    else headers.delete("Authorization");
     return nativeFetch(input, { ...init, headers });
   };
 })();

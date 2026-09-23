@@ -179,6 +179,7 @@ function taskAssignmentAssigneePayload(value) {
 }
 
 function taskAssignmentDateTime(dateValue, timeValue) {
+  if (!/^\d{4}-\d{2}-\d{2}(?:$|[T ])/.test(String(dateValue || ""))) return null;
   if (typeof orderFlowDateTime === "function") return orderFlowDateTime(dateValue, timeValue);
   const date = String(dateValue || "").trim();
   const time = String(timeValue || "").trim();
@@ -203,7 +204,7 @@ async function taskAssignmentPatchTask(taskId, assigneeValue, plannedDate, plann
     status: extra.status || undefined,
     article_key: extra.article_key || undefined,
     article_name: extra.article_name || undefined,
-    due_date: extra.due_date || undefined,
+    due_date: /^\d{4}-\d{2}-\d{2}(?:$|[T ])/.test(String(extra.due_date || "")) ? extra.due_date : null,
     sequence_order: extra.sequence_order || undefined,
   };
 

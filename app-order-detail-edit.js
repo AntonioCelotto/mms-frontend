@@ -159,6 +159,10 @@ function orderDetailEditDraftFor(order) {
       materials: (appData.orderMaterials?.[orderId] || []).map(orderDetailEditMaterialToDraft),
       tasks: (appData.orderTasks?.[orderId] || []).map(orderDetailEditTaskToDraft),
     };
+    // A browser's saved form is not authoritative for an order in the database.
+    if (stored && (order?.db_id || order?.internal_id) && order.statusKey) {
+      appState.orderDetailEdits[orderId].status = order.status;
+    }
   }
 
   const draft = appState.orderDetailEdits[orderId];
@@ -178,7 +182,7 @@ function orderDetailEditApplyStoredToOrders() {
     order.category = draft.category || order.category;
     order.department = draft.department || order.department;
     order.priority = draft.priority || order.priority;
-    order.status = draft.status || order.status;
+    if (!(order.db_id || order.internal_id)) order.status = draft.status || order.status;
     order.orderDate = draft.orderDate || order.orderDate;
     order.estimatedDelivery = draft.estimatedDelivery || order.estimatedDelivery;
     order.eta = draft.estimatedDelivery || order.eta;

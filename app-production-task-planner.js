@@ -130,8 +130,19 @@
   if (typeof orderDetailEditSave === "function") {
     const baseSave = orderDetailEditSave;
     orderDetailEditSave = function saveAndPlan() {
+      const order = typeof getSelectedOrder === "function" ? getSelectedOrder() : null;
+      const draft = order && typeof orderDetailEditDraftFor === "function" ? orderDetailEditDraftFor(order) : null;
+      const existing = appData?.orderTasks?.[Number(order?.id)] || [];
+      const planning = (task) => [
+        String(task.id || ""), String(task.phase || task.task_phase || ""),
+        String(task.assignedUserId || task.assigned_user_id || ""),
+        String(task.time || task.planned_date || "").slice(0, 10),
+        String(task.dueDate || task.due_date || "").slice(0, 10),
+        String(task.hours || task.estimated_hours || "").replace(" h", "").replace(",", "."),
+      ].join("|");
+      const needsPlanning = !!draft && JSON.stringify((draft.tasks || []).map(planning)) !== JSON.stringify(existing.map(planning));
       const result = baseSave();
-      window.productionPlannerSchedule();
+      if (needsPlanning) window.productionPlannerSchedule();
       return result;
     };
   }
