@@ -7,7 +7,7 @@
     <meta name="robots" content="noindex, nofollow, noarchive, nosnippet" />
     <meta name="googlebot" content="noindex, nofollow, noarchive, nosnippet" />
     <script>document.documentElement.classList.add("auth-checking");</script>
-    <style>.auth-checking #app{display:none!important;}</style>
+    <style>#app{display:none!important;}html.auth-ready #app{display:block!important;}</style>
     <link rel="stylesheet" href="./styles.css" />
     <link rel="stylesheet" href="./app-order-enhancements.css" />
     <link rel="stylesheet" href="./app-responsive-tablet.css?v=20260702-tablet-responsive-2" />
@@ -16,6 +16,8 @@
     <div id="app"></div>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="./app-api-security.js?v=20260923-session-fix-1"></script>
+    <script src="./app-auth-gate.js?v=20260923-load-after-auth-1"></script>
+    <template id="mms-app-scripts">
     <script src="./app-task-local-reset.js?v=20260915-reset-p0837-p0838-1"></script>
     <script src="./app.js?v=20260915-selected-order-identity-1"></script>
     <script src="./app-remove-demo-orders.js?v=20260904-real-order-284-1"></script>
@@ -105,7 +107,6 @@
     <script src="./app-ai-reporting.js?v=20260702-ai-reporting-5"></script>
     <script src="./app-worklog-history-report.js?v=20260810-worklog-history-1"></script>
     <script src="./app-dashboard-payments-ai.js?v=20260703-dashboard-payments-ai-1"></script>
-    <script src="./app-auth-gate.js?v=20260923-session-error-1"></script>
     <script src="./app-role-permissions.js?v=20260810-commerce-order-create-1"></script>
     <script src="./app-delete-clients-orders.js?v=20260810-client-delete-feedback-1"></script>
     <script src="./app-order-delete-fast-guard.js?v=20260729-order-delete-fast-1"></script>
@@ -116,5 +117,6 @@
     <script src="./app-production-task-planner.js?v=20260923-planner-1"></script>
     <script src="./app-order-material-row-picker.js?v=20260915-independent-task-save-1"></script>
     <script src="./app-excel-exports.js?v=20260917-excel-export-1"></script>
+    </template>
   </body>
 </html>
