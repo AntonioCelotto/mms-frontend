@@ -23,7 +23,10 @@
           const script = document.createElement("script");
           script.src = source.src;
           script.onload = resolve;
-          script.onerror = () => reject(new Error("Caricamento del gestionale non riuscito. Ricarica la pagina."));
+          script.onerror = () => {
+            console.error("Modulo del gestionale non caricato:", source.getAttribute("src"));
+            reject(new Error("Caricamento del gestionale non riuscito. Ricarica la pagina."));
+          };
           document.body.appendChild(script);
         });
       }
