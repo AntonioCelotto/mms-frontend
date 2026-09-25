@@ -117,16 +117,30 @@ async function readJsonResponse(response, fallbackMessage) {
 }
 
 async function createOrderDirectly(payload) {
-  const response = await fetch(`${DIRECT_SUPABASE_URL}/rest/v1/rpc/create_order_atomic`, {
+  // This RPC is restricted to the server's service role. The API checks the
+  // signed-in user's permissions before creating the order.
+  const response = await fetch("/api/create-order", {
     method: "POST",
-    headers: {
-      apikey: DIRECT_SUPABASE_ANON_KEY,
-      Authorization: `Bearer ${DIRECT_SUPABASE_ANON_KEY}`,
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify(payload),
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      client: payload.p_client_name,
+      category: payload.p_category,
+      department: payload.p_department_name,
+      priority: payload.p_priority,
+      order_date: payload.p_order_date,
+      estimated_delivery_date: payload.p_estimated_delivery_date,
+      warehouse_linked: payload.p_warehouse_linked,
+      client_visibility_note: payload.p_client_visibility_note,
+      note: payload.p_internal_notes,
+      deposit_status: payload.p_deposit_status,
+      source_quote_number: payload.p_source_quote_number,
+      subtotal: payload.p_subtotal,
+      discount_type: payload.p_discount_type,
+      discount_value: payload.p_discount_value,
+    }),
   });
-  return readJsonResponse(response, "Creazione ordine non riuscita");
+  const result = await readJsonResponse(response, "Creazione ordine non riuscita");
+  return result.order;
 }
 
 async function fetchSupabaseRows(table, params = {}) {
@@ -338,6 +352,13 @@ saveDraftOrder = async function saveDraftOrderConfirmed() {
     createdOrder = created;
     createdOrderId = resolveCreatedOrderDbId(created);
     createdOrderNumber = resolveCreatedOrderNumber(created);
+
+    const convertedQuote = appState.orderFromQuoteDraft?.quote;
+    if (convertedQuote && String(convertedQuote.id) === String(created.source_quote_number)) {
+      convertedQuote.status = "Trasformato in ordine";
+      if (typeof quoteStorageWrite === "function") quoteStorageWrite();
+      if (typeof window.quoteDatabaseSave === "function") await window.quoteDatabaseSave(convertedQuote);
+    }
 
     if (materials.length) {
       const materialResponse = await fetch("/api/save-materials", {

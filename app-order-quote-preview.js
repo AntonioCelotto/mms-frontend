@@ -50,12 +50,10 @@ function removeOrderPreviewFromQuote(quoteId) {
 
 const baseQuoteListConvertToOrderPreview = quoteListConvertToOrder;
 quoteListConvertToOrder = async function quoteListConvertToOrderWithPreview(quoteId) {
-  const quote = quoteListFind(quoteId);
   const result = baseQuoteListConvertToOrderPreview(quoteId);
   if (result && typeof result.then === "function") await result;
-  const converted = quoteListFind(quoteId) || quote;
-  upsertOrderPreviewFromQuote(converted);
-  setFlashMessage(`Preventivo ${quoteId} trasformato: lo trovi in Ordini come ordine da completare.`);
+  removeOrderPreviewFromQuote(quoteId);
+  setFlashMessage(`Preventivo ${quoteId} pronto: completa i dati e premi Salva ordine.`);
   renderApp();
   return result;
 };
