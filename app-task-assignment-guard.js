@@ -259,10 +259,35 @@ async function orderFlowApplyTaskPlan(order) {
   let count = 0;
   for (const plan of selected) {
     const task = tasks.find((item) => String(item.phase || "").toLowerCase() === String(plan.phase || "").toLowerCase());
-    if (!task?.id) continue;
     const rawHours = String(plan.workHours ?? plan.estimatedHours ?? "").trim().replace(",", ".");
     const hours = rawHours === "" ? null : Number(rawHours);
     if (rawHours !== "" && (!Number.isFinite(hours) || hours < 0)) throw new Error(`Ore non valide per ${plan.label || plan.phase}`);
+    // Only a real, explicitly configured phase becomes a task. Creating an
+    // order alone must never populate the calendar with guessed hours/dates.
+    if (!task?.id && !plan.assignedUserId && hours === null && !plan.plannedDate) continue;
+    if (!task?.id) {
+      if (hours === null) throw new Error(`Inserisci le ore di lavoro per ${plan.label || plan.phase}`);
+      const assignee = taskAssignmentAssigneePayload(plan.assignedUserId);
+      const response = await fetch("/api/order-task", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          order_id: Number(order?.db_id || order?.internal_id || order?.id),
+          task_name: `${plan.label || plan.phase} ordine`,
+          task_phase: plan.phase,
+          assigned_user_id: assignee.assigned_user_id,
+          external_supplier_name: assignee.external_supplier_name,
+          estimated_hours: hours,
+          planned_date: taskAssignmentDateTime(plan.plannedDate, plan.plannedTime),
+          due_date: plan.plannedDate || null,
+        }),
+      });
+      const created = await response.json().catch(() => ({}));
+      if (!response.ok || !created.id) throw new Error(created.detail || created.error || `Task ${plan.label || plan.phase} non salvata`);
+      tasks.push({ id: created.id, phase: created.task_phase });
+      count += 1;
+      continue;
+    }
     if (plan.assignedUserId) {
       await taskAssignmentPatchTask(task.id, plan.assignedUserId, plan.plannedDate, plan.plannedTime,
         "Assegnazione impostata durante la creazione ordine", { estimated_hours: hours ?? undefined });

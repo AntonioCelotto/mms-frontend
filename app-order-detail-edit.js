@@ -372,7 +372,14 @@ function orderDetailEditHandleField(target) {
   }
   if (target.matches("[data-order-detail-task-field]")) {
     const row = draft.tasks[Number(target.dataset.orderDetailTaskIndex)];
-    if (row) row[target.dataset.orderDetailTaskField] = target.value;
+    if (row) {
+      const field = target.dataset.orderDetailTaskField;
+      row[field] = target.value;
+      // The date input for the deadline also controls the calendar date.
+      // This capture listener stops the older planner's change handler.
+      if (field === "dueDate") row.time = target.value;
+      if (field === "time") row.dueDate = target.value;
+    }
     return true;
   }
   return false;

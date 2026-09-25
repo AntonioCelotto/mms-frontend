@@ -15,6 +15,26 @@
   }
 })();
 
+// Roberta confirmed that the existing task plans were only trials. Clear
+// their browser copies on each device, while retaining unrelated order edits.
+(function () {
+  const marker = "mms_task_local_reset_20260925_all_trials_1";
+  try {
+    if (localStorage.getItem(marker) === "done") return;
+    const key = "mms_order_detail_edits_v1";
+    const drafts = JSON.parse(localStorage.getItem(key) || "{}");
+    Object.values(drafts).forEach((draft) => {
+      if (draft && Array.isArray(draft.tasks)) draft.tasks = [];
+    });
+    localStorage.setItem(key, JSON.stringify(drafts));
+    localStorage.removeItem("mms_order_task_plan_v1");
+    localStorage.removeItem("mms_calendar_worklog_v1");
+    localStorage.setItem(marker, "done");
+  } catch (error) {
+    console.warn("Pulizia task di prova non disponibile", error);
+  }
+})();
+
 // One-time targeted cleanup for P-0837 (#1118) and P-0838 (#1119).
 // Their stale browser drafts contained the old Materiale/Controllo finale
 // rows even after the database was corrected. Preserve every other order.

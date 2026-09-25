@@ -130,8 +130,15 @@ function orderFlowTaskShape(task) {
     team: `${dept} - ${owner}`,
     hours: `${Number(task.estimated_hours || 0).toFixed(1).replace(".", ",")} h`,
     time: task.planned_date || "Da pianificare",
+    plannedTime: String(task.planned_date || "").match(/^\d{4}-\d{2}-\d{2}[ T](\d{2}:\d{2})/)?.[1] || "",
     state: String(task.status || "").replace(/_/g, " ").replace(/^./, (c) => c.toUpperCase()),
     calendarDay: task.calendar_day_label || "Da pianificare",
+    assignedUserId: task.assigned_user_id ? String(task.assigned_user_id) : "",
+    externalSupplierName: task.external_supplier_name || "",
+    dueDate: task.due_date || "",
+    articleKey: task.article_key || "",
+    articleName: task.article_name || "",
+    sequenceOrder: task.sequence_order || 0,
   };
 }
 

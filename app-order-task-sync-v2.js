@@ -1,4 +1,5 @@
 const TASK_SYNC_LOCAL_PREFIX = "local-task";
+const taskSyncPendingOrders = new Set();
 
 function taskSyncOrder() {
   return typeof getSelectedOrder === "function" ? getSelectedOrder() : null;
@@ -114,7 +115,7 @@ if (typeof orderDetailEditApplyStoredToOrders === "function") {
     databaseTasks.forEach((tasks, orderId) => {
       appData.orderTasks[orderId] = tasks;
       const draft = appState.orderDetailEdits?.[Number(orderId)] || appState.orderDetailEdits?.[orderId];
-      if (draft) {
+      if (draft && !taskSyncPendingOrders.has(String(orderId))) {
         const currentRows = Array.isArray(draft.tasks) ? draft.tasks : [];
         const pendingRows = currentRows.filter((task) =>
           /^local-task-\d+-(extra|manual|nuovo)/.test(String(task?.id || "")));
@@ -253,8 +254,18 @@ if (typeof orderDetailEditSave === "function") {
       return saved;
     };
 
-    persistAssignments()
+    if (orderId) taskSyncPendingOrders.add(String(orderId));
+    const savingTasks = persistAssignments()
       .then((count) => {
+        if (draft && orderId && typeof orderFlowLoadTasks === "function") {
+          // Reopen from the rows confirmed by the database, not the optimistic
+          // values saved in the browser before the request finished.
+          draft.tasks = (appData.orderTasks?.[orderId] || [])
+            .filter((task) => /^\d+$/.test(String(task.id || "")))
+            .map((task, index) => taskSyncDraftFromTask(task, index, orderId))
+            .concat(draft.tasks.filter((task) => String(task.id || "").startsWith(TASK_SYNC_LOCAL_PREFIX)));
+          orderDetailEditWriteStored(orderId, draft);
+        }
         if (!count) return;
         setFlashMessage(`${count} ${count === 1 ? "task aggiornata" : "task aggiornate"} nel database`);
         renderApp();
@@ -262,9 +273,11 @@ if (typeof orderDetailEditSave === "function") {
       .catch((error) => {
         setFlashMessage(`Ordine salvato, ma assegnazione task non riuscita: ${error.message}`);
         renderApp();
+      }).finally(() => {
+        taskSyncPendingOrders.delete(String(orderId));
       });
 
-    return result;
+    return Promise.resolve(result).then(() => savingTasks);
   };
 }
 
