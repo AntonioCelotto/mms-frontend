@@ -39,6 +39,10 @@ function resolveCreatedOrderLabel(created) {
   return String(created.source_quote_number || appState.draftOrder.sourceQuoteNumber || `#${resolveCreatedOrderNumber(created)}`);
 }
 
+function orderCustomerDeliveryFromNotes(notes) {
+  return String(notes || "").match(/(?:^|\n)Consegna cliente:\s*(\d{4}-\d{2}-\d{2})(?:\n|$)/)?.[1] || "";
+}
+
 function upsertCreatedOrderPreview(created, uploadedCount = 0) {
   const displayId = resolveCreatedOrderNumber(created);
   const dbId = resolveCreatedOrderDbId(created);
@@ -68,7 +72,7 @@ function upsertCreatedOrderPreview(created, uploadedCount = 0) {
     files: uploadedCount,
     summary: appState.draftOrder.note || `Ordine ${displayId} per ${client}`,
     notes: appState.draftOrder.note || "Nessuna nota operativa registrata.",
-    customerWindow: estimatedDelivery,
+    customerWindow: appState.orderFromQuoteDraft?.customerDelivery || "",
     orderDate,
     estimatedDelivery,
     warehouseLinked: (appState.draftOrder.warehouseLink || "").toLowerCase().includes("magazzino"),
@@ -217,7 +221,7 @@ function shapeDirectOrders({ orders, clients, departments, tasks, payments, atta
       files: countFilesForOrder(attachments, order.id),
       summary: order.internal_notes || `Ordine ${displayId} per ${client?.name || "Cliente"}`,
       notes: order.internal_notes || "Nessuna nota operativa registrata.",
-      customerWindow: eta,
+      customerWindow: orderCustomerDeliveryFromNotes(order.internal_notes),
       orderDate: order.order_date || "Da definire",
       estimatedDelivery: eta,
       warehouseLinked: !!order.warehouse_linked,
