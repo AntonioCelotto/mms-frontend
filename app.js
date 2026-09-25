@@ -1108,8 +1108,8 @@ function renderOrderDetail() {
               <div class="line"><div class="muted">Reparto principale</div><div>${order.department}</div></div>
               <div class="line"><div class="muted">Origine</div><div>${order.route}</div></div>
               <div class="line"><div class="muted">Data ordine</div><div>${order.orderDate}</div></div>
-              <div class="line"><div class="muted">Data consegna stimata</div><div>${order.estimatedDelivery}</div></div>
-              <div class="line"><div class="muted">Finestra cliente</div><div>${order.customerWindow}</div></div>
+              <div class="line"><div class="muted">Data stimata</div><div>${order.estimatedDelivery || "Da definire"}</div></div>
+              <div class="line"><div class="muted">Consegna cliente</div><div>${order.customerWindow || "Da definire"}</div></div>
               <div class="line"><div class="muted">Collegamento magazzino</div><div>${order.warehouseLinked ? "Attivo su magazzino MMS" : "Solo materiali cliente / esterni"}</div></div>
             </div>
           </div>

@@ -242,14 +242,35 @@ async function taskAssignmentPatchTask(taskId, assigneeValue, plannedDate, plann
 }
 
 async function orderFlowApplyTaskPlan(order) {
-  const selected = orderFlowPlan().filter((item) => item.enabled && item.assignedUserId);
+  const selected = orderFlowPlan().filter((item) => item.enabled);
   if (!selected.length) return 0;
   const tasks = await orderFlowLoadTasks(order);
   let count = 0;
   for (const plan of selected) {
     const task = tasks.find((item) => String(item.phase || "").toLowerCase() === String(plan.phase || "").toLowerCase());
     if (!task?.id) continue;
-    await taskAssignmentPatchTask(task.id, plan.assignedUserId, plan.plannedDate, plan.plannedTime, "Assegnazione impostata durante la creazione ordine");
+    const rawHours = String(plan.workHours ?? plan.estimatedHours ?? "").trim().replace(",", ".");
+    const hours = rawHours === "" ? null : Number(rawHours);
+    if (rawHours !== "" && (!Number.isFinite(hours) || hours < 0)) throw new Error(`Ore non valide per ${plan.label || plan.phase}`);
+    if (plan.assignedUserId) {
+      await taskAssignmentPatchTask(task.id, plan.assignedUserId, plan.plannedDate, plan.plannedTime,
+        "Assegnazione impostata durante la creazione ordine", { estimated_hours: hours ?? undefined });
+    } else if (hours !== null || plan.plannedDate) {
+      const response = await fetch("/api/assign-task", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          task_id: Number(task.id),
+          estimated_hours: hours ?? undefined,
+          planned_date: taskAssignmentDateTime(plan.plannedDate, plan.plannedTime),
+          calendar_day_label: plan.plannedDate && typeof getCalendarDayFromDate === "function" ? getCalendarDayFromDate(plan.plannedDate) : null,
+        }),
+      });
+      if (!response.ok) {
+        const error = await response.json().catch(() => ({}));
+        throw new Error(error.detail || error.error || `Ore della task ${plan.label || plan.phase} non salvate`);
+      }
+    } else continue;
     count += 1;
   }
   if (count) await orderFlowLoadTasks(order);

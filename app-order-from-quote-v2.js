@@ -275,22 +275,9 @@ if (baseOrderFlowApplyTaskPlanV2) {
   orderFlowApplyTaskPlan = async function orderFlowApplyTaskPlanWithHours(order) {
     const plan = orderFromQuoteV2EnsureTaskHours();
     plan.forEach((item) => {
-      item.plannedTime = "";
-      item.estimatedHours = item.workHours || item.estimatedHours || "";
+      item.estimatedHours = item.workHours ?? item.estimatedHours ?? "";
     });
-    const assigned = await baseOrderFlowApplyTaskPlanV2(order);
-    const tasks = await orderFlowLoadTasks(order).catch(() => []);
-    for (const item of plan.filter((row) => row.enabled && row.workHours)) {
-      const task = tasks.find((row) => String(row.phase || "").toLowerCase() === item.phase);
-      if (!task?.id) continue;
-      await fetch("/api/assign-task", {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ task_id: task.id, estimated_hours: Number(String(item.workHours).replace(",", ".")) || null, notes: `Ore lavoro stimate: ${item.workHours}` }),
-      }).catch(() => {});
-    }
-    await orderFlowLoadTasks(order).catch(() => []);
-    return assigned;
+    return baseOrderFlowApplyTaskPlanV2(order);
   };
 }
 

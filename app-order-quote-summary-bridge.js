@@ -93,6 +93,17 @@
   function summaryForOrder(order) {
     const orderId = Number(order?.id || appState.selectedOrderId || 0);
     if (!orderId) return null;
+    const payload = order?.sourceQuotePayload || order?.source_quote_payload || {};
+    // The order's database copy is shared by all users. A local summary can
+    // contain incomplete prices from an earlier load, so prefer the source.
+    if (Array.isArray(payload.articles) && payload.articles.length) {
+      return {
+        quoteId: payload.id || order?.sourceQuoteNumber || "",
+        articles: payload.articles.map(normalizeArticle),
+        subtotal: payload.subtotal ?? order?.subtotal,
+        total: payload.total,
+      };
+    }
     if (appState.orderQuoteSummaries?.[orderId]) return appState.orderQuoteSummaries[orderId];
     const stored = readStore()[orderId] || null;
     if (stored) {
@@ -187,6 +198,10 @@
           .join("")
       : "";
     if (!articleRows && !materialRows) return "";
+    const amount = Number(summary?.total);
+    const totalLine = summary?.total != null && summary.total !== "" && Number.isFinite(amount)
+      ? `<div class="order-quote-total"><strong>Totale preventivo (IVA inclusa)</strong><strong>${escapeHtml(new Intl.NumberFormat("it-IT", { style: "currency", currency: "EUR" }).format(amount))}</strong></div>`
+      : "";
     return `
       <div class="order-quote-summary surface order-detail-edit-panel">
         <div class="surface-inner">
@@ -202,6 +217,7 @@
               <tbody>${articleRows || materialRows}</tbody>
             </table>
           </div>
+          ${totalLine}
         </div>
       </div>
     `;

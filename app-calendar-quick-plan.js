@@ -106,6 +106,7 @@
       title: slot.title || task?.name || task?.task_name || "Task ordine",
       phase: slot.phase || task?.phase || task?.task_phase || "Lavorazione",
       assignedUserId: assigneeId(task, slot.owner),
+      originalAssignedUserId: assigneeId(task, slot.owner),
       plannedDate: planned.date,
       plannedTime: planned.time,
       calendarDay: task?.calendarDay || task?.calendar_day_label || slot.day || dayFromDate(planned.date),
@@ -210,11 +211,24 @@
   async function savePlan() {
     const plan = appState.calendarQuickPlan;
     if (!plan || appState.busy) return;
-    if (!plan.taskId || !plan.assignedUserId) {
-      setFlashMessage("Seleziona un dipendente per pianificare la lavorazione");
+    if (!plan.taskId || !plan.plannedDate) {
+      setFlashMessage("Seleziona la data della lavorazione");
+      return;
+    }
+    if (plan.originalAssignedUserId && !plan.assignedUserId) {
+      setFlashMessage("Per togliere un assegnatario usa la scheda ordine; qui puoi cambiare la data lasciandolo selezionato.");
       return;
     }
     const plannedDate = [plan.plannedDate, plan.plannedTime].filter(Boolean).join(" ") || null;
+    const assigneeChanged = String(plan.assignedUserId || "") !== String(plan.originalAssignedUserId || "");
+    const assigned = String(plan.assignedUserId || "");
+    const assigneeFields = assigneeChanged ? (assigned.startsWith("external:")
+      ? { external_supplier_name: decodeURIComponent(assigned.slice(9)) }
+      : { assigned_user_id: Number(assigned) }) : {};
+    if (assigneeChanged && !assigneeFields.external_supplier_name && !assigneeFields.assigned_user_id) {
+      setFlashMessage("Seleziona un dipendente valido");
+      return;
+    }
     appState.busy = true;
     renderApp();
     try {
@@ -223,17 +237,26 @@
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           task_id: Number(plan.taskId),
-          assigned_user_id: Number(plan.assignedUserId),
+          ...assigneeFields,
           planned_date: plannedDate,
-          calendar_day_label: plan.calendarDay || null,
+          calendar_day_label: dayFromDate(plan.plannedDate),
           notes: "Pianificazione aggiornata dal calendario",
         }),
       });
       if (!response.ok) {
         const error = await response.json().catch(() => ({}));
-        throw new Error(error.error || "Pianificazione non riuscita");
+        throw new Error(error.detail || error.error || "Pianificazione non riuscita");
       }
-      await refreshBootstrap();
+      const updated = await response.json().catch(() => ({}));
+      const task = findTask(plan.taskId, plan.orderId);
+      if (task) {
+        task.time = updated.planned_date || plannedDate;
+        task.planned_date = task.time;
+        task.calendarDay = dayFromDate(plan.plannedDate);
+        if (assigneeChanged) task.assignedUserId = updated.assigned_user_id || "";
+      }
+      try { await refreshBootstrap(); } catch (error) { console.warn("Calendario salvato, aggiornamento elenco non riuscito", error); }
+      appState.calendarWeekStart = plan.plannedDate;
       appState.calendarQuickPlan = null;
       setFlashMessage("Pianificazione calendario salvata");
     } catch (error) {

@@ -162,6 +162,7 @@ function orderDetailEditDraftFor(order) {
     // A browser's saved form is not authoritative for an order in the database.
     if (stored && (order?.db_id || order?.internal_id) && order.statusKey) {
       appState.orderDetailEdits[orderId].status = order.status;
+      appState.orderDetailEdits[orderId].customerWindow = order.customerWindow || "";
     }
   }
 
@@ -186,7 +187,7 @@ function orderDetailEditApplyStoredToOrders() {
     order.orderDate = draft.orderDate || order.orderDate;
     order.estimatedDelivery = draft.estimatedDelivery || order.estimatedDelivery;
     order.eta = draft.estimatedDelivery || order.eta;
-    order.customerWindow = draft.customerWindow || order.customerWindow;
+    if (!(order.db_id || order.internal_id)) order.customerWindow = draft.customerWindow || "";
     order.notes = draft.notes || order.notes;
     order.summary = draft.notes || order.summary;
     order.payment = orderDetailEditFormatPayment(draft.payments);
@@ -393,7 +394,7 @@ function orderDetailEditSave() {
     eta: draft.estimatedDelivery || order.eta,
     orderDate: draft.orderDate || order.orderDate,
     estimatedDelivery: draft.estimatedDelivery || order.estimatedDelivery,
-    customerWindow: draft.customerWindow || order.customerWindow,
+    customerWindow: draft.customerWindow || "",
     notes: draft.notes || order.notes,
     summary: draft.notes || order.summary,
   });
