@@ -254,7 +254,11 @@ const baseSaveDraftOrderFlow = saveDraftOrder;
 saveDraftOrder = async function saveDraftOrderWithOrderFlow() {
   const materialsSnapshot = Array.isArray(appState.draftMaterials) ? appState.draftMaterials.map((item) => ({ ...item })) : [];
   await baseSaveDraftOrderFlow();
-  await orderFlowFinalize(getSelectedOrder?.(), materialsSnapshot);
+  const savedOrder = getSelectedOrder?.();
+  const sourceQuote = String(appState.draftOrder?.sourceQuoteNumber || "").trim();
+  if (!["orders", "order-detail"].includes(appState.currentView) ||
+      (sourceQuote && String(savedOrder?.sourceQuoteNumber || savedOrder?.source_quote_number || "") !== sourceQuote)) return;
+  await orderFlowFinalize(savedOrder, materialsSnapshot);
   renderApp();
 };
 
