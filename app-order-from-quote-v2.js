@@ -41,6 +41,7 @@ function orderFromQuoteV2SyncDraft() {
     client: draft.client,
     category: draft.category,
     priority: draft.priority,
+    sourceQuoteNumber: draft.quote?.id || "",
     deposit: orderFromQuoteV2PaymentSummary(draft),
     department: draft.category,
     orderDate: draft.orderDate,
