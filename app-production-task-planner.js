@@ -94,39 +94,26 @@
     row.name = `${phaseLabel(row.phase)} - ${row.articleName || "articolo"}`;
   }, false);
 
-  async function authHeaders() {
-    const session = await window.mmsSupabaseAuth?.auth?.getSession?.();
-    const token = session?.data?.session?.access_token;
-    return token ? { Authorization: `Bearer ${token}` } : {};
-  }
-
   let plannerTimer;
   window.productionPlannerSchedule = function () {
     clearTimeout(plannerTimer);
     plannerTimer = setTimeout(async () => {
       try {
-        const headers = await authHeaders();
-        const previewResponse = await fetch("/api/task-planner", { headers });
-        const preview = await previewResponse.json();
-        if (!previewResponse.ok) throw new Error(preview.detail || preview.error);
-        const lines = (preview.changes || []).slice(0, 12).map((item) => `${item.task_name}: ${item.from || "da pianificare"} → ${item.to}${item.end !== item.to ? ` (fine ${item.end})` : ""}`);
-        const conflicts = (preview.conflicts || []).map((item) => `ATTENZIONE: ${item.task_name} - ${item.message}`);
-        if (!lines.length && !conflicts.length) return;
-        const accepted = window.confirm(`La pianificazione deve essere aggiornata:\n\n${[...lines, ...conflicts].join("\n")}\n\nConfermi lo spostamento?`);
-        if (!accepted || conflicts.length) {
-          if (typeof setFlashMessage === "function") setFlashMessage(conflicts.length ? "Pianificazione non applicata: una o più consegne non sono rispettabili" : "Pianificazione lasciata invariata");
-          return;
-        }
-        const response = await fetch("/api/task-planner", { method: "POST", headers: { "Content-Type": "application/json", ...headers }, body: JSON.stringify({ apply: true }) });
-        const result = await response.json();
-        if (!response.ok) throw new Error(result.detail || result.error);
         if (typeof refreshBootstrap === "function") await refreshBootstrap();
-        if (typeof setFlashMessage === "function") setFlashMessage("Calendario ripianificato rispettando articoli, sequenze e consegne");
       } catch (error) {
-        if (typeof setFlashMessage === "function") setFlashMessage(`Controllo pianificazione non riuscito: ${error.message}`);
+        if (typeof setFlashMessage === "function") setFlashMessage(`Calendario non aggiornato: ${error.message}`);
       }
-    }, 900);
+    }, 500);
   };
+
+  if (typeof orderFlowApplyTaskPlan === "function") {
+    const baseApplyTaskPlan = orderFlowApplyTaskPlan;
+    orderFlowApplyTaskPlan = async function applyAndRefreshTaskPlan(...args) {
+      const count = await baseApplyTaskPlan(...args);
+      if (count) window.productionPlannerSchedule();
+      return count;
+    };
+  }
 
   if (typeof orderDetailEditSave === "function") {
     const baseSave = orderDetailEditSave;
@@ -143,7 +130,9 @@
       ].join("|");
       const needsPlanning = !!draft && JSON.stringify((draft.tasks || []).map(planning)) !== JSON.stringify(existing.map(planning));
       const result = baseSave();
-      if (needsPlanning) window.productionPlannerSchedule();
+      if (needsPlanning) Promise.resolve(result)
+        .then(() => window.productionPlannerSchedule())
+        .catch(() => {});
       return result;
     };
   }
