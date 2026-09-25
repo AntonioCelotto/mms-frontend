@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import json
 import os
+import re
 import socket
 from collections import defaultdict
 from datetime import datetime, timezone
@@ -15,6 +16,11 @@ DEFAULT_SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmF
 SUPABASE_URL = os.environ.get("SUPABASE_URL", DEFAULT_SUPABASE_URL).rstrip("/")
 SUPABASE_KEY = os.environ.get("SUPABASE_SERVICE_ROLE_KEY") or os.environ.get("SUPABASE_ANON_KEY", DEFAULT_SUPABASE_KEY)
 SUPABASE_TIMEOUT_SECONDS = 5
+
+
+def customer_delivery_from_notes(notes):
+    match = re.search(r"(?:^|\n)Consegna cliente:\s*(\d{4}-\d{2}-\d{2})(?:\n|$)", notes or "")
+    return match.group(1) if match else ""
 
 
 def supabase_request(path: str, *, method: str = "GET", query: dict | None = None, payload=None, prefer: str | None = None):
@@ -215,7 +221,7 @@ def build_bootstrap(profile=None):
                 "files": attachment_count[row["id"]],
                 "summary": row.get("internal_notes") or f"Ordine {row.get('order_number')} per {client.get('name', 'Cliente')}",
                 "notes": row.get("internal_notes") or "Nessuna nota operativa registrata.",
-                "customerWindow": row.get("estimated_delivery_date") or "Da confermare",
+                "customerWindow": customer_delivery_from_notes(row.get("internal_notes")),
                 "orderDate": row.get("order_date") or "Da definire",
                 "estimatedDelivery": row.get("estimated_delivery_date") or "Da definire",
                 "warehouseLinked": bool(row.get("warehouse_linked")),
