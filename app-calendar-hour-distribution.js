@@ -6,7 +6,20 @@
     return Object.fromEntries(Object.entries(source || {}).map(([orderId, tasks]) => [
       orderId,
       (Array.isArray(tasks) ? tasks : []).flatMap((task) => {
-        const segments = task.calendarSegments;
+        // An order detail reload replaces task objects, but it does not
+        // replace the bootstrap's independent, server-calculated schedule.
+        const saved = appData.calendarTaskSlots?.[String(task.id)];
+        const matches = saved && (
+          String(saved.time) === String(task.time || task.planned_date) &&
+          String(saved.hours) === String(task.hours) &&
+          String(saved.phase) === String(task.phase || task.task_phase) &&
+          String(saved.assignedUserId) === String(task.assignedUserId || task.assigned_user_id || "") &&
+          String(saved.dueDate) === String(task.dueDate || "") &&
+          String(saved.state).toLowerCase() === String(task.state || task.status || "").toLowerCase() &&
+          Number(saved.sequenceOrder || 99) === Number(task.sequenceOrder || 99)
+        );
+        const segments = Array.isArray(task.calendarSegments) && task.calendarSegments.length
+          ? task.calendarSegments : matches ? saved.segments : [];
         if (!Array.isArray(segments) || !segments.length) return [task];
         return segments.map((segment, index) => ({
           ...task,

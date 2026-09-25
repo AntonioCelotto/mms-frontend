@@ -479,6 +479,22 @@ def build_bootstrap(profile=None):
         "alerts": alerts[:8],
         "payments": payments_payload,
         "orderTasks": dict(order_tasks_payload),
+        # Keep the calculated intervals independent from orderTasks: opening
+        # an order reloads those rows from REST and replaces their UI objects.
+        # Only include task IDs left visible after the operator role filter.
+        "calendarTaskSlots": {
+            str(task["id"]): {
+                "segments": task_segments[task["id"]],
+                "time": task.get("planned_date") or "Da pianificare",
+                "hours": f"{float(task.get('estimated_hours') or 0):.1f} h".replace(".", ","),
+                "phase": task.get("task_phase") or "",
+                "assignedUserId": str(task.get("assigned_user_id") or ""),
+                "dueDate": str(task.get("due_date") or ""),
+                "state": (task.get("status") or "").replace("_", " ").title(),
+                "sequenceOrder": task.get("sequence_order") or 99,
+            }
+            for task in order_tasks if task_segments.get(task["id"])
+        },
         "orderTimeline": dict(timeline),
         "orderMaterials": dict(order_materials_payload),
         "clients": clients_payload,
