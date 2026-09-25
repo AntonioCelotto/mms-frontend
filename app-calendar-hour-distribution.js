@@ -113,6 +113,10 @@
     const dailyHours = dailyHoursFor(account);
     const workingDays = workingDaysFor(account);
     const ownerKey = accountKey(task, account);
+    const requestedMinutes = planned.time ? Number(planned.time.slice(0, 2)) * 60 + Number(planned.time.slice(3, 5)) : null;
+    const requestedOffset = requestedMinutes === null ? 0 : Math.max(0,
+      (requestedMinutes <= 12 * 60 ? requestedMinutes - 8 * 60 :
+        requestedMinutes < 13 * 60 ? 4 * 60 : requestedMinutes - 9 * 60) / 60);
     const segments = [];
     let remaining = totalHours;
     let cursor = planned.date;
@@ -122,7 +126,7 @@
       if (isWorkingDay(cursor, workingDays)) {
         const iso = isoDate(cursor);
         const capacityKey = `${ownerKey}:${iso}`;
-        const used = Number(occupancy.get(capacityKey) || 0);
+        const used = Math.max(Number(occupancy.get(capacityKey) || 0), iso === planned.iso && !segments.length ? requestedOffset : 0);
         const available = Math.max(0, dailyHours - used);
         if (available > 0) {
           const hours = Math.min(available, remaining);
