@@ -10,6 +10,11 @@ from urllib.error import HTTPError, URLError
 from urllib.parse import urlencode
 from urllib.request import Request, urlopen
 
+try:
+    from _task_schedule import schedule_task_segments
+except ModuleNotFoundError:
+    from api._task_schedule import schedule_task_segments
+
 
 DEFAULT_SUPABASE_URL = "https://fzdqemzowxjuotqalaol.supabase.co"
 DEFAULT_SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZ6ZHFlbXpvd3hqdW90cWFsYW9sIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzk5Njg3NzYsImV4cCI6MjA5NTU0NDc3Nn0.fmZ9RThFxnaJGQsOYeu_ZjjUNHThlRX87qz9sX4N6Mk"
@@ -161,6 +166,11 @@ def build_bootstrap(profile=None):
     order_materials = fetch_table("order_materials", order="id.asc")
     payments = fetch_table("payments", order="id.desc")
     attachments = fetch_table("attachments", select="id,order_id", order="id.asc")
+
+    # Calculate across every order and every employee before restricting the
+    # operator payload: otherwise an operator's calendar misses predecessors
+    # assigned to colleagues and can show simultaneous work on other orders.
+    task_segments = schedule_task_segments(order_tasks, users)
 
     operator_mode = (profile or {}).get("access_profile") == "operator"
     if operator_mode:
@@ -332,6 +342,7 @@ def build_bootstrap(profile=None):
                 "articleName": task.get("article_name") or "",
                 "dueDate": str(task.get("due_date") or ""),
                 "sequenceOrder": task.get("sequence_order") or 99,
+                "calendarSegments": task_segments.get(task["id"], []),
                 "scheduleWarning": task.get("schedule_warning") or "",
                 "actualHours": task.get("actual_hours") or 0,
             }
