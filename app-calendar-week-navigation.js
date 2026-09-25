@@ -192,7 +192,7 @@
           client: order.client || "Cliente",
           status: task.state || task.status || "Da avviare",
           iso: parsed?.iso || "",
-          time: task.calendarSegmentTimeLabel || (parsed?.time && parsed.time !== "Orario da definire" ? parsed.time : taskWorkHours(task)),
+          time: task.calendarSegmentTimeLabel || (parsed?.time && parsed.time !== "Orario da definire" ? parsed.time : "Orario da definire"),
           day: taskDay(task, parsed),
           unscheduled: !parsed,
         };
