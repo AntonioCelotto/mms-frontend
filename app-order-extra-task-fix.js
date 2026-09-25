@@ -1,17 +1,4 @@
 (function () {
-  const CORE_PHASES = [
-    { phase: "cartamodello", label: "Cartamodello" },
-    { phase: "taglio", label: "Taglio" },
-    { phase: "confezione", label: "Confezione" },
-  ];
-
-  function key(value) {
-    const raw = String(value || "").trim().toLowerCase();
-    if (raw.includes("cartamodello")) return "cartamodello";
-    if (raw.includes("taglio")) return "taglio";
-    if (raw.includes("confezione")) return "confezione";
-    return "";
-  }
 
   function isRealId(value) {
     return /^\d+$/.test(String(value || ""));
@@ -19,54 +6,13 @@
 
   function normalizeTasksWithExtras(tasks) {
     const rows = Array.isArray(tasks) ? tasks : [];
-    // Once tasks are linked to order articles, every article owns its own
-    // Cartamodello -> Taglio -> Confezione chain. Never collapse equal phases
-    // belonging to different articles.
-    if (rows.some((task) => task.articleKey || task.article_key)) {
-      return rows.map((task, index) => ({
-        ...task,
-        name: task.name || task.task_name || "Nuovo task ordine",
-        phase: task.phase || task.task_phase || "altro",
-        state: task.state || task.status || "Da avviare",
-        sortIndex: index,
-      }));
-    }
-    const used = new Set();
-    const coreRows = CORE_PHASES.map((core, index) => {
-      const existingIndex = rows.findIndex((task) => key(task.phase || task.task_phase || task.name || task.task_name) === core.phase);
-      if (existingIndex >= 0) {
-        used.add(existingIndex);
-        const existing = rows[existingIndex];
-        return {
-          ...existing,
-          phase: existing.phase || existing.task_phase || core.phase,
-          name: existing.name || existing.task_name || `${core.label} ordine`,
-        };
-      }
-      return {
-        id: "",
-        name: `${core.label} ordine`,
-        phase: core.phase,
-        team: "Da assegnare",
-        hours: "0,0 h",
-        time: "Da pianificare",
-        state: "Da avviare",
-        localOnly: true,
-        sortIndex: index,
-      };
-    });
-
-    const extraRows = rows
-      .filter((task, index) => !used.has(index) && !key(task.phase || task.task_phase || task.name || task.task_name))
-      .map((task, index) => ({
-        ...task,
-        name: task.name || task.task_name || "Nuovo task ordine",
-        phase: task.phase || task.task_phase || "altro",
-        state: task.state || task.status || "Da avviare",
-        sortIndex: 100 + index,
-      }));
-
-    return [...coreRows, ...extraRows];
+    return rows.map((task, index) => ({
+      ...task,
+      name: task.name || task.task_name || "Nuovo task ordine",
+      phase: task.phase || task.task_phase || "altro",
+      state: task.state || task.status || "Da avviare",
+      sortIndex: index,
+    }));
   }
 
   if (typeof orderCoreTaskNormalizeTasks === "function") {
@@ -75,6 +21,10 @@
 
   async function saveTaskToDatabase(orderId, task) {
     const validDate = (value) => /^\d{4}-\d{2}-\d{2}(?:$|[T ])/.test(String(value || "")) ? value : null;
+    const hours = Number(String(task.hours ?? task.estimated_hours ?? "").replace(/\s*h\s*$/i, "").replace(",", "."));
+    if (!Number.isFinite(hours) || hours < 0 || String(task.hours ?? task.estimated_hours ?? "").trim() === "") {
+      throw new Error(`Inserisci le ore di lavoro per ${task.name || "la nuova task"}`);
+    }
     const response = await fetch("/api/order-task", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -84,8 +34,8 @@
         task_phase: task.phase || task.task_phase || "altro",
         assigned_user_id: task.assignedUserId || task.assigned_user_id || null,
         external_supplier_name: task.externalSupplierName || task.external_supplier_name || null,
-        planned_date: validDate(task.time) || validDate(task.planned_date),
-        estimated_hours: task.hours || task.estimated_hours || null,
+        planned_date: validDate(task.time) ? [String(task.time).slice(0, 10), task.plannedTime].filter(Boolean).join(" ") : validDate(task.planned_date),
+        estimated_hours: hours,
         status: task.state || task.status || "Da avviare",
         article_key: task.articleKey || task.article_key || null,
         article_name: task.articleName || task.article_name || null,
@@ -94,6 +44,7 @@
     });
     const payload = await response.json().catch(() => ({}));
     if (!response.ok) throw new Error(payload.detail || payload.error || "Task non salvato");
+    if (!payload.id) throw new Error("La nuova task non è stata confermata dal database");
     return payload;
   }
 
@@ -103,13 +54,14 @@
     draftTask.localOnly = false;
     draftTask.name = created.task_name || draftTask.name;
     draftTask.phase = created.task_phase || draftTask.phase;
-    draftTask.time = created.planned_date || draftTask.time || "";
+    draftTask.time = String(created.planned_date || draftTask.time || "").slice(0, 10);
+    draftTask.plannedTime = String(created.planned_date || "").match(/^\d{4}-\d{2}-\d{2}[ T](\d{2}:\d{2})/)?.[1] || draftTask.plannedTime || "";
     draftTask.hours = created.estimated_hours ?? draftTask.hours;
     draftTask.state = String(created.status || draftTask.state || "da_avviare").replace(/_/g, " ").replace(/\b\w/g, (letter) => letter.toUpperCase());
     if (!appData.orderTasks || typeof appData.orderTasks !== "object") appData.orderTasks = {};
     appData.orderTasks[orderId] = normalizeTasksWithExtras(appData.orderTasks[orderId] || []);
     const match = appData.orderTasks[orderId].find((task) => !isRealId(task.id) && (task.name || "") === (draftTask.name || ""));
-    if (match) Object.assign(match, draftTask, { id: created.id, localOnly: false });
+    if (match) Object.assign(match, draftTask, { id: created.id, time: created.planned_date || draftTask.time, localOnly: false });
   }
 
   let activeSaveKey = "";
@@ -120,7 +72,10 @@
     const orderId = Number(order?.id || appState.selectedOrderId || 0);
     const orderDbId = Number(order?.db_id || order?.internal_id || orderId || 0);
     const draft = typeof orderDetailEditDraftFor === "function" ? orderDetailEditDraftFor(order) : null;
-    const pending = (draft?.tasks || []).filter((task) => !isRealId(task.id));
+    const pending = (draft?.tasks || []).filter((task) =>
+      String(task.id || "").startsWith(`local-task-${orderId}-extra-`) ||
+      String(task.id || "").startsWith(`local-task-${orderId}-manual-`) ||
+      String(task.id || "").startsWith(`local-task-${orderId}-nuovo`));
     return { order, orderId, orderDbId, draft, pending };
   }
 

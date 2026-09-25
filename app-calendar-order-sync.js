@@ -46,31 +46,8 @@ function calendarOrderSyncTaskId(orderId, task, index) {
 
 function calendarOrderSyncEnsureOrderTasks() {
   if (!appData.orderTasks || typeof appData.orderTasks !== "object") appData.orderTasks = {};
-  const knownOrders = new Set((appData.orders || []).map((order) => String(order.id)));
-  (appData.calendar || []).forEach((day) => {
-    (day.slots || []).forEach((slot) => {
-      const orderId = String(slot.orderId || "");
-      if (!orderId || !knownOrders.has(orderId)) return;
-      if (!Array.isArray(appData.orderTasks[orderId])) appData.orderTasks[orderId] = [];
-      const exists = appData.orderTasks[orderId].some((task) => {
-        const samePhase = String(task.phase || "").toLowerCase() === String(slot.phase || "").toLowerCase();
-        const sameName = String(task.name || "").toLowerCase() === String(slot.title || "").toLowerCase();
-        return samePhase && sameName;
-      });
-      if (exists) return;
-      appData.orderTasks[orderId].push({
-        id: "",
-        name: slot.title || slot.phase || "Task ordine",
-        phase: slot.phase || "Lavorazione",
-        team: slot.owner || "Non assegnato",
-        hours: slot.hours || "0,0 h",
-        time: slot.isoDate ? `${slot.isoDate} ${slot.time || ""}`.trim() : day.date || slot.time || "Da pianificare",
-        state: slot.status ? String(slot.status).replace(/_/g, " ").replace(/^./, (c) => c.toUpperCase()) : "Da avviare",
-        calendarDay: day.day || slot.day || "Da pianificare",
-        localOnly: true,
-      });
-    });
-  });
+  // Calendar slots are a view of saved tasks, never a source of new tasks.
+  // The old reverse sync recreated deleted and demonstration tasks locally.
 }
 
 function calendarOrderSyncBuildCalendarFromTasks() {
@@ -78,6 +55,8 @@ function calendarOrderSyncBuildCalendarFromTasks() {
   const slots = [];
   Object.entries(appData.orderTasks).forEach(([orderId, tasks]) => {
     (Array.isArray(tasks) ? tasks : []).forEach((task, index) => {
+      if (!/^\d+$/.test(String(task?.id || "")) ||
+          !(task.assignedUserId || task.assigned_user_id || task.externalSupplierName || task.external_supplier_name)) return;
       const parts = calendarOrderSyncTaskDate(task);
       if (!parts) return;
       slots.push({
@@ -98,7 +77,6 @@ function calendarOrderSyncBuildCalendarFromTasks() {
       });
     });
   });
-  if (!slots.length) return false;
   const grouped = new Map();
   slots.forEach((slot) => {
     if (!grouped.has(slot.isoDate)) grouped.set(slot.isoDate, { day: slot.day, date: slot.date, slots: [] });
@@ -110,13 +88,15 @@ function calendarOrderSyncBuildCalendarFromTasks() {
       ...group,
       slots: group.slots.sort((a, b) => a.sortKey.localeCompare(b.sortKey)),
     }));
-  return true;
+  return Boolean(slots.length);
 }
 
 function calendarOrderSyncEmployees() {
   const fromCalendar = (appData.calendar || []).flatMap((day) => (day.slots || []).map((slot) => slot.owner).filter(Boolean));
   const fromTasks = Object.values(appData.orderTasks || {}).flatMap((tasks) =>
-    (Array.isArray(tasks) ? tasks : []).map(calendarOrderSyncTaskOwner).filter(Boolean)
+    (Array.isArray(tasks) ? tasks : []).filter((task) => /^\d+$/.test(String(task.id || "")) &&
+      (task.assignedUserId || task.assigned_user_id || task.externalSupplierName || task.external_supplier_name))
+      .map(calendarOrderSyncTaskOwner).filter(Boolean)
   );
   return ["all", ...new Set([...fromCalendar, ...fromTasks])];
 }

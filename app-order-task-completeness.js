@@ -87,6 +87,9 @@ function orderTaskCompletenessTaskFromPlan(item) {
 function orderTaskCompletenessMerge(order, preferredPlan = null) {
   const orderId = Number(order?.id || appState.selectedOrderId);
   if (!orderId) return false;
+  // Persisted orders get their tasks only from the database. A saved browser
+  // plan must not resurrect tasks absent from an order (including completed ones).
+  if (order?.db_id || order?.internal_id) return false;
   if (!appData.orderTasks || typeof appData.orderTasks !== "object") appData.orderTasks = {};
 
   const current = Array.isArray(appData.orderTasks[orderId]) ? appData.orderTasks[orderId] : [];
