@@ -93,18 +93,11 @@ function taskSyncDraft(order = taskSyncOrder(), draft = null) {
   const currentDraft = draft || appState.orderDetailEdits?.[orderId];
   if (!currentDraft) return draft;
   if (!Array.isArray(currentDraft.tasks)) currentDraft.tasks = [];
-  const byKey = new Map(currentDraft.tasks.map((task) => [taskSyncKey(task), task]));
+  const byId = new Set(currentDraft.tasks.map((task) => String(task.id || "")));
   taskSyncEnsureOrderTasks(order).forEach((task, index) => {
-    const key = taskSyncKey(task);
-    const existing = key ? byKey.get(key) : null;
-    if (existing) {
-      if (Number(task.id) > 0) {
-        existing.id = task.id;
-        existing.localOnly = false;
-      }
-      return;
-    }
-    if (key) currentDraft.tasks.push(taskSyncDraftFromTask(task, index, orderId));
+    if (!/^\d+$/.test(String(task.id || "")) || byId.has(String(task.id))) return;
+    currentDraft.tasks.push(taskSyncDraftFromTask(task, index, orderId));
+    byId.add(String(task.id));
   });
   return currentDraft;
 }
@@ -112,31 +105,20 @@ function taskSyncDraft(order = taskSyncOrder(), draft = null) {
 if (typeof orderDetailEditApplyStoredToOrders === "function") {
   const baseApply = orderDetailEditApplyStoredToOrders;
   orderDetailEditApplyStoredToOrders = function taskSyncApplyStored() {
-    const databaseTasks = new Map(
-      Object.entries(appData.orderTasks || {}).map(([orderId, tasks]) => [
-        String(orderId),
-        Array.isArray(tasks) ? tasks.map((task) => ({ ...task })) : [],
-      ])
-    );
+    const databaseTasks = new Map((appData.orders || [])
+      .filter((order) => order.db_id || order.internal_id)
+      .map((order) => [String(order.id), (appData.orderTasks?.[order.id] || [])
+        .filter((task) => /^\d+$/.test(String(task.id || "")))
+        .map((task) => ({ ...task }))]));
     baseApply();
     databaseTasks.forEach((tasks, orderId) => {
       appData.orderTasks[orderId] = tasks;
       const draft = appState.orderDetailEdits?.[Number(orderId)] || appState.orderDetailEdits?.[orderId];
       if (draft) {
         const currentRows = Array.isArray(draft.tasks) ? draft.tasks : [];
-        const currentById = new Map(
-          currentRows
-            .filter((task) => /^\d+$/.test(String(task?.id || "")))
-            .map((task) => [String(task.id), task])
-        );
-        const pendingRows = currentRows.filter((task) => !/^\d+$/.test(String(task?.id || "")));
-        const databaseRows = tasks.map((task, index) => {
-          const fresh = taskSyncDraftFromTask(task, index, Number(orderId));
-          const edited = currentById.get(String(fresh.id));
-          // Preserve fields currently being edited. The database remains the
-          // source for identity, while the open form owns unsaved values.
-          return edited ? { ...fresh, ...edited, id: fresh.id, localOnly: false } : fresh;
-        });
+        const pendingRows = currentRows.filter((task) =>
+          /^local-task-\d+-(extra|manual|nuovo)/.test(String(task?.id || "")));
+        const databaseRows = tasks.map((task, index) => taskSyncDraftFromTask(task, index, Number(orderId)));
         // Never discard a row created with + Task just because it has not
         // reached the database yet. It belongs only to this order's draft.
         draft.tasks = [...databaseRows, ...pendingRows];
@@ -148,7 +130,15 @@ if (typeof orderDetailEditApplyStoredToOrders === "function") {
 if (typeof orderDetailEditDraftFor === "function") {
   const baseDraftFor = orderDetailEditDraftFor;
   orderDetailEditDraftFor = function taskSyncDraftFor(order) {
-    return taskSyncDraft(order, baseDraftFor(order));
+    const orderId = taskSyncOrderId(order);
+    const alreadyOpen = !!appState.orderDetailEdits?.[orderId];
+    const draft = baseDraftFor(order);
+    if (draft && !alreadyOpen && (order?.db_id || order?.internal_id)) {
+      draft.tasks = (appData.orderTasks?.[orderId] || [])
+        .filter((task) => /^\d+$/.test(String(task.id || "")))
+        .map((task, index) => taskSyncDraftFromTask(task, index, orderId));
+    }
+    return taskSyncDraft(order, draft);
   };
 }
 
@@ -231,7 +221,7 @@ if (typeof orderDetailEditSave === "function") {
           {
             task_name: task.name,
             task_phase: task.phase,
-            estimated_hours: task.hours,
+            estimated_hours: Number(String(task.hours || "").replace(/\s*h\s*$/i, "").replace(",", ".")),
             status: task.state,
             article_key: task.articleKey || null,
             article_name: task.articleName || null,
