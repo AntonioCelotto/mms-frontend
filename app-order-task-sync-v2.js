@@ -47,6 +47,7 @@ function taskSyncDraftFromTask(task, index, orderId) {
     team: task.team || taskSyncAssigneeLabel(assignedUserId),
     hours: String(task.hours || task.estimated_hours || "").replace(" h", "").replace(",", "."),
     time: String(task.time || task.planned_date || "").match(/^\d{4}-\d{2}-\d{2}/)?.[0] || "",
+    plannedTime: String(task.time || task.planned_date || "").match(/^\d{4}-\d{2}-\d{2}[ T](\d{2}:\d{2})/)?.[1] || "",
     state: task.state || task.status || "Da avviare",
     articleKey: task.articleKey || task.article_key || "",
     articleName: task.articleName || task.article_name || "",
@@ -65,6 +66,7 @@ function taskSyncTaskFromDraft(task, index, orderId) {
     team: taskSyncAssigneeLabel(assignedUserId),
     hours: hours ? `${hours.replace(".", ",")} h` : "0,0 h",
     time: task.time || "Da pianificare",
+    plannedTime: task.plannedTime || "",
     state: task.state || "Da avviare",
     assignedUserId,
     externalSupplierName: String(assignedUserId).startsWith("external:") ? decodeURIComponent(String(assignedUserId).slice(9)) : "",
@@ -205,8 +207,11 @@ if (typeof orderDetailEditSave === "function") {
       return ({ da_confermare: "in_attesa", stand_by: "in_attesa" })[key] || key;
     };
     const validDate = (value) => /^\d{4}-\d{2}-\d{2}(?:$|[T ])/.test(String(value || "")) ? value : null;
-    const changedFields = (task, previous) => ["name", "phase", "assignedUserId", "time", "hours", "articleKey", "articleName", "dueDate"]
+    const changedFields = (task, previous) => ["name", "phase", "assignedUserId", "time", "plannedTime", "hours", "articleKey", "articleName", "dueDate"]
       .some((field) => String(task[field] || "") !== String(previous[field] || ""));
+    const plannedDateTime = (task) => validDate(task.time)
+      ? [String(task.time).slice(0, 10), task.plannedTime].filter(Boolean).join(" ")
+      : null;
 
     const persistAssignments = async () => {
       let saved = 0;
@@ -221,7 +226,7 @@ if (typeof orderDetailEditSave === "function") {
           Number(task.id),
           task.assignedUserId,
           task.time,
-          "",
+          task.plannedTime,
           "Assegnazione aggiornata dalla scheda ordine",
           {
             task_name: task.name,
@@ -239,7 +244,7 @@ if (typeof orderDetailEditSave === "function") {
           const payload = detailsChanged ? {
             task_name: task.name,
             task_phase: task.phase,
-            planned_date: validDate(task.time),
+            planned_date: plannedDateTime(task),
             due_date: validDate(task.dueDate) || validDate(task.time),
             estimated_hours: Number(String(task.hours || "").replace(" h", "").replace(",", ".")) || 0,
             article_key: task.articleKey || null,
