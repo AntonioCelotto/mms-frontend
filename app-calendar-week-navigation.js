@@ -146,7 +146,9 @@
   function taskRows() {
     if (typeof calendarOrderSyncEnsureOrderTasks === "function") calendarOrderSyncEnsureOrderTasks();
     return Object.entries(appData.orderTasks || {}).flatMap(([orderId, tasks]) =>
-      (Array.isArray(tasks) ? tasks : []).map((task, index) => {
+      (Array.isArray(tasks) ? tasks : []).filter((task) => /^\d+$/.test(String(task?.id || "")) &&
+        (task.assignedUserId || task.assigned_user_id || task.externalSupplierName || task.external_supplier_name))
+        .map((task, index) => {
         const parsed = taskDate(task);
         const order = (appData.orders || []).find((item) => Number(item.id) === Number(orderId)) || {};
         const owner = taskOwner(task);
