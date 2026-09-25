@@ -190,6 +190,9 @@ async function taskAssignmentPatchTask(taskId, assigneeValue, plannedDate, plann
   const assignee = taskAssignmentAssigneePayload(assigneeValue);
   if (!taskId || (!assignee.assigned_user_id && !assignee.external_supplier_name)) throw new Error("Dipendente non valido");
   const planned = taskAssignmentDateTime(plannedDate, plannedTime);
+  const rawHours = String(extra.estimated_hours ?? "").trim().replace(/\s*h\s*$/i, "").replace(",", ".");
+  const estimatedHours = rawHours === "" ? undefined : Number(rawHours);
+  if (rawHours !== "" && (!Number.isFinite(estimatedHours) || estimatedHours < 0)) throw new Error("Ore di lavoro non valide");
   const calendarDay = typeof getCalendarDayFromDate === "function" ? getCalendarDayFromDate(plannedDate) : null;
   const payload = {
     task_id: Number(taskId),
@@ -200,7 +203,7 @@ async function taskAssignmentPatchTask(taskId, assigneeValue, plannedDate, plann
     notes: notes || "Assegnazione task",
     task_name: extra.task_name || undefined,
     task_phase: extra.task_phase || undefined,
-    estimated_hours: extra.estimated_hours ?? undefined,
+    estimated_hours: estimatedHours,
     status: extra.status || undefined,
     article_key: extra.article_key || undefined,
     article_name: extra.article_name || undefined,
@@ -208,15 +211,23 @@ async function taskAssignmentPatchTask(taskId, assigneeValue, plannedDate, plann
     sequence_order: extra.sequence_order || undefined,
   };
 
+  let response;
   try {
-    const response = await fetch("/api/assign-task", {
+    response = await fetch("/api/assign-task", {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(payload),
     });
-    if (response.ok) return true;
   } catch (error) {
     console.warn("API assegnazione non disponibile, uso Supabase diretto", error);
+  }
+  if (response) {
+    const updated = await response.json().catch(() => ({}));
+    if (!response.ok) throw new Error(updated.detail || updated.error || "Task non aggiornata");
+    if (estimatedHours !== undefined && Number(updated.estimated_hours) !== estimatedHours) {
+      throw new Error("Le ore della task non risultano salvate");
+    }
+    return true;
   }
 
   await orderFlowRequest(`/rest/v1/order_tasks?id=eq.${Number(taskId)}`, {
