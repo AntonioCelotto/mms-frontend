@@ -245,6 +245,18 @@
     return /^\d{4}-\d{2}-\d{2}$/.test(candidate) ? candidate : null;
   }
 
+  function customerDeliveryFromNotes(notes) {
+    return text(notes).match(/(?:^|\n)Consegna cliente:\s*(\d{4}-\d{2}-\d{2})(?:\n|$)/)?.[1] || "";
+  }
+
+  function notesWithCustomerDelivery(notes, date) {
+    const plain = String(notes || "")
+      .split("\n")
+      .filter((line) => !/^Consegna cliente:\s*\d{4}-\d{2}-\d{2}\s*$/.test(line.trim()))
+      .join("\n").trim();
+    return [plain, date ? `Consegna cliente: ${date}` : ""].filter(Boolean).join("\n");
+  }
+
   function priorityKey(value) {
     return text(value).toLowerCase() === "express" ? "express" : "standard";
   }
@@ -270,6 +282,7 @@
       order.productionStartedAt = row.production_started_at || "";
       order.completedAt = row.completed_at || "";
       order.actualDeliveryDate = row.actual_delivery_date || "";
+      order.customerWindow = customerDeliveryFromNotes(row.internal_notes);
 
       const draft = typeof orderDetailEditDraftFor === "function" ? orderDetailEditDraftFor(order) : null;
       if (draft) {
@@ -278,6 +291,7 @@
         draft.category = order.category;
         draft.priority = order.priority;
         draft.notes = order.notes;
+        draft.customerWindow = order.customerWindow;
         draft.status = order.status;
         if (typeof orderDetailEditWriteStored === "function") {
           orderDetailEditWriteStored(Number(order.id), draft);
@@ -316,7 +330,7 @@
           estimated_delivery_date: cleanDate(draft.estimatedDelivery),
           category: text(draft.category) || text(order.category) || "Da definire",
           priority: priorityKey(draft.priority),
-          internal_notes: text(draft.notes) || null,
+          internal_notes: notesWithCustomerDelivery(draft.notes, cleanDate(draft.customerWindow)) || null,
         }),
       }
     );
@@ -325,11 +339,14 @@
     order.orderDate = row.order_date || "";
     order.estimatedDelivery = row.estimated_delivery_date || "";
     order.eta = row.estimated_delivery_date || "Da definire";
+    order.customerWindow = customerDeliveryFromNotes(row.internal_notes);
     order.category = row.category || order.category;
     order.priority = text(row.priority).toLowerCase() === "express" ? "Express" : "Standard";
     order.notes = row.internal_notes || "";
     draft.orderDate = order.orderDate;
     draft.estimatedDelivery = order.estimatedDelivery;
+    draft.customerWindow = order.customerWindow;
+    draft.notes = order.notes = row.internal_notes || "";
     if (typeof orderDetailEditWriteStored === "function") {
       orderDetailEditWriteStored(Number(order.id), draft);
     }
