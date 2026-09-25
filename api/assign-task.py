@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import math
 from http import HTTPStatus
 from http.server import BaseHTTPRequestHandler
 
@@ -11,10 +12,10 @@ def parse_optional_hours(value):
     if value in (None, ""):
         return None
     try:
-        parsed = float(str(value).replace(",", "."))
+        parsed = float(str(value).replace(",", ".").removesuffix(" h").strip())
     except (TypeError, ValueError):
         return None
-    return parsed if parsed >= 0 else None
+    return parsed if math.isfinite(parsed) and parsed >= 0 else None
 
 
 def normalize_phase(value):
@@ -50,6 +51,8 @@ class handler(BaseHTTPRequestHandler):
         assigned_user_id = parse_optional_positive_int(payload.get("assigned_user_id"))
         external_supplier_name = clean_text(payload.get("external_supplier_name")) or None
         estimated_hours = parse_optional_hours(payload.get("estimated_hours"))
+        if "estimated_hours" in payload and payload.get("estimated_hours") not in (None, "") and estimated_hours is None:
+            return write_json(self, {"error": "Ore di lavoro non valide"}, HTTPStatus.BAD_REQUEST)
         task_name = clean_text(payload.get("task_name")) or None
         task_phase = normalize_phase(payload.get("task_phase"))
         status = normalize_status(payload.get("status"))
