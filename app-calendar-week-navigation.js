@@ -143,6 +143,26 @@
     return `Ore lavoro: ${raw.replace(".", ",")} h`;
   }
 
+  // Sort only the visible cards. Scheduling, assigned dates and task records
+  // retain their existing values and order in the database.
+  function phasePriority(phase) {
+    const value = normalize(phase).replace(/[_-]+/g, " ");
+    if (value.includes("cartamodello")) return 0;
+    if (value.includes("taglio")) return 1;
+    if (value.includes("confezione")) return 2;
+    if (value.includes("controllo")) return 3;
+    return 4;
+  }
+
+  function compareDailyTasks(a, b) {
+    const phase = phasePriority(a.phase) - phasePriority(b.phase);
+    if (phase) return phase;
+    const time = (text(a.time).match(/^\d{2}:\d{2}/)?.[0] || "99:99")
+      .localeCompare(text(b.time).match(/^\d{2}:\d{2}/)?.[0] || "99:99");
+    if (time) return time;
+    return `${a.orderId}:${a.taskId}`.localeCompare(`${b.orderId}:${b.taskId}`);
+  }
+
   function taskRows() {
     if (typeof calendarOrderSyncEnsureOrderTasks === "function") calendarOrderSyncEnsureOrderTasks();
     return Object.entries(appData.orderTasks || {}).flatMap(([orderId, tasks]) =>
@@ -247,7 +267,7 @@
     const phaseOptions = optionsFromRows(rows, "phase", ["Cartamodello", "Taglio", "Confezione"]);
     const byDay = new Map(DAYS.map((day) => [day, []]));
     visibleRows.forEach((row) => byDay.get(row.day)?.push(row));
-    byDay.forEach((items) => items.sort((a, b) => `${a.time} ${a.orderId}`.localeCompare(`${b.time} ${b.orderId}`)));
+    byDay.forEach((items) => items.sort(compareDailyTasks));
     const worklog = typeof calendarWorklogPanel === "function" ? calendarWorklogPanel() : "";
 
     return `
