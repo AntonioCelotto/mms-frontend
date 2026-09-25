@@ -307,7 +307,13 @@
           return;
         }
       }
-      const assignedTasks = typeof orderFlowApplyTaskPlan === "function" ? await orderFlowApplyTaskPlan(order).catch(() => 0) : 0;
+      let assignedTasks = 0;
+      try {
+        assignedTasks = typeof orderFlowApplyTaskPlan === "function" ? await orderFlowApplyTaskPlan(order) : 0;
+      } catch (error) {
+        setFlashMessage(`Ordine salvato, ma ore o date delle task non aggiornate: ${error.message}`);
+        return;
+      }
       if (typeof orderFlowLoadAttachments === "function") await orderFlowLoadAttachments(order).catch(() => {});
       setFlashMessage(`Ordine completato: ${savedMaterials} elementi collegati al Magazzino, ${assignedTasks} task assegnati`);
     };
