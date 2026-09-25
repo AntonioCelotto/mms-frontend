@@ -308,7 +308,6 @@ const baseQuoteListConvertToOrderFromQuote = quoteListConvertToOrder;
 quoteListConvertToOrder = async function quoteListConvertToOperationalOrder(quoteId) {
   const quote = quoteListFind(quoteId);
   if (!quote) return baseQuoteListConvertToOrderFromQuote(quoteId);
-  quote.status = "Trasformato in ordine";
   const photos = Array.isArray(quote.photos) ? quote.photos : [];
   const attachments = await Promise.all(photos.map(orderFromQuotePhotoAttachment));
   appState.draftOrderAttachments = attachments;
