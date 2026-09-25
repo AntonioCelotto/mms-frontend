@@ -147,7 +147,24 @@ async function orderFlowLoadTasks(order) {
   const dbId = orderFlowDbId(order);
   if (!displayId || !dbId) return [];
   const rows = await orderFlowRequest(`/rest/v1/order_tasks?select=*,departments(name),users(first_name,last_name)&order_id=eq.${dbId}&order=id.asc`);
-  const tasks = (Array.isArray(rows) ? rows : []).map(orderFlowTaskShape);
+  const previous = new Map((appData.orderTasks?.[displayId] || []).map((task) => [String(task.id), task]));
+  const scheduleInputs = (task) => [
+    task.time, task.hours, task.phase, String(task.assignedUserId || task.assigned_user_id || ""),
+    task.externalSupplierName || "", task.dueDate || "",
+    String(task.state || "").toLowerCase(), task.sequenceOrder || 99,
+  ];
+  const tasks = (Array.isArray(rows) ? rows : []).map((row) => {
+    const task = orderFlowTaskShape(row);
+    const prior = previous.get(String(task.id));
+    // The order detail reload must not discard slots computed across every
+    // order and operator by /api/bootstrap. A changed task waits for a fresh
+    // bootstrap instead of displaying slots based on obsolete work hours.
+    if (Array.isArray(prior?.calendarSegments) &&
+        JSON.stringify(scheduleInputs(prior)) === JSON.stringify(scheduleInputs(task))) {
+      task.calendarSegments = prior.calendarSegments;
+    }
+    return task;
+  });
   if (!appData.orderTasks || typeof appData.orderTasks !== "object") appData.orderTasks = {};
   appData.orderTasks[displayId] = tasks;
   return tasks;
