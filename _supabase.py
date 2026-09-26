@@ -9,6 +9,11 @@ from urllib.error import HTTPError, URLError
 from urllib.parse import urlencode
 from urllib.request import Request, urlopen
 
+try:
+    from _task_schedule import schedule_task_segments
+except ModuleNotFoundError:
+    from api._task_schedule import schedule_task_segments
+
 
 DEFAULT_SUPABASE_URL = "https://fzdqemzowxjuotqalaol.supabase.co"
 DEFAULT_SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZ6ZHFlbXpvd3hqdW90cWFsYW9sIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzk5Njg3NzYsImV4cCI6MjA5NTU0NDc3Nn0.fmZ9RThFxnaJGQsOYeu_ZjjUNHThlRX87qz9sX4N6Mk"
@@ -155,6 +160,10 @@ def build_bootstrap(profile=None):
     order_materials = fetch_table("order_materials", order="id.asc")
     payments = fetch_table("payments", order="id.desc")
     attachments = fetch_table("attachments", select="id,order_id", order="id.asc")
+
+    # Plan all orders before filtering a single operator's view: later phases
+    # and other orders must reserve the same employees' working hours.
+    task_segments = schedule_task_segments(order_tasks, users)
 
     operator_mode = (profile or {}).get("access_profile") == "operator"
     if operator_mode:
@@ -319,6 +328,7 @@ def build_bootstrap(profile=None):
                 "articleName": task.get("article_name") or "",
                 "dueDate": str(task.get("due_date") or ""),
                 "sequenceOrder": task.get("sequence_order") or 99,
+                "calendarSegments": task_segments.get(task["id"], []),
                 "scheduleWarning": task.get("schedule_warning") or "",
                 "actualHours": task.get("actual_hours") or 0,
             }
@@ -455,6 +465,19 @@ def build_bootstrap(profile=None):
         "alerts": alerts[:8],
         "payments": payments_payload,
         "orderTasks": dict(order_tasks_payload),
+        "calendarTaskSlots": {
+            str(task["id"]): {
+                "segments": task_segments[task["id"]],
+                "time": task.get("planned_date") or "Da pianificare",
+                "hours": f"{float(task.get('estimated_hours') or 0):.1f} h".replace(".", ","),
+                "phase": task.get("task_phase") or "",
+                "assignedUserId": str(task.get("assigned_user_id") or ""),
+                "dueDate": str(task.get("due_date") or ""),
+                "state": (task.get("status") or "").replace("_", " ").title(),
+                "sequenceOrder": task.get("sequence_order") or 99,
+            }
+            for task in order_tasks if task_segments.get(task["id"])
+        },
         "orderTimeline": dict(timeline),
         "orderMaterials": dict(order_materials_payload),
         "clients": clients_payload,
