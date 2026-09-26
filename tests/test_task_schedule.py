@@ -56,6 +56,19 @@ class ScheduleTest(unittest.TestCase):
         self.assertEqual(labels(schedule, 1), ["08:00–09:00"])
         self.assertEqual(labels(schedule, 2), ["08:00–09:00"])
 
+    def test_standalone_control_fills_free_slot_before_other_orders_final_phase(self):
+        rows = [task(2878, 1149, "confezione", 2, 22),
+                task(2881, 1150, "controllo", .5, 23),
+                task(2880, 1149, "controllo", .5, 23),
+                task(2877, 1149, "cartamodello", .5, 22),
+                task(2879, 1149, "taglio", 1, 22)]
+        schedule = schedule_task_segments(rows, USERS)
+        self.assertEqual(labels(schedule, 2877), ["08:00–08:30"])
+        self.assertEqual(labels(schedule, 2879), ["08:30–09:30"])
+        self.assertEqual(labels(schedule, 2878), ["09:30–11:30"])
+        self.assertEqual(labels(schedule, 2880), ["11:30–12:00"])
+        self.assertEqual(labels(schedule, 2881), ["08:00–08:30"])
+
     def test_full_day_from_eight_skips_lunch_and_new_order_moves_to_monday(self):
         rows = [task(1, 1, "taglio", 8, 22), task(2, 2, "taglio", 1, 22)]
         schedule = schedule_task_segments(rows, USERS)
