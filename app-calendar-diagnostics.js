@@ -1,8 +1,11 @@
 (function () {
   // Only shown to an authenticated administrator who opens the diagnostic URL.
   // Reads the current page and a fresh bootstrap; never saves or edits tasks.
-  if (new URLSearchParams(location.search).get("diagnostica-orari") !== "1" ||
-      String(window.mmsAuthProfile?.access_profile || "").toLowerCase() !== "admin") return;
+  if (new URLSearchParams(location.search).get("diagnostica-orari") !== "1") return;
+
+  function showForProfile(profile) {
+    if (String(profile?.access_profile || "").toLowerCase() !== "admin" ||
+        document.querySelector('[aria-label="Diagnostica orari task"]')) return;
 
   const ids = ["2877", "2879", "2878", "2880", "2881"];
   const panel = document.createElement("aside");
@@ -46,4 +49,11 @@
 
   button.addEventListener("click", inspect);
   inspect();
+  }
+
+  // The authentication gate publishes the verified profile only after all
+  // application modules finish loading. Listen for that event rather than
+  // reading the profile during script evaluation.
+  window.addEventListener("mms-auth-profile", (event) => showForProfile(event.detail?.profile));
+  showForProfile(window.mmsAuthProfile);
 })();
