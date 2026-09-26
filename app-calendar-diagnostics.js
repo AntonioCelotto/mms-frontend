@@ -37,8 +37,13 @@
       const server = await response.json();
       const browser = typeof appData === "object" ? appData : {};
       const version = document.querySelector('script[src*="app-calendar-week-navigation.js"]')?.src.split("?")[1] || "sconosciuta";
-      result.textContent = `Versione calendario: ${version}\n` + ids.map((id) =>
-        `${id} · server: ${label(server, id)}\n       pagina: ${label(browser, id)}`
+      function summary(source) {
+        const tasks = Object.values(source?.orderTasks || {}).flat();
+        const target = tasks.filter((task) => ids.includes(String(task.id)));
+        return `ordini=${source?.orders?.length ?? "?"}, task=${tasks.length}, piano=${Object.keys(source?.calendarTaskSlots || {}).length}, cercate=${target.length}`;
+      }
+      result.textContent = `Versione calendario: ${version}\nServer: ${summary(server)}\nPagina: ${summary(browser)}\n` + ids.map((id) =>
+        `${id} · server: ${label(server, id)}\n       pagina: ${label(browser, id)}\n       task: ${Object.values(server?.orderTasks || {}).flat().find((task) => String(task.id) === id)?.calendarSegments?.map((segment) => segment.label).join(" / ") || "assente"}`
       ).join("\n") + "\n\nPuoi inviare una foto di questo riquadro; non contiene password.";
     } catch (error) {
       result.textContent = `Verifica non riuscita: ${error.message}`;
