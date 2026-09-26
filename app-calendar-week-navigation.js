@@ -168,34 +168,45 @@
     return Object.entries(appData.orderTasks || {}).flatMap(([orderId, tasks]) =>
       (Array.isArray(tasks) ? tasks : []).filter((task) => /^\d+$/.test(String(task?.id || "")) &&
         (task.assignedUserId || task.assigned_user_id || task.externalSupplierName || task.external_supplier_name))
-        .map((task, index) => {
-        const parsed = taskDate(task);
-        const order = (appData.orders || []).find((item) => Number(item.id) === Number(orderId)) || {};
-        const owner = taskOwner(task);
-        const displayOrderNumber =
-          order.sourceQuoteNumber ||
-          order.source_quote_number ||
-          order.quoteNumber ||
-          order.quote_number ||
-          order.orderNumber ||
-          order.order_number ||
-          orderId;
-        return {
-          orderId,
-          displayOrderNumber,
-          assignedUserId: task.assignedUserId || task.assigned_user_id || "",
-          canSee: operatorCanSeeTask(task, owner),
-          taskId: taskId(orderId, task, index),
-          title: displayTaskTitle(task.name || task.task_name || "Task"),
-          phase: task.phase || task.task_phase || "Lavorazione",
-          owner,
-          client: order.client || "Cliente",
-          status: task.state || task.status || "Da avviare",
-          iso: parsed?.iso || "",
-          time: task.calendarSegmentTimeLabel || (parsed?.time && parsed.time !== "Orario da definire" ? parsed.time : "Orario da definire"),
-          day: taskDay(task, parsed),
-          unscheduled: !parsed,
-        };
+        .flatMap((task, index) => {
+        // The saved server schedule is independent of the task objects. Read
+        // it here as well, so a later wrapper or order-detail reload cannot
+        // make the calendar fall back to "Orario da definire".
+        const saved = appData.calendarTaskSlots?.[String(task.id)];
+        const segments = task.calendarDistributed ? null :
+          Array.isArray(saved?.segments) && saved.segments.length ? saved.segments : task.calendarSegments;
+        const dayTasks = Array.isArray(segments) && segments.length
+          ? segments.map((segment) => ({ ...task, time: segment.date, calendarSegmentTimeLabel: segment.label }))
+          : [task];
+        return dayTasks.map((task) => {
+          const parsed = taskDate(task);
+          const order = (appData.orders || []).find((item) => Number(item.id) === Number(orderId)) || {};
+          const owner = taskOwner(task);
+          const displayOrderNumber =
+            order.sourceQuoteNumber ||
+            order.source_quote_number ||
+            order.quoteNumber ||
+            order.quote_number ||
+            order.orderNumber ||
+            order.order_number ||
+            orderId;
+          return {
+            orderId,
+            displayOrderNumber,
+            assignedUserId: task.assignedUserId || task.assigned_user_id || "",
+            canSee: operatorCanSeeTask(task, owner),
+            taskId: taskId(orderId, task, index),
+            title: displayTaskTitle(task.name || task.task_name || "Task"),
+            phase: task.phase || task.task_phase || "Lavorazione",
+            owner,
+            client: order.client || "Cliente",
+            status: task.state || task.status || "Da avviare",
+            iso: parsed?.iso || "",
+            time: task.calendarSegmentTimeLabel || (parsed?.time && parsed.time !== "Orario da definire" ? parsed.time : "Orario da definire"),
+            day: taskDay(task, parsed),
+            unscheduled: !parsed,
+          };
+        });
       })
     );
   }
