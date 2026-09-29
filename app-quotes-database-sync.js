@@ -81,8 +81,8 @@
     return Boolean(quote?.updatedAt) || status !== "bozza";
   }
 
-  async function quoteDatabaseLoad({ rerender = false } = {}) {
-    if (quoteDatabaseLoaded || quoteDatabaseLoading || typeof quoteListEnsureState !== "function") return;
+  async function quoteDatabaseLoad({ rerender = false, force = false } = {}) {
+    if ((!force && quoteDatabaseLoaded) || quoteDatabaseLoading || quoteDatabaseSaving || typeof quoteListEnsureState !== "function") return;
     quoteDatabaseLoading = true;
     try {
       quoteListEnsureState();
@@ -102,6 +102,7 @@
       quoteDatabaseLoaded = true;
     } catch (error) {
       console.warn("Storico preventivi database non caricato", error);
+      if (force) throw error;
     } finally {
       quoteDatabaseLoading = false;
     }
@@ -165,6 +166,7 @@
   }
 
   window.quoteDatabaseLoad = quoteDatabaseLoad;
+  window.quoteDatabaseRefresh = () => quoteDatabaseLoad({ force: true, rerender: appState.currentView === "quotes" });
   window.quoteDatabaseSave = quoteDatabaseSave;
   quoteDatabaseLoad({ rerender: true });
 })();

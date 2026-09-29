@@ -375,6 +375,21 @@ function orderDetailEditHandleField(target) {
     if (row) {
       const field = target.dataset.orderDetailTaskField;
       row[field] = target.value;
+      // This listener runs in capture phase and stops the later planner
+      // listener. Keep the article label on the same row before saving.
+      if (field === "articleKey") {
+        const order = getSelectedOrder();
+        const articles = order?.sourceQuotePayload?.articles || order?.source_quote_payload?.articles || [];
+        const selected = articles.find((article, index) =>
+          String(article?.id || article?.code || `article-${index + 1}`) === target.value);
+        const option = target.selectedOptions?.[0];
+        row.articleName = selected ? (option?.textContent || selected.name || selected.product_name || "").trim() : "";
+      }
+      if (field === "articleKey" || field === "phase") {
+        const phase = String(row.phase || "altro").toLowerCase();
+        row.sequenceOrder = ({ cartamodello: 1, taglio: 2, confezione: 3, controllo: 4 })[phase] || 99;
+        row.name = `${phase.charAt(0).toUpperCase() + phase.slice(1)} - ${row.articleName || "articolo"}`;
+      }
       // The date input for the deadline also controls the calendar date.
       // This capture listener stops the older planner's change handler.
       if (field === "dueDate") row.time = target.value;

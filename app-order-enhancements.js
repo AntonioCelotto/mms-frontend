@@ -263,15 +263,20 @@ function attachmentFileDataUrl(file) {
 }
 
 async function uploadAttachmentFile(orderId, attachment) {
-  if (!attachment.file) return null;
+  // Photos inherited from a quote carry a data URL instead of a File.
+  // Upload that original image to the private order bucket too.
+  const data = attachment.file
+    ? await attachmentFileDataUrl(attachment.file)
+    : String(attachment.dataUrl || attachment.url || attachment.localUrl || "");
+  if (!data.startsWith("data:image/")) return null;
   const response = await fetch("/api/upload-attachment", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
       order_id: orderId,
-      file_name: safeAttachmentFileName(attachment.name || attachment.file.name),
-      file_type: attachment.type || attachment.file.type || "application/octet-stream",
-      data: await attachmentFileDataUrl(attachment.file),
+      file_name: safeAttachmentFileName(attachment.name || attachment.file?.name),
+      file_type: attachment.type || attachment.file?.type || data.slice(5, data.indexOf(";")) || "image/jpeg",
+      data,
     }),
   });
   const payload = await readAttachmentJson(response, "Upload file non riuscito");
@@ -300,14 +305,18 @@ function normalizePersistedAttachment(attachment) {
 async function loadPersistedOrderAttachments(orderId, force = false, stateKey = orderId) {
   ensureOrderAttachmentState();
   if (!orderId || appState.loadingOrderAttachmentIds[stateKey]) return;
-  if (!force && appState.loadedOrderAttachmentIds[stateKey]) return;
+  if (!force && appState.loadedOrderAttachmentIds[stateKey] &&
+      !(appState.orderAttachments[stateKey] || []).some((item) => item.fromQuote && !item.persisted)) return;
 
   appState.loadingOrderAttachmentIds[stateKey] = true;
   try {
     const response = await fetch(`/api/list-attachments?order_id=${encodeURIComponent(orderId)}`);
     if (!response.ok) return;
     const payload = await response.json();
-    appState.orderAttachments[stateKey] = (payload.attachments || []).map(normalizePersistedAttachment);
+    const persisted = (payload.attachments || []).map(normalizePersistedAttachment);
+    const pending = (appState.orderAttachments[stateKey] || []).filter((item) => item.fromQuote && !item.persisted);
+    appState.orderAttachments[stateKey] = [...persisted, ...pending.filter((item) =>
+      !persisted.some((saved) => saved.name === item.name && Number(saved.size) === Number(item.size)))];
     appState.loadedOrderAttachmentIds[stateKey] = true;
     renderApp();
   } finally {
