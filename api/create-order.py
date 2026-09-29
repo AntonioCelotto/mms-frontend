@@ -4,7 +4,7 @@ from http import HTTPStatus
 from http.server import BaseHTTPRequestHandler
 
 from _api import clean_text, normalize_choice, read_json_body, require_access, write_json
-from _supabase import supabase_request
+from _supabase import fetch_table, supabase_request
 
 
 ALLOWED_PRIORITIES = {"standard", "express"}
@@ -27,6 +27,12 @@ class handler(BaseHTTPRequestHandler):
             if not client_name:
                 return write_json(self, {"error": "Campo obbligatorio mancante: client"}, HTTPStatus.BAD_REQUEST)
 
+            source_quote_number = clean_text(payload.get("source_quote_number"))
+            if source_quote_number:
+                existing = fetch_table("orders", select="id,order_number", filters={"source_quote_number": f"eq.{source_quote_number}"}, page_size=1)
+                if existing:
+                    return write_json(self, {"error": "Preventivo gia' trasformato in ordine", "order": existing[0]}, HTTPStatus.CONFLICT)
+
             order = supabase_request(
                 "/rest/v1/rpc/create_order_atomic",
                 method="POST",
@@ -41,7 +47,7 @@ class handler(BaseHTTPRequestHandler):
                     "p_client_visibility_note": clean_text(payload.get("client_visibility_note")) or None,
                     "p_internal_notes": clean_text(payload.get("note")) or None,
                     "p_deposit_status": clean_text(payload.get("deposit_status")) or None,
-                    "p_source_quote_number": clean_text(payload.get("source_quote_number")) or None,
+                    "p_source_quote_number": source_quote_number or None,
                     "p_subtotal": payload.get("subtotal") or 0,
                     "p_discount_type": clean_text(payload.get("discount_type")) or "none",
                     "p_discount_value": payload.get("discount_value") or 0,
@@ -51,6 +57,8 @@ class handler(BaseHTTPRequestHandler):
                 raise RuntimeError("RPC create_order_atomic non ha restituito un ordine valido")
         except RuntimeError as error:
             detail = str(error)
+            if "23505" in detail or "duplicate key" in detail.lower():
+                return write_json(self, {"error": "Esiste gia' un ordine per questo preventivo"}, HTTPStatus.CONFLICT)
             status = HTTPStatus.BAD_REQUEST if "Reparto non trovato" in detail else HTTPStatus.INTERNAL_SERVER_ERROR
             return write_json(self, {"error": "Creazione ordine non riuscita", "detail": detail}, status)
         except Exception as error:

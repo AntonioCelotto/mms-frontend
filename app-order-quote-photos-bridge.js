@@ -76,6 +76,7 @@
       type: photo.type || "image/jpeg",
       localUrl: url,
       url,
+      dataUrl: url.startsWith("data:image/") ? url : "",
       persisted: false,
       fromQuote: true,
     };
@@ -94,7 +95,8 @@
       if (!exists) merged.push(attachment);
     });
     appState.orderAttachments[displayId] = merged;
-    appState.loadedOrderAttachmentIds[displayId] = true;
+    // A local preview must never suppress a fresh read of private attachments.
+    if (merged.length > current.length) appState.loadedOrderAttachmentIds[displayId] = false;
     const order = appData.orders?.find((item) => Number(item.id) === Number(displayId));
     if (order) order.files = Math.max(Number(order.files || 0), merged.length);
   }

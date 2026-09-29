@@ -290,6 +290,7 @@ async function uploadPendingOrderAttachments(orderId, pendingAttachments) {
   for (const attachment of pendingAttachments) {
     const saved = await uploadAttachmentFile(orderId, attachment);
     if (saved) uploaded.push(saved);
+    else throw new Error(`La foto ${attachment.name || "del preventivo"} non ha un originale caricabile. Caricala nuovamente nell'ordine.`);
   }
   return uploaded;
 }
