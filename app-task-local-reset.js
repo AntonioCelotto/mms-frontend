@@ -18,7 +18,7 @@
 // Roberta confirmed that the existing task plans were only trials. Clear
 // their browser copies on each device, while retaining unrelated order edits.
 (function () {
-  const marker = "mms_task_local_reset_20260925_all_trials_1";
+  const marker = "mms_task_local_reset_20261005_all_trials_1";
   try {
     if (localStorage.getItem(marker) === "done") return;
     const key = "mms_order_detail_edits_v1";
