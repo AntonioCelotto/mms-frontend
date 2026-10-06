@@ -8,18 +8,41 @@
     <meta name="googlebot" content="noindex, nofollow, noarchive, nosnippet" />
     <script>document.documentElement.classList.add("auth-checking");</script>
     <style>#app{display:none!important;}html.auth-ready #app{display:block!important;}</style>
+    <style>
+      #mms-startup-loading { position: fixed; inset: 0; z-index: 10000; display: grid; place-items: center; padding: 24px; box-sizing: border-box; background: #f2eee8; color: #17212b; font-family: system-ui, -apple-system, "Segoe UI", sans-serif; }
+      #mms-startup-loading[hidden] { display: none; }
+      .mms-startup-panel { width: min(440px, 100%); box-sizing: border-box; padding: 32px; background: #fff; border: 1px solid #e4e0da; border-radius: 16px; box-shadow: 0 18px 55px rgba(23, 33, 43, .12); text-align: center; }
+      .mms-startup-brand { margin: 0 0 20px; color: #667085; font-size: 13px; font-weight: 800; letter-spacing: .08em; }
+      .mms-startup-spinner { width: 36px; height: 36px; margin: 0 auto 20px; border: 4px solid #ede8e3; border-top-color: #e90046; border-radius: 50%; animation: mms-startup-spin 1s linear infinite; }
+      .mms-startup-panel h1 { margin: 0 0 12px; font-size: 24px; }
+      .mms-startup-panel p { line-height: 1.55; }
+      .mms-startup-note { margin-bottom: 0; color: #667085; font-size: 14px; }
+      #mms-startup-retry { margin-top: 20px; padding: 12px 20px; border: 0; border-radius: 8px; background: #1f2937; color: #fff; font: inherit; font-weight: 700; cursor: pointer; }
+      @keyframes mms-startup-spin { to { transform: rotate(360deg); } }
+      @media (prefers-reduced-motion: reduce) { .mms-startup-spinner { animation: none; } }
+    </style>
     <link rel="stylesheet" href="./styles.css?v=20260925-order-dates-tasks-1" />
     <link rel="stylesheet" href="./app-order-enhancements.css" />
     <link rel="stylesheet" href="./app-responsive-tablet.css?v=20260702-tablet-responsive-2" />
   </head>
   <body>
+    <section id="mms-startup-loading" role="status" aria-live="polite" aria-busy="true" aria-labelledby="mms-startup-title">
+      <div class="mms-startup-panel">
+        <div class="mms-startup-brand">MMS STUDIO</div>
+        <div id="mms-startup-spinner" class="mms-startup-spinner" aria-hidden="true"></div>
+        <h1 id="mms-startup-title">Caricamento del gestionale</h1>
+        <p id="mms-startup-message">Stiamo preparando il gestionale. Attendi, per favore: il caricamento potrebbe richiedere qualche minuto.</p>
+        <p id="mms-startup-note" class="mms-startup-note">Lascia aperta questa pagina fino al termine del caricamento.</p>
+        <button id="mms-startup-retry" type="button" hidden>Riprova il caricamento</button>
+      </div>
+    </section>
     <div id="app"></div>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="./app-api-security.js?v=20260923-session-fix-1"></script>
-    <script src="./app-auth-gate.js?v=20260924-load-after-auth-2"></script>
+    <script src="./app-auth-gate.js?v=20261006-startup-loading-1"></script>
     <template id="mms-app-scripts">
     <script src="./app-task-local-reset.js?v=20261005-all-trial-tasks-1"></script>
-    <script src="./app.js?v=20260925-order-dates-tasks-1"></script>
+    <script src="./app.js?v=20261006-startup-loading-1"></script>
     <script src="./app-remove-demo-orders.js?v=20260904-real-order-284-1"></script>
     <script src="./app-empty-orders-stability.js?v=20260730-empty-orders-stability-1"></script>
     <script src="./app-override.js"></script>

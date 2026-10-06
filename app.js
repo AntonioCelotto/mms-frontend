@@ -2438,13 +2438,16 @@ function renderApp() {
 }
 
 async function initApp() {
+  let startupError = null;
   try {
     await refreshBootstrap();
   } catch (error) {
+    startupError = error;
     console.warn("Bootstrap API not available, using local fallback data.");
   } finally {
     renderApp();
   }
+  return { error: startupError };
 }
 
-initApp();
+window.mmsInitialAppLoad = initApp();

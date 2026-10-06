@@ -12,6 +12,40 @@
   };
   let appLoadPromise = null;
 
+  function showStartupLoading() {
+    const node = document.getElementById("mms-startup-loading");
+    if (!node) return;
+    node.hidden = false;
+    node.setAttribute("aria-busy", "true");
+    document.getElementById("mms-startup-title").textContent = "Caricamento del gestionale";
+    document.getElementById("mms-startup-message").textContent = "Stiamo caricando tutti i dati. Attendi, per favore: l'operazione potrebbe richiedere qualche minuto.";
+    document.getElementById("mms-startup-note").textContent = "Lascia aperta questa pagina fino al termine del caricamento.";
+    document.getElementById("mms-startup-spinner").hidden = false;
+    document.getElementById("mms-startup-retry").hidden = true;
+  }
+
+  function hideStartupLoading() {
+    const node = document.getElementById("mms-startup-loading");
+    if (node) {
+      node.hidden = true;
+      node.setAttribute("aria-busy", "false");
+    }
+  }
+
+  function showStartupError() {
+    const node = document.getElementById("mms-startup-loading");
+    if (!node) return;
+    node.hidden = false;
+    node.setAttribute("aria-busy", "false");
+    document.getElementById("mms-startup-title").textContent = "Caricamento non riuscito";
+    document.getElementById("mms-startup-message").textContent = "Non siamo riusciti a caricare i dati del gestionale. Controlla la connessione e riprova.";
+    document.getElementById("mms-startup-note").textContent = "Se il problema continua, contatta l'amministratore.";
+    document.getElementById("mms-startup-spinner").hidden = true;
+    const retry = document.getElementById("mms-startup-retry");
+    retry.hidden = false;
+    retry.onclick = () => window.location.reload();
+  }
+
   function loadApp() {
     if (appLoadPromise) return appLoadPromise;
     appLoadPromise = (async () => {
@@ -30,6 +64,9 @@
           document.body.appendChild(script);
         });
       }
+      // A script's load event does not wait for its asynchronous data load.
+      // Keep the initial loading message until the first bootstrap is rendered.
+      return await window.mmsInitialAppLoad;
     })().catch((error) => {
       appLoadPromise = null;
       throw error;
@@ -221,6 +258,7 @@
 
   function renderAuth() {
     ensureStyles();
+    hideStartupLoading();
     authState.profile = null;
     publishProfile(null);
     document.documentElement.classList.remove("auth-ready");
@@ -235,7 +273,9 @@
 
   async function renderAuthenticated(profile) {
     authState.profile = profile;
-    await loadApp();
+    const initialLoad = !document.documentElement.classList.contains("auth-ready");
+    if (initialLoad) showStartupLoading();
+    const startupResult = await loadApp();
     if (authState.profile !== profile) return;
     document.documentElement.classList.remove("auth-checking", "auth-locked");
     document.documentElement.classList.add("auth-ready");
@@ -249,6 +289,8 @@
       <button class="mms-auth-logout" type="button" data-auth-logout>Esci</button>
     `;
     bar.querySelector("[data-auth-logout]")?.addEventListener("click", signOut);
+    if (startupResult?.error) showStartupError();
+    else hideStartupLoading();
   }
 
   function attachAuthEvents() {
