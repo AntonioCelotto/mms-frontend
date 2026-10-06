@@ -89,7 +89,12 @@ def signed_storage_url(path: str, expires_in: int = 3600) -> str:
     signed_path = payload.get("signedURL") or payload.get("signedUrl") or ""
     if not signed_path:
         raise RuntimeError("Collegamento allegato non disponibile")
-    return signed_path if signed_path.startswith("http") else f"{SUPABASE_URL}{signed_path}"
+    if signed_path.startswith("http"):
+        return signed_path
+    signed_path = "/" + signed_path.lstrip("/")
+    if not signed_path.startswith("/storage/v1/"):
+        signed_path = f"/storage/v1{signed_path}"
+    return f"{SUPABASE_URL}{signed_path}"
 
 
 class handler(BaseHTTPRequestHandler):

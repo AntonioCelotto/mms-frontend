@@ -427,6 +427,8 @@ def build_bootstrap(profile=None):
             "category": row.get("category") or "",
             "available": row.get("available_quantity") or 0,
             "reserved": row.get("reserved_quantity") or 0,
+            "unit_cost": row.get("unit_cost") or 0,
+            "retail_price": row.get("retail_price") or 0,
             "status": row.get("status") or "",
             "reorder": row.get("notes") or "Senza note",
             "unit": row.get("unit") or "",
