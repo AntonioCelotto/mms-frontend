@@ -82,6 +82,10 @@
   }
 
   function applyLocalSearch(kind) {
+    if (kind === "payments" && typeof window.mmsApplyPaymentArchiveSearch === "function") {
+      window.mmsApplyPaymentArchiveSearch(searchState().payments || "");
+      return;
+    }
     const section = document.querySelector(`section.view.${kind}.active`) || document.querySelector("section.view.active");
     if (!section) return;
     const query = (searchState()[kind] || "").trim().toLowerCase();
