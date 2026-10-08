@@ -194,8 +194,15 @@ def build_bootstrap(profile=None):
         attachment_count[row["order_id"]] += 1
 
     latest_payment_by_order = {}
+    payment_rows_by_order = defaultdict(list)
     for row in payments:
         latest_payment_by_order.setdefault(row["order_id"], row)
+        payment_rows_by_order[row["order_id"]].append({
+            key: row.get(key)
+            for key in ("id", "order_id", "payment_type", "amount", "due_date", "paid_date", "status")
+        })
+    for rows in payment_rows_by_order.values():
+        rows.sort(key=lambda row: row.get("id") or 0)
 
     order_department = {}
     for task in order_tasks:
@@ -220,6 +227,7 @@ def build_bootstrap(profile=None):
                 "completedAt": row.get("completed_at") or "",
                 "actualDeliveryDate": row.get("actual_delivery_date") or "",
                 "payment": (latest_payment.get("status") or "da_pagare").replace("_", " ").title(),
+                "paymentRows": payment_rows_by_order.get(row["id"], []),
                 "eta": row.get("estimated_delivery_date") or "Da definire",
                 "files": attachment_count[row["id"]],
                 "summary": row.get("internal_notes") or f"Ordine {row.get('order_number')} per {client.get('name', 'Cliente')}",

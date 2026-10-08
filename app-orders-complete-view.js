@@ -52,7 +52,11 @@
   function applyCachedPaymentDetails() {
     if (!paymentRowsByOrder.size || !Array.isArray(appData?.orders)) return;
     appData.orders.forEach((order) => {
-      order.paymentRows = paymentRowsByOrder.get(orderDbId(order)) || [];
+      // A bootstrap refresh contains the current saved amounts, including zero.
+      // The legacy cache must never replace a newer server snapshot.
+      if (!Array.isArray(order.paymentRows)) {
+        order.paymentRows = paymentRowsByOrder.get(orderDbId(order)) || [];
+      }
     });
   }
 
@@ -197,6 +201,10 @@
     if (paymentsLoading || paymentsLoaded) return;
     if (!appData?.orders?.length) {
       schedulePaymentLoad();
+      return;
+    }
+    if (appData.orders.every((order) => Array.isArray(order.paymentRows))) {
+      paymentsLoaded = true;
       return;
     }
     paymentsLoading = true;
