@@ -16,7 +16,7 @@
 
   function normalizeStatus(value, paidDate) {
     const status = text(value).toLowerCase().replace(/\s+/g, "_");
-    if (status === "pagato" || status === "da_pagare") return status;
+    if (["pagato", "da_pagare", "scaduto", "autorizzato"].includes(status)) return status;
     return paidDate ? "pagato" : "da_pagare";
   }
 
@@ -36,6 +36,11 @@
 
   function normalizeRows(rows) {
     return (Array.isArray(rows) ? rows : []).map(normalizeRow);
+  }
+
+  function paymentStatusOptions(status) {
+    return [["da_pagare", "Da pagare"], ["pagato", "Pagato / Saldato"], ["scaduto", "Scaduto"], ["autorizzato", "Autorizzato"]]
+      .map(([value, label]) => `<option value="${value}" ${status === value ? "selected" : ""}>${label}</option>`).join("");
   }
 
   if (typeof orderFromQuoteV2PaymentRows === "function") {
@@ -69,9 +74,9 @@
                   <button class="mini-btn" data-order-from-quote-remove-payment="${index}" type="button">Rimuovi</button>
                 </div>
                 <div class="form-grid">
-                  <div class="field"><label>Tipo</label><select class="filter-chip" data-order-from-quote-payment-index="${index}" data-order-from-quote-payment-field="type">${["Acconto", "Saldo"].map((type) => `<option value="${type}" ${row.type === type ? "selected" : ""}>${type}</option>`).join("")}</select></div>
+                  <div class="field"><label>Tipo</label><select class="filter-chip" data-order-from-quote-payment-index="${index}" data-order-from-quote-payment-field="type">${["Acconto", "Saldo", "Scadenza"].map((type) => `<option value="${type}" ${row.type === type ? "selected" : ""}>${type}</option>`).join("")}</select></div>
                   <div class="field"><label>Importo</label><input class="field-value" inputmode="decimal" data-order-from-quote-payment-index="${index}" data-order-from-quote-payment-field="amount" value="${esc(row.amount)}" placeholder="0,00" /></div>
-                  <div class="field"><label>Stato</label><select class="filter-chip" data-order-from-quote-payment-index="${index}" data-order-from-quote-payment-field="status"><option value="da_pagare" ${row.status !== "pagato" ? "selected" : ""}>Da pagare</option><option value="pagato" ${row.status === "pagato" ? "selected" : ""}>Pagato / Saldato</option></select></div>
+                  <div class="field"><label>Stato</label><select class="filter-chip" data-order-from-quote-payment-index="${index}" data-order-from-quote-payment-field="status">${paymentStatusOptions(row.status)}</select></div>
                   <div class="field"><label>Scadenza</label><input class="field-value" type="date" data-order-from-quote-payment-index="${index}" data-order-from-quote-payment-field="dueDate" value="${esc(row.dueDate)}" /></div>
                   <div class="field"><label>Data pagamento</label><input class="field-value" type="date" data-order-from-quote-payment-index="${index}" data-order-from-quote-payment-field="paidDate" value="${esc(row.paidDate)}" /></div>
                   <div class="field"><label>Nota</label><input class="field-value" data-order-from-quote-payment-index="${index}" data-order-from-quote-payment-field="note" value="${esc(row.note)}" placeholder="es. bonifico, contanti" /></div>
@@ -97,9 +102,9 @@
     orderDetailEditPaymentRows = function paymentDetailRowsWithAccountingFields(rows) {
       return normalizeRows(rows).map((row, index) => `
         <tr>
-          <td><select class="filter-chip" data-order-detail-payment-index="${index}" data-order-detail-payment-field="type">${["Acconto", "Saldo"].map((type) => `<option value="${type}" ${row.type === type ? "selected" : ""}>${type}</option>`).join("")}</select></td>
+          <td><select class="filter-chip" data-order-detail-payment-index="${index}" data-order-detail-payment-field="type">${["Acconto", "Saldo", "Scadenza"].map((type) => `<option value="${type}" ${row.type === type ? "selected" : ""}>${type}</option>`).join("")}</select></td>
           <td><input class="field-value" inputmode="decimal" data-order-detail-payment-index="${index}" data-order-detail-payment-field="amount" value="${esc(row.amount)}" placeholder="0,00" /></td>
-          <td><select class="filter-chip" data-order-detail-payment-index="${index}" data-order-detail-payment-field="status"><option value="da_pagare" ${row.status !== "pagato" ? "selected" : ""}>Da pagare</option><option value="pagato" ${row.status === "pagato" ? "selected" : ""}>Pagato / Saldato</option></select></td>
+          <td><select class="filter-chip" data-order-detail-payment-index="${index}" data-order-detail-payment-field="status">${paymentStatusOptions(row.status)}</select></td>
           <td><input class="field-value" type="date" data-order-detail-payment-index="${index}" data-order-detail-payment-field="dueDate" value="${esc(row.dueDate)}" /></td>
           <td><input class="field-value" type="date" data-order-detail-payment-index="${index}" data-order-detail-payment-field="paidDate" value="${esc(row.paidDate)}" /></td>
           <td><input class="field-value" data-order-detail-payment-index="${index}" data-order-detail-payment-field="note" value="${esc(row.note)}" placeholder="nota pagamento" /></td>
