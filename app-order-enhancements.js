@@ -12,6 +12,11 @@ const ORDER_CATEGORY_OPTIONS = [
 const ATTACHMENT_SUPABASE_URL = "https://fzdqemzowxjuotqalaol.supabase.co";
 const ATTACHMENT_SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZ6ZHFlbXpvd3hqdW90cWFsYW9sIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzk5Njg3NzYsImV4cCI6MjA5NTU0NDc3Nn0.fmZ9RThFxnaJGQsOYeu_ZjjUNHThlRX87qz9sX4N6Mk";
 const ATTACHMENT_STORAGE_BUCKET = "order-attachments";
+const ATTACHMENT_REFRESH_MARGIN_MS = 60000;
+const attachmentLoadPromises = new Map();
+const attachmentLoadRetryAfter = new Map();
+const attachmentImageRetries = new Set();
+let attachmentRefreshTimer = null;
 
 const EMPTY_ORDER_DRAFT = {
   client: "",
@@ -87,6 +92,26 @@ function attachmentUrl(attachment) {
   return attachment.url || attachment.localUrl || "";
 }
 
+function attachmentExpiresAt(attachment) {
+  try {
+    const url = new URL(attachmentUrl(attachment));
+    if (url.origin !== ATTACHMENT_SUPABASE_URL || !url.pathname.startsWith("/storage/v1/object/sign/")) return null;
+    // Decode only to schedule renewal, never to authorize access. The existing
+    // list endpoint still validates the user and their access to the order.
+    const token = url.searchParams.get("token") || "";
+    const part = (token.split(".")[1] || "").replace(/-/g, "+").replace(/_/g, "/");
+    const expiry = Number(JSON.parse(atob(part.padEnd(Math.ceil(part.length / 4) * 4, "="))).exp);
+    return Number.isFinite(expiry) && expiry > 0 ? expiry * 1000 : 0;
+  } catch (error) {
+    return attachmentUrl(attachment).startsWith(`${ATTACHMENT_SUPABASE_URL}/storage/v1/object/sign/`) ? 0 : null;
+  }
+}
+
+function attachmentNeedsRefresh(attachment) {
+  const expiry = attachmentExpiresAt(attachment);
+  return expiry !== null && expiry <= Date.now() + ATTACHMENT_REFRESH_MARGIN_MS;
+}
+
 function renderAttachmentCards(attachments, scope) {
   if (!attachments.length) {
     return `<div class="empty-state">Nessuna foto caricata per questo ${scope === "draft" ? "nuovo ordine" : "ordine"}.</div>`;
@@ -99,7 +124,7 @@ function renderAttachmentCards(attachments, scope) {
           (attachment, index) => `
         <div class="attachment-card">
           <button class="attachment-preview" data-attachment-open="${scope}" data-attachment-index="${index}" type="button">
-            <img src="${attachmentUrl(attachment)}" alt="${escapeOrderEnhancementHtml(attachment.name)}" />
+            <img ${attachmentNeedsRefresh(attachment) ? "" : `src="${escapeOrderEnhancementHtml(attachmentUrl(attachment))}"`} data-attachment-image="${scope}" data-attachment-index="${index}" alt="${escapeOrderEnhancementHtml(attachment.name)}" />
           </button>
           <div class="attachment-info">
             <strong>${escapeOrderEnhancementHtml(attachment.name)}</strong>
@@ -155,12 +180,13 @@ function renderOrderDetailAttachments() {
             <p>File salvati e collegati all'ordine #${order.id}.</p>
           </div>
           <div class="pill-row">
-            <div class="ghost-pill">${attachments.length} foto salvate</div>
+            <div class="ghost-pill" data-order-attachment-count>${attachments.length} foto salvate</div>
             <button class="action-pill" data-action="pick-existing-order-photo" type="button">+ Foto</button>
             <input class="visually-hidden" data-existing-order-photo-input type="file" accept="image/*" multiple />
           </div>
         </div>
-        ${renderAttachmentCards(attachments, "order")}
+        <p data-order-attachment-message role="status" hidden></p>
+        <div data-order-attachment-gallery>${renderAttachmentCards(attachments, "order")}</div>
       </div>
     </div>
   `;
@@ -214,7 +240,7 @@ function enhanceOrderDetailView() {
 
   const metricBand = section.querySelector(".metric-band");
   metricBand.insertAdjacentHTML("afterend", renderOrderDetailAttachments());
-  loadPersistedOrderAttachments(getSelectedOrderStorageId(), false, getSelectedOrderDisplayId());
+  loadPersistedOrderAttachments(getSelectedOrderStorageId(), false, getSelectedOrderDisplayId()).catch(() => {});
 }
 
 function safeAttachmentFileName(name) {
@@ -348,24 +374,82 @@ function normalizePersistedAttachment(attachment) {
 
 async function loadPersistedOrderAttachments(orderId, force = false, stateKey = orderId) {
   ensureOrderAttachmentState();
-  if (!orderId || appState.loadingOrderAttachmentIds[stateKey]) return;
+  if (!orderId) return [];
+  if (attachmentLoadPromises.has(stateKey)) return attachmentLoadPromises.get(stateKey);
+  const current = appState.orderAttachments[stateKey] || [];
   if (!force && appState.loadedOrderAttachmentIds[stateKey] &&
-      !(appState.orderAttachments[stateKey] || []).some((item) => item.fromQuote && !item.persisted)) return;
+      !current.some((item) => attachmentNeedsRefresh(item) || (item.fromQuote && !item.persisted))) return current;
+  if (!force && Date.now() < (attachmentLoadRetryAfter.get(stateKey) || 0)) return current;
 
   appState.loadingOrderAttachmentIds[stateKey] = true;
-  try {
-    const response = await fetch(`/api/list-attachments?order_id=${encodeURIComponent(orderId)}`);
-    if (!response.ok) return;
-    const payload = await response.json();
-    const persisted = (payload.attachments || []).map(normalizePersistedAttachment);
-    const pending = (appState.orderAttachments[stateKey] || []).filter((item) => item.fromQuote && !item.persisted);
-    appState.orderAttachments[stateKey] = [...persisted, ...pending.filter((item) =>
-      !persisted.some((saved) => saved.name === item.name && Number(saved.size) === Number(item.size)))];
-    appState.loadedOrderAttachmentIds[stateKey] = true;
-    renderApp();
-  } finally {
-    appState.loadingOrderAttachmentIds[stateKey] = false;
-  }
+  const request = (async () => {
+    try {
+      const response = await fetch(`/api/list-attachments?order_id=${encodeURIComponent(orderId)}`, { cache: "no-store" });
+      if (!response.ok) throw new Error("Impossibile aggiornare i collegamenti delle foto. Riprova tra poco.");
+      const payload = await response.json();
+      if (!Array.isArray(payload.attachments)) throw new Error("Elenco allegati non valido");
+      const persisted = payload.attachments.map(normalizePersistedAttachment);
+      if (persisted.some(attachmentNeedsRefresh)) throw new Error("Collegamento foto non disponibile. Riprova tra poco.");
+      const pending = (appState.orderAttachments[stateKey] || []).filter((item) => item.fromQuote && !item.persisted);
+      appState.orderAttachments[stateKey] = [...persisted, ...pending.filter((item) =>
+        !persisted.some((saved) => saved.name === item.name && Number(saved.size) === Number(item.size)))];
+      appState.loadedOrderAttachmentIds[stateKey] = true;
+      attachmentLoadRetryAfter.delete(stateKey);
+      updateOrderAttachmentGallery(stateKey);
+      return appState.orderAttachments[stateKey];
+    } catch (error) {
+      // Keep the archive and unsaved fields intact; never loop on a failed link.
+      attachmentLoadRetryAfter.set(stateKey, Date.now() + 60000);
+      throw error;
+    } finally {
+      appState.loadingOrderAttachmentIds[stateKey] = false;
+      attachmentLoadPromises.delete(stateKey);
+      scheduleAttachmentRefresh();
+    }
+  })();
+  attachmentLoadPromises.set(stateKey, request);
+  return request;
+}
+
+function updateOrderAttachmentGallery(stateKey) {
+  if (appState.currentView !== "order-detail" || Number(getSelectedOrderDisplayId()) !== Number(stateKey)) return;
+  const gallery = document.querySelector("[data-order-attachment-gallery]");
+  if (!gallery) return;
+  const attachments = appState.orderAttachments[stateKey] || [];
+  gallery.innerHTML = renderAttachmentCards(attachments, "order");
+  const count = document.querySelector("[data-order-attachment-count]");
+  if (count) count.textContent = `${attachments.length} foto salvate`;
+  const message = document.querySelector("[data-order-attachment-message]");
+  if (message) message.hidden = true;
+  attachAttachmentCardEvents(gallery);
+}
+
+function scheduleAttachmentRefresh() {
+  if (typeof setTimeout !== "function") return;
+  clearTimeout(attachmentRefreshTimer);
+  if (appState.currentView !== "order-detail" || document.hidden) return;
+  const stateKey = getSelectedOrderDisplayId();
+  if (attachmentLoadPromises.has(stateKey) || attachmentLoadRetryAfter.has(stateKey)) return;
+  const expiries = (appState.orderAttachments[stateKey] || []).map(attachmentExpiresAt).filter((value) => value !== null);
+  if (!expiries.length) return;
+  const orderId = getSelectedOrderStorageId();
+  const delay = Math.min(...expiries) - Date.now() - ATTACHMENT_REFRESH_MARGIN_MS;
+  // Invalid/already expired URLs are handled by the normal loader or a click.
+  if (delay <= 0) return;
+  attachmentRefreshTimer = setTimeout(() => {
+    if (appState.currentView === "order-detail" && getSelectedOrderDisplayId() === stateKey) {
+      loadPersistedOrderAttachments(orderId, false, stateKey).catch(() => {});
+    }
+  }, Math.min(delay, 2147483647));
+}
+
+async function freshOrderAttachment(attachment, scope, stateKey, orderId) {
+  const failedPreview = attachmentImageRetries.has(`${stateKey}:${attachment.id}`);
+  if (scope === "draft" || (!attachmentNeedsRefresh(attachment) && !failedPreview)) return attachment;
+  const list = await loadPersistedOrderAttachments(orderId, true, stateKey);
+  const fresh = list.find((item) => String(item.id) === String(attachment.id));
+  if (!fresh || attachmentNeedsRefresh(fresh)) throw new Error("Collegamento foto non disponibile. Riprova tra poco.");
+  return fresh;
 }
 
 async function uploadFilesToExistingOrder(files) {
@@ -442,32 +526,73 @@ function attachOrderEnhancementEvents() {
     });
   }
 
-  document.querySelectorAll("[data-attachment-open]").forEach((button) => {
-    button.addEventListener("click", () => {
-      const list = getAttachmentList(button.dataset.attachmentOpen);
+  attachAttachmentCardEvents();
+  scheduleAttachmentRefresh();
+}
+
+function attachAttachmentCardEvents(root = document) {
+  root.querySelectorAll("[data-attachment-open], [data-attachment-download]").forEach((button) => {
+    if (button.dataset.attachmentBound) return;
+    button.dataset.attachmentBound = "true";
+    button.addEventListener("click", async () => {
+      const scope = button.dataset.attachmentOpen || button.dataset.attachmentDownload;
+      const list = getAttachmentList(scope);
       const attachment = list[Number(button.dataset.attachmentIndex)];
-      const url = attachment ? attachmentUrl(attachment) : "";
-      if (url) window.open(url, "_blank", "noopener");
+      if (!attachment) return;
+      const stateKey = getSelectedOrderDisplayId();
+      const orderId = getSelectedOrderStorageId();
+      // Open synchronously so renewal does not trigger the popup blocker.
+      const popup = button.dataset.attachmentOpen ? window.open("", "_blank") : null;
+      if (popup) popup.opener = null;
+      try {
+        const fresh = await freshOrderAttachment(attachment, scope, stateKey, orderId);
+        const url = attachmentUrl(fresh);
+        if (!url) throw new Error("Collegamento foto non disponibile");
+        if (button.dataset.attachmentOpen) {
+          if (popup) popup.location.replace(url);
+        } else {
+          const link = document.createElement("a");
+          link.href = url;
+          link.download = fresh.name;
+          document.body.appendChild(link);
+          link.click();
+          link.remove();
+        }
+      } catch (error) {
+        if (popup) popup.close();
+        const message = document.querySelector("[data-order-attachment-message]");
+        if (message) {
+          message.textContent = error.message || "Foto non disponibile. Riprova tra poco.";
+          message.hidden = false;
+        }
+      }
     });
   });
 
-  document.querySelectorAll("[data-attachment-download]").forEach((button) => {
-    button.addEventListener("click", () => {
-      const list = getAttachmentList(button.dataset.attachmentDownload);
-      const attachment = list[Number(button.dataset.attachmentIndex)];
-      const url = attachment ? attachmentUrl(attachment) : "";
-      if (!attachment || !url) return;
-
-      const link = document.createElement("a");
-      link.href = url;
-      link.download = attachment.name;
-      document.body.appendChild(link);
-      link.click();
-      link.remove();
+  root.querySelectorAll("[data-attachment-image='order']").forEach((image) => {
+    if (image.dataset.attachmentBound) return;
+    image.dataset.attachmentBound = "true";
+    const stateKey = getSelectedOrderDisplayId();
+    const orderId = getSelectedOrderStorageId();
+    const attachment = (appState.orderAttachments[stateKey] || [])[Number(image.dataset.attachmentIndex)];
+    if (!attachment?.persisted) return;
+    const key = `${stateKey}:${attachment.id}`;
+    image.addEventListener("load", () => attachmentImageRetries.delete(key));
+    image.addEventListener("error", () => {
+      if (attachmentImageRetries.has(key)) {
+        image.alt = "Foto temporaneamente non disponibile. Premi Visualizza per riprovare.";
+        return;
+      }
+      attachmentImageRetries.add(key);
+      loadPersistedOrderAttachments(orderId, true, stateKey).catch(() => {
+        image.alt = "Foto temporaneamente non disponibile. Riprova tra poco.";
+      });
     });
   });
 
-  document.querySelectorAll("[data-attachment-remove]").forEach((button) => {
+  root.querySelectorAll("[data-attachment-remove]").forEach((button) => {
+    if (button.dataset.attachmentBound) return;
+    button.dataset.attachmentBound = "true";
     button.addEventListener("click", () => {
       const index = Number(button.dataset.attachmentRemove);
       const [removed] = appState.draftOrderAttachments.splice(index, 1);
@@ -524,3 +649,11 @@ renderApp = function renderAppOrderEnhancements() {
 };
 
 ensureOrderAttachmentState();
+if (typeof document.addEventListener === "function") {
+  document.addEventListener("visibilitychange", () => {
+    scheduleAttachmentRefresh();
+    if (!document.hidden && appState.currentView === "order-detail") {
+      loadPersistedOrderAttachments(getSelectedOrderStorageId(), false, getSelectedOrderDisplayId()).catch(() => {});
+    }
+  });
+}
