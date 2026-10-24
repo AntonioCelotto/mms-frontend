@@ -263,6 +263,7 @@ async function saveBillingForSelectedClient() {
 }
 
 async function savePaymentDraftForSelectedOrder() {
+  if (appState.busy) return;
   ensurePaymentState();
   const order = getPaymentSelectedOrder();
   const dbOrderId = getPaymentOrderId(order);
