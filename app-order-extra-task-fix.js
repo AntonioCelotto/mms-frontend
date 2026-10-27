@@ -30,10 +30,11 @@
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         order_id: orderId,
+        client_task_key: task.clientTaskKey || String(task.id),
         task_name: task.name || task.task_name || "Nuovo task ordine",
         task_phase: task.phase || task.task_phase || "altro",
-        assigned_user_id: task.assignedUserId || task.assigned_user_id || null,
-        external_supplier_name: task.externalSupplierName || task.external_supplier_name || null,
+        assigned_user_id: String(task.assignedUserId || "").startsWith("external:") ? null : task.assignedUserId || task.assigned_user_id || null,
+        external_supplier_name: String(task.assignedUserId || "").startsWith("external:") ? decodeURIComponent(task.assignedUserId.slice(9)) : task.externalSupplierName || task.external_supplier_name || null,
         planned_date: validDate(task.time) ? [String(task.time).slice(0, 10), task.plannedTime].filter(Boolean).join(" ") : validDate(task.planned_date),
         estimated_hours: hours,
         status: task.state || task.status || "Da avviare",
@@ -50,22 +51,30 @@
 
   function applyCreatedTask(orderId, draftTask, created) {
     if (!created || !created.id) return;
-    draftTask.id = created.id;
-    draftTask.localOnly = false;
-    draftTask.name = created.task_name || draftTask.name;
-    draftTask.phase = created.task_phase || draftTask.phase;
-    draftTask.time = String(created.planned_date || draftTask.time || "").slice(0, 10);
-    draftTask.plannedTime = String(created.planned_date || "").match(/^\d{4}-\d{2}-\d{2}[ T](\d{2}:\d{2})/)?.[1] || draftTask.plannedTime || "";
-    draftTask.hours = created.estimated_hours ?? draftTask.hours;
-    draftTask.state = String(created.status || draftTask.state || "da_avviare").replace(/_/g, " ").replace(/\b\w/g, (letter) => letter.toUpperCase());
+    const localId = String(draftTask.id);
+    const key = draftTask.clientTaskKey || created.client_task_key || localId;
+    const identity = { id: created.id, clientTaskKey: key, localOnly: false };
+    // Rendering replaces row objects. Match their stable key, never their name
+    // (two articles may legitimately have the same phase and label).
+    const draft = appState.orderDetailEdits?.[orderId];
+    (draft?.tasks || []).forEach((task) => {
+      if (String(task.id) === localId || task.clientTaskKey === key) Object.assign(task, identity);
+    });
+    Object.assign(draftTask, identity);
     if (!appData.orderTasks || typeof appData.orderTasks !== "object") appData.orderTasks = {};
     appData.orderTasks[orderId] = normalizeTasksWithExtras(appData.orderTasks[orderId] || []);
-    const match = appData.orderTasks[orderId].find((task) => !isRealId(task.id) && (task.name || "") === (draftTask.name || ""));
-    if (match) Object.assign(match, draftTask, { id: created.id, time: created.planned_date || draftTask.time, localOnly: false });
+    const rows = appData.orderTasks[orderId];
+    const match = rows.find((task) => String(task.id) === localId || task.clientTaskKey === key || String(task.id) === String(created.id));
+    const confirmed = typeof taskSyncTaskFromDraft === "function"
+      ? taskSyncTaskFromDraft(taskSyncDraftFromTask(created, 0, orderId), 0, orderId)
+      : { ...draftTask, ...identity, time: created.planned_date || draftTask.time };
+    if (match) Object.assign(match, confirmed, identity);
+    else rows.push({ ...confirmed, ...identity });
+    appData.orderTasks[orderId] = rows.filter((row, index) => rows.findIndex((other) => String(other.id) === String(row.id)) === index);
+    if (draft) draft.tasks = draft.tasks.filter((row, index, all) => all.findIndex((other) => String(other.id) === String(row.id)) === index);
   }
 
-  let activeSaveKey = "";
-  let activeSavePromise = null;
+  const activeSaves = new Map();
 
   function pendingTaskSaveContext() {
     const order = typeof getSelectedOrder === "function" ? getSelectedOrder() : null;
@@ -76,24 +85,23 @@
       String(task.id || "").startsWith(`local-task-${orderId}-extra-`) ||
       String(task.id || "").startsWith(`local-task-${orderId}-manual-`) ||
       String(task.id || "").startsWith(`local-task-${orderId}-nuovo`));
+    pending.forEach((task) => { task.clientTaskKey ||= String(task.id); });
     return { order, orderId, orderDbId, draft, pending };
   }
 
   function persistPendingTasks() {
     const context = pendingTaskSaveContext();
     const { order, orderId, orderDbId, draft, pending } = context;
+    if (activeSaves.has(orderDbId)) return activeSaves.get(orderDbId);
     if (!orderId || !orderDbId || !draft || !pending.length) return Promise.resolve([]);
-
-    const saveKey = `${orderDbId}:${pending.map((task) => String(task.id || task.name || "new")).join("|")}`;
-    if (activeSavePromise && activeSaveKey === saveKey) return activeSavePromise;
-
-    activeSaveKey = saveKey;
-    activeSavePromise = Promise.all(
-      pending.map((task) => saveTaskToDatabase(orderDbId, task).then((created) => {
+    const snapshots = pending.map((task) => ({ ...task }));
+    if (typeof orderDetailEditWriteStored === "function") orderDetailEditWriteStored(orderId, draft);
+    const saving = Promise.resolve().then(() => Promise.all(
+      snapshots.map((task) => saveTaskToDatabase(orderDbId, task).then((created) => {
         applyCreatedTask(orderId, task, created);
         return created;
       }))
-    )
+    ))
       .then((createdTasks) => {
         if (typeof orderDetailEditWriteStored === "function") orderDetailEditWriteStored(orderId, draft);
         const displayNumber = order?.sourceQuoteNumber || order?.source_quote_number || orderId;
@@ -108,10 +116,10 @@
         throw error;
       })
       .finally(() => {
-        activeSaveKey = "";
-        activeSavePromise = null;
+        activeSaves.delete(orderDbId);
       });
-    return activeSavePromise;
+    activeSaves.set(orderDbId, saving);
+    return saving;
   }
 
   window.orderTaskPersistPending = persistPendingTasks;
@@ -120,8 +128,7 @@
     const baseSave = orderDetailEditSave;
     orderDetailEditSave = function orderDetailEditSaveWithExtraTasks() {
       const result = baseSave();
-      persistPendingTasks().catch(() => {});
-      return result;
+      return Promise.all([result, persistPendingTasks()]).then(([saved]) => saved);
     };
   }
 

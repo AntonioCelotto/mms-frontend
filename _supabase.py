@@ -322,6 +322,7 @@ def build_bootstrap(profile=None):
         order_tasks_payload[str(display_order_id)].append(
             {
                 "id": task["id"],
+                "clientTaskKey": task.get("client_task_key") or "",
                 "name": task["task_name"],
                 "phase": task["task_phase"],
                 "team": f"{department_name} - {owner}",

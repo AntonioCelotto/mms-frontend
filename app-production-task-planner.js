@@ -60,7 +60,7 @@
       // the row with an existing core task, so the freshly added row vanished.
       const createdAt = Date.now();
       draft.tasks.push({
-        id: `local-task-${orderId}-manual-${createdAt}`,
+        id: `local-task-${orderId}-manual-${window.crypto?.randomUUID?.() || createdAt + '-' + Math.random().toString(36).slice(2)}`,
         orderId,
         articleKey: "",
         articleName: "",

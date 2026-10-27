@@ -76,7 +76,7 @@
     const uniqueTasks = new Map();
     const addTask = (task, fallbackKey) => {
       const id = text(task?.id);
-      const key = id || fallbackKey;
+      const key = task?.clientTaskKey || task?.client_task_key || id || fallbackKey;
       if (key) uniqueTasks.set(key, task);
     };
     let total = 0;
@@ -88,6 +88,7 @@
     uniqueTasks.forEach((task) => {
       if (!sameAssignee(task, candidate.assignedUserId) || isCompleted(task)) return;
       if (candidate.id && String(task.id || "") === String(candidate.id)) return;
+      if (candidate.clientTaskKey && candidate.clientTaskKey === (task.clientTaskKey || task.client_task_key)) return;
       const taskDeadline = parseDate(task.time || task.planned_date);
       if (!taskDeadline || taskDeadline > deadline) return;
       total += numberValue(task.hours || task.estimated_hours || task.estimatedHours);
@@ -201,6 +202,14 @@
   };
 
   const baseAttachEventsCapacity = attachEvents;
+  if (typeof orderDetailEditHandleField === "function") {
+    const baseField = orderDetailEditHandleField;
+    orderDetailEditHandleField = function capacityAfterField(target) {
+      const handled = baseField(target);
+      if (handled && target.dataset?.orderDetailTaskField) Promise.resolve().then(refreshWarnings);
+      return handled;
+    };
+  }
   attachEvents = function attachEventsWithTaskCapacity() {
     baseAttachEventsCapacity();
     document.querySelectorAll("[data-order-detail-task-field='assignedUserId'],[data-order-detail-task-field='time'],[data-order-detail-task-field='hours']").forEach((input) => {

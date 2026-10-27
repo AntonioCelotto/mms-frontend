@@ -128,6 +128,7 @@ function orderDetailEditTaskToDraft(task) {
 function orderDetailEditTaskFromDraft(task) {
   const cleanHours = String(task.hours || "").trim();
   return {
+    ...task,
     id: task.id || "",
     name: task.name || "Nuovo task",
     phase: task.phase || "Lavorazione",
