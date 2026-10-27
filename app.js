@@ -971,9 +971,20 @@ function renderDashboard() {
   `;
 }
 
+function orderArchiveDepartmentOptions() {
+  // Configuration is shared by every account. Browser drafts and the current
+  // set of tasks must never decide which departments appear in this filter.
+  const configured = (Array.isArray(appData.departments) ? appData.departments : [])
+    .map((department) => String(typeof department === "string" ? department : department?.name || "").trim())
+    .filter(Boolean);
+  const names = configured.length ? configured : ["Sartoria interna", "Sartoria esterna", "Commercio"];
+  return ["all", "Da assegnare", ...new Set(names.filter((name) => name !== "Da assegnare" && name !== "all"))];
+}
+
 function renderOrders() {
+  const departments = orderArchiveDepartmentOptions();
+  if (!departments.includes(appState.filters.department)) appState.filters.department = "all";
   const orders = filterOrders();
-  const departments = ["all", ...new Set(appData.orders.map((order) => order.department))];
   const statuses = ["all", ...new Set(appData.orders.map((order) => order.status))];
   const payments = ["all", ...new Set(appData.orders.map((order) => order.payment))];
   const priorities = ["all", ...new Set(appData.orders.map((order) => order.priority))];
