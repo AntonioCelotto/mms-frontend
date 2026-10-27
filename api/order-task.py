@@ -1,13 +1,15 @@
 from __future__ import annotations
 
 import json
+import math
+import re
 from http import HTTPStatus
 from http.server import BaseHTTPRequestHandler
 from urllib.error import HTTPError, URLError
 from urllib.request import Request, urlopen
 
 from _api import clean_text, parse_optional_positive_int, parse_positive_int, read_json_body, require_access, write_json, write_options
-from _supabase import SUPABASE_KEY, SUPABASE_URL, delete_rows, fetch_table, insert_rows, resolve_order
+from _supabase import SUPABASE_KEY, SUPABASE_URL, delete_rows, fetch_table, resolve_order, supabase_request
 
 
 CORE_PHASES = {"cartamodello", "taglio", "confezione"}
@@ -38,11 +40,26 @@ def parse_hours(value):
         parsed = float(str(value).replace(",", ".").replace(" h", "").strip())
     except (TypeError, ValueError):
         return None
-    return parsed if parsed >= 0 else None
+    return parsed if math.isfinite(parsed) and parsed >= 0 else None
 
 
 def sequence_for_phase(phase):
-    return {"cartamodello": 1, "taglio": 2, "confezione": 3}.get(phase, 99)
+    return {"cartamodello": 1, "taglio": 2, "confezione": 3, "controllo": 4}.get(phase, 99)
+
+
+def create_task_once(row, request_key):
+    # ON CONFLICT DO NOTHING is atomic even across simultaneous workers.
+    # Replay must never overwrite later edits to a previously created task.
+    row = {**row, "client_task_key": request_key}
+    rows = supabase_request("/rest/v1/order_tasks", method="POST",
+        query={"on_conflict": "order_id,client_task_key"}, payload=row,
+        prefer="resolution=ignore-duplicates,return=representation")
+    if not rows:
+        rows = fetch_table("order_tasks", filters={"order_id": f"eq.{row['order_id']}",
+            "client_task_key": f"eq.{request_key}"})
+    if not rows or not rows[0].get("id"):
+        raise RuntimeError("Creazione task non confermata")
+    return rows
 
 
 def default_department_id(order_id):
@@ -88,6 +105,15 @@ class handler(BaseHTTPRequestHandler):
         if payload is None:
             return write_json(self, {"error": "JSON non valido"}, HTTPStatus.BAD_REQUEST)
 
+        request_key = clean_text(payload.get("client_task_key"))
+        if not request_key:
+            return write_json(self, {"error": "Aggiorna la pagina prima di creare task: protezione contro i doppioni attivata."}, HTTPStatus.CONFLICT)
+        if request_key and not re.fullmatch(r"[A-Za-z0-9_-]{8,200}", request_key):
+            return write_json(self, {"error": "Identificativo task non valido"}, HTTPStatus.BAD_REQUEST)
+        raw_hours = payload.get("estimated_hours", payload.get("hours"))
+        if raw_hours not in (None, "") and parse_hours(raw_hours) is None:
+            return write_json(self, {"error": "Ore task non valide"}, HTTPStatus.BAD_REQUEST)
+
         order_ref = parse_positive_int(payload.get("order_id") or payload.get("order_ref"))
         if not order_ref:
             return write_json(self, {"error": "Ordine non valido"}, HTTPStatus.BAD_REQUEST)
@@ -114,8 +140,7 @@ class handler(BaseHTTPRequestHandler):
             if not department_id:
                 return write_json(self, {"error": "Reparto non disponibile"}, HTTPStatus.BAD_REQUEST)
 
-            created = insert_rows(
-                "order_tasks",
+            created = create_task_once(
                 {
                     "order_id": order["id"],
                     "department_id": department_id,
@@ -125,13 +150,14 @@ class handler(BaseHTTPRequestHandler):
                     "task_phase": task_phase,
                     "status": normalize_status(payload.get("status") or payload.get("state")),
                     "planned_date": clean_text(payload.get("planned_date") or payload.get("time")) or None,
-                    "estimated_hours": parse_hours(payload.get("estimated_hours") or payload.get("hours")),
+                    "estimated_hours": parse_hours(raw_hours),
                     "notes": clean_text(payload.get("notes")) or None,
                     "article_key": article_key,
                     "article_name": article_name,
                     "due_date": clean_text(payload.get("due_date") or payload.get("dueDate")) or None,
                     "sequence_order": sequence_for_phase(task_phase),
                 },
+                request_key,
             )
         except RuntimeError as error:
             return write_json(self, {"error": "Task non salvato", "detail": str(error)}, HTTPStatus.INTERNAL_SERVER_ERROR)

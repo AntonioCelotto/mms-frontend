@@ -1,5 +1,6 @@
 const TASK_SYNC_LOCAL_PREFIX = "local-task";
 const taskSyncPendingOrders = new Set();
+const taskSyncSaves = new Map();
 
 function taskSyncOrder() {
   return typeof getSelectedOrder === "function" ? getSelectedOrder() : null;
@@ -42,13 +43,14 @@ function taskSyncDraftFromTask(task, index, orderId) {
   const assignedUserId = taskSyncAssigneeValue(task);
   return {
     id: task.id || taskSyncLocalId(orderId, key, index),
+    clientTaskKey: task.clientTaskKey || task.client_task_key || "",
     name: task.name || task.task_name || `${key} ordine`,
     phase: task.phase || task.task_phase || key,
     assignedUserId,
     team: task.team || taskSyncAssigneeLabel(assignedUserId),
     hours: String(task.hours || task.estimated_hours || "").replace(" h", "").replace(",", "."),
     time: String(task.time || task.planned_date || "").match(/^\d{4}-\d{2}-\d{2}/)?.[0] || "",
-    plannedTime: String(task.time || task.planned_date || "").match(/^\d{4}-\d{2}-\d{2}[ T](\d{2}:\d{2})/)?.[1] || "",
+    plannedTime: task.plannedTime || String(task.time || task.planned_date || "").match(/^\d{4}-\d{2}-\d{2}[ T](\d{2}:\d{2})/)?.[1] || "",
     state: task.state || task.status || "Da avviare",
     articleKey: task.articleKey || task.article_key || "",
     articleName: task.articleName || task.article_name || "",
@@ -62,6 +64,7 @@ function taskSyncTaskFromDraft(task, index, orderId) {
   const hours = String(task.hours || "").trim();
   return {
     id: task.id || taskSyncLocalId(orderId, task.phase || task.name, index),
+    clientTaskKey: task.clientTaskKey || task.client_task_key || (String(task.id || "").startsWith(TASK_SYNC_LOCAL_PREFIX) ? String(task.id) : ""),
     name: task.name || "Nuovo task ordine",
     phase: task.phase || "altro",
     team: taskSyncAssigneeLabel(assignedUserId),
@@ -97,6 +100,14 @@ function taskSyncDraft(order = taskSyncOrder(), draft = null) {
   const byId = new Set(currentDraft.tasks.map((task) => String(task.id || "")));
   taskSyncEnsureOrderTasks(order).forEach((task, index) => {
     if (!/^\d+$/.test(String(task.id || "")) || byId.has(String(task.id))) return;
+    const key = task.clientTaskKey || task.client_task_key;
+    const pending = key && currentDraft.tasks.find((row) =>
+      !/^\d+$/.test(String(row.id || "")) && (row.clientTaskKey || row.id) === key);
+    if (pending) {
+      Object.assign(pending, { id: task.id, clientTaskKey: key, localOnly: false });
+      byId.add(String(task.id));
+      return;
+    }
     currentDraft.tasks.push(taskSyncDraftFromTask(task, index, orderId));
     byId.add(String(task.id));
   });
@@ -117,12 +128,19 @@ if (typeof orderDetailEditApplyStoredToOrders === "function") {
       const draft = appState.orderDetailEdits?.[Number(orderId)] || appState.orderDetailEdits?.[orderId];
       if (draft && !taskSyncPendingOrders.has(String(orderId))) {
         const currentRows = Array.isArray(draft.tasks) ? draft.tasks : [];
+        const confirmedKeys = new Map(tasks.filter((task) => task.clientTaskKey).map((task) => [task.clientTaskKey, task]));
         const pendingRows = currentRows.filter((task) =>
           /^local-task-\d+-(extra|manual|nuovo)/.test(String(task?.id || "")));
         const databaseRows = tasks.map((task, index) => taskSyncDraftFromTask(task, index, Number(orderId)));
         // Never discard a row created with + Task just because it has not
         // reached the database yet. It belongs only to this order's draft.
-        draft.tasks = [...databaseRows, ...pendingRows];
+        pendingRows.forEach((row) => {
+          const confirmed = confirmedKeys.get(row.clientTaskKey || row.id);
+          if (confirmed) Object.assign(row, { id: confirmed.id, clientTaskKey: confirmed.clientTaskKey, localOnly: false });
+        });
+        // Keep edits made while a request was in flight; replace identities only.
+        draft.tasks = databaseRows.map((row) => currentRows.find((old) => String(old.id) === String(row.id)) || row)
+          .concat(pendingRows.filter((row) => !/^\d+$/.test(String(row.id || ""))));
       }
     });
   };
@@ -182,6 +200,7 @@ if (typeof orderDetailEditSave === "function") {
   orderDetailEditSave = function taskSyncSave() {
     const order = taskSyncOrder();
     const orderId = taskSyncOrderId(order);
+    if (taskSyncSaves.has(orderId)) return taskSyncSaves.get(orderId);
     const previousTasks = new Map((appData.orderTasks?.[orderId] || [])
       .filter((task) => Number(task.id) > 0)
       .map((task) => [Number(task.id), task]));
@@ -255,15 +274,11 @@ if (typeof orderDetailEditSave === "function") {
     };
 
     if (orderId) taskSyncPendingOrders.add(String(orderId));
-    const savingTasks = persistAssignments()
+    const savingTasks = Promise.resolve()
+      .then(() => typeof window.orderTaskPersistPending === "function" ? window.orderTaskPersistPending() : [])
+      .then(persistAssignments)
       .then((count) => {
-        if (draft && orderId && typeof orderFlowLoadTasks === "function") {
-          // Reopen from the rows confirmed by the database, not the optimistic
-          // values saved in the browser before the request finished.
-          draft.tasks = (appData.orderTasks?.[orderId] || [])
-            .filter((task) => /^\d+$/.test(String(task.id || "")))
-            .map((task, index) => taskSyncDraftFromTask(task, index, orderId))
-            .concat(draft.tasks.filter((task) => String(task.id || "").startsWith(TASK_SYNC_LOCAL_PREFIX)));
+        if (draft && orderId) {
           orderDetailEditWriteStored(orderId, draft);
         }
         if (!count) return;
@@ -275,9 +290,12 @@ if (typeof orderDetailEditSave === "function") {
         renderApp();
       }).finally(() => {
         taskSyncPendingOrders.delete(String(orderId));
+        taskSyncSaves.delete(orderId);
       });
 
-    return Promise.resolve(result).then(() => savingTasks);
+    const saving = Promise.resolve(result).then(() => savingTasks);
+    taskSyncSaves.set(orderId, saving);
+    return saving;
   };
 }
 

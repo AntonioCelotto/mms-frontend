@@ -273,6 +273,7 @@ async function orderFlowApplyTaskPlan(order) {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           order_id: Number(order?.db_id || order?.internal_id || order?.id),
+          client_task_key: plan.clientTaskKey ||= `plan-${window.crypto?.randomUUID?.() || Date.now() + '-' + Math.random().toString(36).slice(2)}`,
           task_name: `${plan.label || plan.phase} ordine`,
           task_phase: plan.phase,
           assigned_user_id: assignee.assigned_user_id,

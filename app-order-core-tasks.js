@@ -63,6 +63,7 @@ function orderCoreTaskNormalizeCurrentOrder() {
   const draft = appState.orderDetailEdits?.[orderId];
   if (draft && Array.isArray(draft.tasks)) {
     draft.tasks = orderCoreTaskNormalizeTasks(draft.tasks).map((task) => ({
+      ...task,
       id: task.id || "",
       name: task.name || "",
       phase: task.phase || "",

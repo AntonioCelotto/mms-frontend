@@ -125,6 +125,7 @@ function orderFlowTaskShape(task) {
   const dept = task.departments?.name || "Reparto";
   return {
     id: task.id,
+    clientTaskKey: task.client_task_key || "",
     name: task.task_name,
     phase: task.task_phase,
     team: `${dept} - ${owner}`,
