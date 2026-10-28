@@ -181,7 +181,8 @@ function orderDetailEditApplyStoredToOrders() {
     const draft = stored[Number(order.id)];
     if (!draft) return;
     order.client = draft.client || order.client;
-    order.category = draft.category || order.category;
+    // Never replace a server-backed archive category with an old browser draft.
+    if (!(order.db_id || order.internal_id)) order.category = draft.category || order.category;
     order.department = draft.department || order.department;
     order.priority = draft.priority || order.priority;
     if (!(order.db_id || order.internal_id)) order.status = draft.status || order.status;

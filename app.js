@@ -747,7 +747,7 @@ function filterOrders() {
         .includes(query);
 
     const matchesDepartment =
-      appState.filters.department === "all" || order.department === appState.filters.department;
+      appState.filters.department === "all" || orderArchiveCategory(order) === appState.filters.department;
     const matchesStatus =
       appState.filters.status === "all" || order.status === appState.filters.status;
     const matchesPayment =
@@ -971,6 +971,11 @@ function renderDashboard() {
   `;
 }
 
+function orderArchiveCategory(order) {
+  // Category is shared server data; a missing task assignment is not a category.
+  return String(order.category || "").trim() || String(order.department || "").trim() || "Da assegnare";
+}
+
 function orderArchiveDepartmentOptions() {
   // Configuration is shared by every account. Browser drafts and the current
   // set of tasks must never decide which departments appear in this filter.
@@ -991,10 +996,10 @@ function renderOrders() {
 
   function renderFilterSelect(key, options) {
     const labels = {
-      all: "tutti",
+      all: key === "department" ? "Tutte le categorie" : "tutti",
     };
     return `
-      <select class="filter-chip" data-filter="${key}">
+      <select class="filter-chip" data-filter="${key}" ${key === "department" ? 'aria-label="Categoria ordine" title="Filtra per categoria dell’ordine, anche senza task assegnate"' : ""}>
         ${options
           .map(
             (option) => `

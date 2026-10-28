@@ -76,6 +76,67 @@ class ScheduleTest(unittest.TestCase):
         self.assertEqual(schedule[2][0]["date"], "2026-09-28")
         self.assertEqual(labels(schedule, 2), ["08:00–09:00"])
 
+    def test_articles_do_not_block_each_other_by_insertion_order(self):
+        future = task(1, 1, "cartamodello", 5, 22, "2026-11-05")
+        earlier = task(2, 1, "cartamodello", 7.5, 22, "2026-10-29")
+        future["article_key"], earlier["article_key"] = "article-1", "article-3"
+        rows = [future, earlier]
+        original = copy.deepcopy(rows)
+        schedule = schedule_task_segments(rows, USERS)
+        self.assertEqual(schedule[2][0]["date"], "2026-10-29")
+        self.assertEqual(labels(schedule, 2), ["08:00–13:00 / 14:00–16:30"])
+        self.assertEqual(schedule[1][0]["date"], "2026-11-05")
+        self.assertEqual(schedule, schedule_task_segments(list(reversed(rows)), USERS))
+        self.assertEqual(rows, original, "Scheduling must not rewrite saved dates or hours")
+
+    def test_same_article_control_waits_but_other_article_can_run(self):
+        rows = [task(1, 1, "cartamodello", .5, 22), task(2, 1, "taglio", 1, 22),
+                task(3, 1, "confezione", 2, 22), task(4, 1, "controllo", .5, 23),
+                task(5, 1, "controllo", .5, 23)]
+        for row in rows[:4]:
+            row["article_key"] = "article-1"
+        rows[4]["article_key"] = "article-2"
+        schedule = schedule_task_segments(rows, USERS)
+        self.assertEqual(labels(schedule, 5), ["08:00–08:30"])
+        self.assertEqual(labels(schedule, 4), ["11:30–12:00"])
+        self.assertEqual(labels(schedule, 3), ["09:30–11:30"])
+
+    def test_sunrise_requested_october_task_remains_visible_in_october(self):
+        specs = [(2910,"article-1","cartamodello",5,23,"2026-11-05"),
+                 (2911,"article-5","cartamodello",4,23,"2026-11-05"),
+                 (2912,"article-9","cartamodello",8,23,"2026-11-04"),
+                 (2913,"article-2","confezione",2.5,22,"2026-10-28"),
+                 (2914,"article-2","taglio",1,22,"2026-10-29"),
+                 (2915,"article-7","cartamodello",9,23,"2026-11-03"),
+                 (2916,"article-3","cartamodello",7.5,23,"2026-10-29")]
+        rows = []
+        for ident, article, phase, hours, user, planned in specs:
+            row = task(ident, 1222, phase, hours, user, planned)
+            row["article_key"] = article
+            rows.append(row)
+        before = copy.deepcopy(rows)
+        schedule = schedule_task_segments(rows, USERS)
+        self.assertEqual(schedule[2916][0]["date"], "2026-10-29")
+        self.assertEqual(schedule[2914][0]["date"], "2026-10-29")
+        self.assertEqual(labels(schedule, 2914), ["08:00–09:00"])
+        self.assertEqual(labels(schedule, 2913), ["09:00–11:30"])
+        for row in rows:
+            self.assertAlmostEqual(sum(part["hours"] for part in schedule[row["id"]]), row["estimated_hours"])
+        self.assertEqual(schedule, schedule_task_segments(list(reversed(rows)), USERS))
+        self.assertEqual(rows, before)
+        occupied = task(2906, 1180, "taglio", 8, 22, "2026-10-29")
+        with_other_order = schedule_task_segments(rows + [occupied], USERS)
+        self.assertEqual(with_other_order[2916][0]["date"], "2026-10-29")
+        self.assertEqual(with_other_order[2914][0]["date"], "2026-10-30")
+        self.assertEqual(labels(with_other_order, 2914), ["08:00–09:00"])
+        self.assertEqual(labels(with_other_order, 2913), ["09:00–11:30"])
+
+    def test_unplannable_predecessor_does_not_release_its_control(self):
+        rows = [task(1, 1, "confezione", 4000, 22), task(2, 1, "controllo", .5, 23)]
+        schedule = schedule_task_segments(rows, USERS)
+        self.assertEqual(schedule[1], [])
+        self.assertNotIn(2, schedule)
+
 
 if __name__ == "__main__":
     unittest.main()
