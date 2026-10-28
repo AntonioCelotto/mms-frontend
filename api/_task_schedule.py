@@ -9,6 +9,7 @@ from __future__ import annotations
 
 import math
 import re
+import heapq
 from collections import defaultdict
 from datetime import date, datetime, timedelta
 
@@ -120,11 +121,12 @@ def _allocate(start, duration, account, staff_key, busy):
 def schedule_task_segments(tasks, users):
     """Return {task_id: daily segments}, accounting for every order and user.
 
-    Sorting is by requested start / deadline between orders, then by production
-    phase inside each order. A phase cannot begin before the previous one ends.
+    Dependencies belong to an article, not every article in its order. Legacy
+    tasks without an article retain their order-wide production chain. Ready
+    phases compete by requested start / deadline, never by insertion order.
     """
     accounts = {row.get("id"): row for row in users}
-    by_order = defaultdict(list)
+    chains = defaultdict(list)
     for row in tasks:
         person = accounts.get(row.get("assigned_user_id"), {})
         if row.get("assigned_user_id") and person.get("is_active") is False:
@@ -132,24 +134,33 @@ def schedule_task_segments(tasks, users):
         requested = _requested_start(row.get("planned_date") or row.get("due_date"))
         key = _staff_key(row)
         if requested and key and _minutes(row.get("actual_hours") if row.get("status") == "completato" and row.get("actual_hours") else row.get("estimated_hours")):
-            by_order[row.get("order_id")].append((row, requested, person, key))
-
-    def order_sort(item):
-        order_id, entries = item
-        start = min(entry[1] for entry in entries)
-        due = min(str(entry[0].get("due_date") or "9999-12-31")[:10] for entry in entries)
-        return start, due, str(order_id)
+            article = str(row.get("article_key") or "").strip()
+            chain = (row.get("order_id"), article)
+            chains[chain].append((row, requested, person, key))
 
     busy = defaultdict(list)
     result = {}
-    for _, entries in sorted(by_order.items(), key=order_sort):
-        chain_end = None
-        entries.sort(key=lambda entry: (_phase_rank(entry[0]), int(entry[0].get("sequence_order") or 99), entry[0]["id"]))
-        for row, requested, account, staff_key in entries:
-            earliest = max(requested, chain_end) if chain_end else requested
-            duration = _minutes(row.get("actual_hours") if row.get("status") == "completato" and row.get("actual_hours") else row.get("estimated_hours"))
-            segments, end = _allocate(earliest, duration, account, staff_key, busy)
-            result[row["id"]] = segments
-            if end:
-                chain_end = end
+    ready = []
+
+    def enqueue(chain, index, previous_end=None):
+        row, requested, _, _ = chains[chain][index]
+        earliest = max(requested, previous_end) if previous_end else requested
+        due = str(row.get("due_date") or "9999-12-31")[:10]
+        heapq.heappush(ready, (earliest, due, str(chain[0]), str(chain[1]),
+                              row["id"], index, chain))
+
+    for chain, entries in chains.items():
+        entries.sort(key=lambda entry: (_phase_rank(entry[0]), int(entry[0].get("sequence_order") or 99),
+                                        entry[1], entry[0]["id"]))
+        enqueue(chain, 0)
+
+    while ready:
+        earliest, _, _, _, _, index, chain = heapq.heappop(ready)
+        row, _, account, staff_key = chains[chain][index]
+        duration = _minutes(row.get("actual_hours") if row.get("status") == "completato" and row.get("actual_hours") else row.get("estimated_hours"))
+        segments, end = _allocate(earliest, duration, account, staff_key, busy)
+        result[row["id"]] = segments
+        # An unplannable predecessor must not release a dependent phase.
+        if end and index + 1 < len(chains[chain]):
+            enqueue(chain, index + 1, end)
     return result
