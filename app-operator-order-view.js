@@ -162,6 +162,7 @@
     const statePhotos = appState.orderAttachments?.[orderId] || appState.orderAttachments?.[String(orderId)] || [];
     const storedPhotos = readJson(PHOTO_STORE_KEY, {})[String(orderId)]?.photos || [];
     const merged = [...(Array.isArray(statePhotos) ? statePhotos : []), ...(Array.isArray(storedPhotos) ? storedPhotos : [])]
+      .filter((photo) => !(typeof isOrderPhotoHidden === "function" && isOrderPhotoHidden(photo, orderId)))
       .map(normalizePhoto)
       .filter(Boolean);
     const seen = new Set();

@@ -90,6 +90,7 @@
     const current = appState.orderAttachments[displayId] || [];
     const merged = [...current];
     attachments.forEach((attachment) => {
+      if (typeof isOrderPhotoHidden === "function" && isOrderPhotoHidden(attachment, displayId)) return;
       const url = attachment.url || attachment.localUrl || "";
       const exists = merged.some((item) => (item.url || item.localUrl || "") === url || ((item.name || "") === attachment.name && (item.size || 0) === attachment.size));
       if (!exists) merged.push(attachment);

@@ -80,3 +80,20 @@
 .attachment-actions .mini-btn {
   padding: 8px 9px;
 }
+
+.order-photo-confirm {
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  padding: 24px;
+  max-width: min(480px, 90vw);
+  max-height: 90vh;
+  overflow: auto;
+  color: var(--text);
+  background: var(--panel, white);
+}
+.order-photo-confirm::backdrop { background: rgba(0, 0, 0, .55); }
+.order-photo-confirm img { display: block; max-width: 100%; max-height: 35vh; margin: auto; object-fit: contain; }
+.order-photo-trash { margin-top: 18px; }
+.order-photo-trash summary { cursor: pointer; font-weight: 600; }
+.order-photo-trash-row { display: flex; justify-content: space-between; align-items: center; gap: 12px; padding: 10px 0; }
+.order-photo-trash-row span { overflow-wrap: anywhere; }

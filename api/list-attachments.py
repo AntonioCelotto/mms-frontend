@@ -58,15 +58,25 @@ class handler(BaseHTTPRequestHandler):
         if not profile_can_access_order(profile, order.get("id")):
             return write_json(self, {"error": "Operazione non autorizzata"}, HTTPStatus.FORBIDDEN)
 
+        try:
+            return handler.list_order_photos(self, profile, order, order_ref)
+        except RuntimeError as error:
+            return write_json(self, {"error": str(error)}, HTTPStatus.SERVICE_UNAVAILABLE)
+
+    def list_order_photos(self, profile, order, order_ref):
         rows = fetch_table(
             "attachments",
-            select="id,order_id,file_type,file_name,storage_bucket,storage_path,mime_type,file_size,created_at",
+            select="id,order_id,file_type,file_name,storage_bucket,storage_path,mime_type,file_size,created_at,deleted_at",
             filters={"order_id": f"eq.{order['id']}"},
             order="id.asc",
         )
         attachments = []
+        deleted = []
         try:
             for row in rows:
+                if row.get("deleted_at"):
+                    deleted.append({"id": row["id"], "name": row.get("file_name") or "Foto", "deleted_at": row["deleted_at"]})
+                    continue  # Never generate download links for trashed files.
                 bucket = row.get("storage_bucket") or ""
                 path = row.get("storage_path") or ""
                 if not bucket or not path:
@@ -82,7 +92,11 @@ class handler(BaseHTTPRequestHandler):
                 })
         except RuntimeError as error:
             return write_json(self, {"error": str(error)}, HTTPStatus.SERVICE_UNAVAILABLE)
-        return write_json(self, {"attachments": attachments})
+        can_manage = profile.get("access_profile") in {"admin", "commerce"}
+        return write_json(self, {"attachments": attachments, "can_manage": can_manage,
+                                 "deleted_attachments": deleted if can_manage else [],
+                                 "hidden_photo_names": [row["name"] for row in deleted],
+                                 "active_count": sum(not row.get("deleted_at") for row in rows)})
 
     def do_OPTIONS(self):
         return write_options(self)
