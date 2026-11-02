@@ -513,6 +513,7 @@ function orderDetailEditAttachQuotePhotos(order, quote, fallbackAttachments = []
   const current = appState.orderAttachments[displayId] || [];
   const merged = [...current];
   candidates.forEach((attachment) => {
+    if (typeof isOrderPhotoHidden === "function" && isOrderPhotoHidden(attachment, displayId)) return;
     const exists = merged.some((item) => (item.name || "") === (attachment.name || "") && (item.url || item.localUrl || "") === (attachment.url || attachment.localUrl || ""));
     if (!exists) merged.push(attachment);
   });

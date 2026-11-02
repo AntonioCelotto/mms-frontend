@@ -64,11 +64,12 @@
         const ordersChanged = changed(next, "orders") || changed(next, "tasks");
         const quotesChanged = changed(next, "quotes") && next.quotes;
         const jobs = [];
-        if (ordersChanged) jobs.push(read("/api/bootstrap").then((payload) => {
+        if (ordersChanged) jobs.push(read("/api/bootstrap").then(async (payload) => {
           if (!Array.isArray(payload.orders)) throw new Error("Archivio ordini non valido");
           // Preserve inventory and open drafts. A failed/empty request must not
           // replace the visible archive with a blank fallback.
           appData = { ...appData, ...payload, inventory: appData.inventory };
+          if (typeof invalidateOrderPhotoGalleries === "function") await invalidateOrderPhotoGalleries();
           if (appState.currentView === "calendar" || appState.currentView === "orders") renderWhenSafe();
         }));
         if (inventoryChanged) jobs.push(read("/api/inventory").then((payload) => {

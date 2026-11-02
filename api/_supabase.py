@@ -165,7 +165,7 @@ def build_bootstrap(profile=None):
     order_tasks = fetch_table("order_tasks", order="id.asc")
     order_materials = fetch_table("order_materials", order="id.asc")
     payments = fetch_table("payments", order="id.desc")
-    attachments = fetch_table("attachments", select="id,order_id", order="id.asc")
+    attachments = fetch_table("attachments", select="id,order_id", filters={"deleted_at": "is.null"}, order="id.asc")
 
     # Calculate across every order and every employee before restricting the
     # operator payload: otherwise an operator's calendar misses predecessors

@@ -134,6 +134,7 @@ function renderAttachmentCards(attachments, scope) {
             <button class="mini-btn" data-attachment-open="${scope}" data-attachment-index="${index}" type="button">Visualizza</button>
             <button class="mini-btn" data-attachment-download="${scope}" data-attachment-index="${index}" type="button">Scarica</button>
             ${scope === "draft" ? `<button class="mini-btn" data-attachment-remove="${index}" type="button">Rimuovi</button>` : ""}
+            ${scope === "order" && typeof renderOrderPhotoDeleteButton === "function" ? renderOrderPhotoDeleteButton(attachment) : ""}
           </div>
         </div>
       `
@@ -187,6 +188,7 @@ function renderOrderDetailAttachments() {
         </div>
         <p data-order-attachment-message role="status" hidden></p>
         <div data-order-attachment-gallery>${renderAttachmentCards(attachments, "order")}</div>
+        <div data-order-photo-trash>${typeof renderOrderPhotoTrash === "function" ? renderOrderPhotoTrash() : ""}</div>
       </div>
     </div>
   `;
@@ -390,7 +392,9 @@ async function loadPersistedOrderAttachments(orderId, force = false, stateKey = 
       if (!Array.isArray(payload.attachments)) throw new Error("Elenco allegati non valido");
       const persisted = payload.attachments.map(normalizePersistedAttachment);
       if (persisted.some(attachmentNeedsRefresh)) throw new Error("Collegamento foto non disponibile. Riprova tra poco.");
-      const pending = (appState.orderAttachments[stateKey] || []).filter((item) => item.fromQuote && !item.persisted);
+      if (typeof rememberOrderPhotoTrash === "function") rememberOrderPhotoTrash(payload, stateKey);
+      const pending = (appState.orderAttachments[stateKey] || []).filter((item) => item.fromQuote && !item.persisted &&
+        !(typeof isOrderPhotoHidden === "function" && isOrderPhotoHidden(item, stateKey)));
       appState.orderAttachments[stateKey] = [...persisted, ...pending.filter((item) =>
         !persisted.some((saved) => saved.name === item.name && Number(saved.size) === Number(item.size)))];
       appState.loadedOrderAttachmentIds[stateKey] = true;
@@ -422,6 +426,7 @@ function updateOrderAttachmentGallery(stateKey) {
   const message = document.querySelector("[data-order-attachment-message]");
   if (message) message.hidden = true;
   attachAttachmentCardEvents(gallery);
+  if (typeof updateOrderPhotoTrash === "function") updateOrderPhotoTrash(stateKey);
 }
 
 function scheduleAttachmentRefresh() {
@@ -527,6 +532,7 @@ function attachOrderEnhancementEvents() {
   }
 
   attachAttachmentCardEvents();
+  if (typeof attachOrderPhotoTrashEvents === "function") attachOrderPhotoTrashEvents();
   scheduleAttachmentRefresh();
 }
 
