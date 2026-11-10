@@ -1,9 +1,11 @@
 from __future__ import annotations
 
 import json
+import logging
 import os
 import re
 import socket
+import time
 from collections import defaultdict
 from datetime import datetime, timezone
 from urllib.error import HTTPError, URLError
@@ -49,14 +51,17 @@ def supabase_request(path: str, *, method: str = "GET", query: dict | None = Non
         data = json.dumps(payload, ensure_ascii=True).encode("utf-8")
 
     request = Request(url, data=data, headers=headers, method=method)
+    started = time.monotonic()
     try:
         with urlopen(request, timeout=SUPABASE_TIMEOUT_SECONDS) as response:
             body = response.read().decode("utf-8")
             return json.loads(body) if body else None
     except HTTPError as exc:
+        logging.warning("mms_dependency_failure stage=data method=%s path=%s status=%s elapsed_ms=%d", method, path, exc.code, (time.monotonic() - started) * 1000)
         detail = exc.read().decode("utf-8")
         raise RuntimeError(detail or exc.reason) from exc
     except (URLError, TimeoutError, socket.timeout) as exc:
+        logging.warning("mms_dependency_failure stage=data method=%s path=%s kind=%s elapsed_ms=%d", method, path, type(exc).__name__, (time.monotonic() - started) * 1000)
         raise RuntimeError(f"Supabase non raggiungibile entro {SUPABASE_TIMEOUT_SECONDS}s: {exc}") from exc
     except json.JSONDecodeError as exc:
         raise RuntimeError("Risposta Supabase non valida") from exc
@@ -471,6 +476,7 @@ def build_bootstrap(profile=None):
             {
                 "id": row["id"],
                 "role": "Amministratore" if row.get("role") == "admin" else "Visualizzatore",
+                "is_active": row.get("is_active") is True,
                 "name": full_name,
                 "phone": row.get("phone") or "",
                 "email": row.get("email") or "",

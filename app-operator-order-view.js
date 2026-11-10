@@ -152,6 +152,7 @@
     const url = photoUrl(photo);
     if (!url) return null;
     return {
+      ...photo,
       url,
       name: text(photo.name) || `Foto ${index + 1}`,
     };
@@ -161,7 +162,11 @@
     const orderId = Number(order?.id || selectedOperatorOrderId());
     const statePhotos = appState.orderAttachments?.[orderId] || appState.orderAttachments?.[String(orderId)] || [];
     const storedPhotos = readJson(PHOTO_STORE_KEY, {})[String(orderId)]?.photos || [];
-    const merged = [...(Array.isArray(statePhotos) ? statePhotos : []), ...(Array.isArray(storedPhotos) ? storedPhotos : [])]
+    const persistedNames = new Set(statePhotos.filter((photo) => photo.persisted).map((photo) => photo.name));
+    const previews = (Array.isArray(storedPhotos) ? storedPhotos : [])
+      .filter((photo) => !persistedNames.has(photo.name))
+      .map((photo) => ({ ...photo, fromQuote: true, persisted: false }));
+    const merged = [...(Array.isArray(statePhotos) ? statePhotos : []), ...previews]
       .filter((photo) => !(typeof isOrderPhotoHidden === "function" && isOrderPhotoHidden(photo, orderId)))
       .map(normalizePhoto)
       .filter(Boolean);
@@ -234,21 +239,12 @@
 
   function renderPhotos(order) {
     const photos = photosForOrder(order);
-    if (!photos.length) return `<div class="empty-state">Nessuna foto collegata a questo ordine.</div>`;
-    return `
-      <div class="operator-photo-grid">
-        ${photos
-          .map(
-            (photo) => `
-          <a class="operator-photo" href="${escapeHtml(photo.url)}" target="_blank" rel="noopener">
-            <img src="${escapeHtml(photo.url)}" alt="${escapeHtml(photo.name)}" />
-            <span>${escapeHtml(photo.name)}</span>
-          </a>
-        `
-          )
-          .join("")}
-      </div>
-    `;
+    if (appState.currentView === "operator-order") {
+      ensureOrderAttachmentState();
+      appState.orderAttachments[Number(order.id)] = photos;
+    }
+    return `<div data-operator-photo-panel><div data-order-attachment-gallery>${renderAttachmentCards(photos, "order")}</div>
+      <p data-order-attachment-message role="status" hidden></p></div>`;
   }
 
   function renderTasks(order) {
@@ -406,6 +402,11 @@
   renderApp = function renderAppWithOperatorOrder() {
     ensureStyles();
     baseRenderAppOperatorOrder();
+    if (appState.currentView === "operator-order") {
+      attachAttachmentCardEvents();
+      scheduleAttachmentRefresh();
+      loadPersistedOrderAttachments(getSelectedOrderStorageId(), false, getSelectedOrderDisplayId()).catch(() => {});
+    }
   };
 
   document.addEventListener(

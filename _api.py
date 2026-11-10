@@ -1,11 +1,13 @@
 from __future__ import annotations
 
 import json
+import logging
 import os
 import socket
+import time
 from http import HTTPStatus
 from urllib.error import HTTPError, URLError
-from urllib.parse import urlencode
+from urllib.parse import urlencode, urlsplit
 from urllib.request import Request, urlopen
 
 MAX_JSON_BODY_BYTES = 128 * 1024
@@ -42,6 +44,7 @@ def _write_cors_headers(handler):
 
 def _request_json(url, *, headers=None):
     request = Request(url, headers=headers or {}, method="GET")
+    started = time.monotonic()
     try:
         with urlopen(request, timeout=AUTH_TIMEOUT_SECONDS) as response:
             body = response.read().decode("utf-8")
@@ -49,8 +52,10 @@ def _request_json(url, *, headers=None):
     except HTTPError as exc:
         if exc.code in (HTTPStatus.UNAUTHORIZED, HTTPStatus.FORBIDDEN):
             return None
+        logging.warning("mms_dependency_failure stage=access path=%s status=%s elapsed_ms=%d", urlsplit(url).path, exc.code, (time.monotonic() - started) * 1000)
         raise RuntimeError("Verifica accesso non disponibile") from exc
     except (URLError, TimeoutError, socket.timeout, json.JSONDecodeError) as exc:
+        logging.warning("mms_dependency_failure stage=access path=%s kind=%s elapsed_ms=%d", urlsplit(url).path, type(exc).__name__, (time.monotonic() - started) * 1000)
         raise RuntimeError("Verifica accesso non disponibile") from exc
 
 
