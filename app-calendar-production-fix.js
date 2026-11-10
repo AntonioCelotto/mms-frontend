@@ -61,11 +61,16 @@
   }
 
   async function loadActiveAccounts() {
+    // The bootstrap already supplies the authorized production roster. The
+    // full account-management endpoint remains reserved for administrators.
+    const profile = window.mmsAuthProfile;
+    if (profile?.access_profile !== "admin") return;
     if (accountsLoaded || accountsLoading) return;
     accountsLoading = true;
     try {
       const response = await fetch("/api/accounts", { headers: { Accept: "application/json" } });
       const payload = await response.json().catch(() => ({}));
+      if (window.mmsAuthProfile !== profile) return;
       if (!response.ok || !Array.isArray(payload.accounts)) return;
       appState.calendarActiveAccounts = payload.accounts.filter(isProductionAccount);
       appData.accounts = payload.accounts.filter(isProductionAccount);
@@ -226,6 +231,11 @@
     };
   }
 
+  window.addEventListener?.("mms-auth-profile", () => {
+    accountsLoaded = false;
+    appState.calendarActiveAccounts = [];
+    setTimeout(loadActiveAccounts, 0);
+  });
   loadActiveAccounts();
   if (document.getElementById("app")?.innerHTML) renderApp();
 })();

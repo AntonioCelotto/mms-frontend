@@ -210,3 +210,35 @@ test("Renewal keeps pending quote photos and still works with the production nor
   assert.equal(f.context.attachmentNeedsRefresh(f.context.appState.orderAttachments[1143][0]), false);
   assert.equal(f.context.appState.orderAttachments[1143][1].localUrl, "blob:pending");
 });
+
+test("Operator gallery uses protected renewal, targets its own panel, and never emits an expired src", async () => {
+  const f = fixture(), c = f.context;
+  c.appState.currentView = 'operator-order';
+  c.appState.operatorOrderId = 1143;
+  c.appData = {orders:[f.order]};
+  c.window.mmsAuthProfile = {access_profile:'operator',is_active:true};
+  c.document.getElementById = () => null;
+  const hiddenGallery = node();
+  const panel = {querySelector(selector) {
+    return selector === '[data-order-attachment-gallery]' ? f.gallery : null;
+  }, querySelectorAll:() => []};
+  const baseQuery = c.document.querySelector;
+  c.document.querySelector = selector => selector === '[data-operator-photo-panel]' ? panel :
+    selector === '[data-order-attachment-gallery]' ? hiddenGallery : baseQuery(selector);
+  let operatorSource = fs.readFileSync('app-operator-order-view.js','utf8');
+  operatorSource = operatorSource.replace('  const baseRenderLayoutOperatorOrder',
+    '  window.operatorPhotoTest = { renderPhotos, photosForOrder };\n  const baseRenderLayoutOperatorOrder');
+  vm.runInContext(operatorSource, c);
+  f.remember(signed(f.now() - 1000));
+  const html = c.window.operatorPhotoTest.renderPhotos(f.order);
+  assert.doesNotMatch(html, /\bsrc=/);
+  assert.match(html, /data-attachment-open/);
+  assert.doesNotMatch(html, /Cancella/);
+  await c.loadPersistedOrderAttachments(1164, false, 1143);
+  assert.match(f.gallery.innerHTML, /\bsrc=/);
+  assert.equal(hiddenGallery.innerHTML, '', 'A hidden admin panel must not intercept the operator update');
+  assert.equal(c.appState.draftOrder.note, 'Non perdere queste modifiche');
+  assert.equal(f.renders(), 0);
+  c.scheduleAttachmentRefresh();
+  assert.equal(f.timers()[0].delay, 3540000);
+});

@@ -1,13 +1,15 @@
 from __future__ import annotations
 
 import json
+import logging
 import os
 import socket
+import time
 from datetime import datetime, timezone
 from http import HTTPStatus
 from http.server import BaseHTTPRequestHandler
 from urllib.error import HTTPError, URLError
-from urllib.parse import urlencode
+from urllib.parse import urlencode, urlsplit
 from urllib.request import Request, urlopen
 
 from _api import _write_cors_headers
@@ -21,6 +23,12 @@ SUPABASE_ANON_KEY = os.environ.get(
 SUPABASE_REST_KEY = os.environ.get("SUPABASE_SERVICE_ROLE_KEY") or SUPABASE_ANON_KEY
 TIMEOUT_SECONDS = 8
 MAX_JSON_BODY_BYTES = 64 * 1024
+
+
+class UpstreamHTTPError(RuntimeError):
+    def __init__(self, status):
+        self.status = status
+        super().__init__("Servizio profilo temporaneamente non disponibile")
 
 
 def clean_text(value):
@@ -69,15 +77,17 @@ def request_json(url, *, method="GET", payload=None, headers=None):
     if payload is not None:
         data = json.dumps(payload, ensure_ascii=True).encode("utf-8")
     request = Request(url, data=data, headers=headers or {}, method=method)
+    started = time.monotonic()
     try:
         with urlopen(request, timeout=TIMEOUT_SECONDS) as response:
             body = response.read().decode("utf-8")
             return json.loads(body) if body else None
     except HTTPError as exc:
-        detail = exc.read().decode("utf-8")
-        raise RuntimeError(detail or exc.reason) from exc
+        logging.warning("mms_dependency_failure stage=auth_profile method=%s path=%s status=%s elapsed_ms=%d", method, urlsplit(url).path, exc.code, (time.monotonic() - started) * 1000)
+        raise UpstreamHTTPError(exc.code) from exc
     except (URLError, TimeoutError, socket.timeout) as exc:
-        raise RuntimeError(f"Supabase non raggiungibile entro {TIMEOUT_SECONDS}s: {exc}") from exc
+        logging.warning("mms_dependency_failure stage=auth_profile method=%s path=%s kind=%s elapsed_ms=%d", method, urlsplit(url).path, type(exc).__name__, (time.monotonic() - started) * 1000)
+        raise RuntimeError("Servizio profilo temporaneamente non disponibile") from exc
     except json.JSONDecodeError as exc:
         raise RuntimeError("Risposta Supabase non valida") from exc
 
@@ -103,14 +113,19 @@ def verify_token(handler):
     token = header.split(" ", 1)[1].strip()
     if not token:
         return None
-    return request_json(
-        f"{SUPABASE_URL}/auth/v1/user",
-        headers={
-            "apikey": SUPABASE_ANON_KEY,
-            "Authorization": f"Bearer {token}",
-            "Content-Type": "application/json",
-        },
-    )
+    try:
+        return request_json(
+            f"{SUPABASE_URL}/auth/v1/user",
+            headers={
+                "apikey": SUPABASE_ANON_KEY,
+                "Authorization": f"Bearer {token}",
+                "Content-Type": "application/json",
+            },
+        )
+    except UpstreamHTTPError as error:
+        if error.status in (HTTPStatus.UNAUTHORIZED, HTTPStatus.FORBIDDEN):
+            return None  # Invalid/expired Auth token, not an application 500.
+        raise
 
 
 def split_name(metadata, email):
@@ -250,7 +265,7 @@ class handler(BaseHTTPRequestHandler):
         try:
             auth_user = verify_token(self)
             if not auth_user:
-                return write_json(self, {"error": "Accesso non valido"}, HTTPStatus.UNAUTHORIZED)
+                return write_json(self, {"error": "Sessione scaduta o non valida. Accedi nuovamente."}, HTTPStatus.UNAUTHORIZED)
             profile = sync_profile(auth_user)
             if not profile["is_active"]:
                 return write_json(
@@ -263,10 +278,13 @@ class handler(BaseHTTPRequestHandler):
                     HTTPStatus.FORBIDDEN,
                 )
             return write_json(self, {"profile": profile})
+        except RuntimeError:
+            return write_json(self, {"error": "Verifica accesso temporaneamente non disponibile. Riprova tra poco."}, HTTPStatus.SERVICE_UNAVAILABLE)
         except Exception as error:
+            logging.error("mms_profile_failure kind=%s", type(error).__name__)
             return write_json(
                 self,
-                {"error": "Profilo accesso non disponibile", "detail": str(error)},
+                {"error": "Profilo accesso non disponibile"},
                 HTTPStatus.INTERNAL_SERVER_ERROR,
             )
 

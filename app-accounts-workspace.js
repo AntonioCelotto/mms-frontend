@@ -470,10 +470,13 @@ function renderAccounts() {
 }
 
 async function refreshAccountsWorkspaceData({ rerender = true } = {}) {
+  const profile = window.mmsAuthProfile;
+  if (profile?.access_profile !== "admin") return false;
   try {
     const response = await fetch(ACCOUNT_API_PATH, { headers: await accountApiHeaders() });
     if (!response.ok) return false;
     const payload = await response.json();
+    if (window.mmsAuthProfile !== profile) return false;
     if (payload && Array.isArray(payload.accounts)) {
       appData.accounts = payload.accounts;
       if (rerender && appState.currentView === "accounts") renderApp();
@@ -720,4 +723,10 @@ if (accountsWorkspaceRoot && accountsWorkspaceRoot.innerHTML) {
   renderApp();
 }
 
+window.addEventListener("mms-auth-profile", () => {
+  // Supabase auth callbacks must return before asking for the session again.
+  setTimeout(() => {
+    if (window.mmsAuthProfile?.access_profile === "admin") refreshAccountsWorkspaceData();
+  }, 0);
+});
 refreshAccountsWorkspaceData();
