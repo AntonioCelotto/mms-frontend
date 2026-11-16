@@ -749,11 +749,11 @@ function filterOrders() {
     const matchesDepartment =
       appState.filters.department === "all" || orderArchiveCategory(order) === appState.filters.department;
     const matchesStatus =
-      appState.filters.status === "all" || order.status === appState.filters.status;
+      appState.filters.status === "all" || orderArchiveFilterValue("status", order) === orderArchiveFilterKey("status", appState.filters.status);
     const matchesPayment =
-      appState.filters.payment === "all" || order.payment === appState.filters.payment;
+      appState.filters.payment === "all" || orderArchiveFilterValue("payment", order) === orderArchiveFilterKey("payment", appState.filters.payment);
     const matchesPriority =
-      appState.filters.priority === "all" || order.priority === appState.filters.priority;
+      appState.filters.priority === "all" || orderArchiveFilterValue("priority", order) === orderArchiveFilterKey("priority", appState.filters.priority);
 
     return matchesSearch && matchesDepartment && matchesStatus && matchesPayment && matchesPriority;
   });
@@ -986,25 +986,60 @@ function orderArchiveDepartmentOptions() {
   return ["all", "Da assegnare", ...new Set(names.filter((name) => name !== "Da assegnare" && name !== "all"))];
 }
 
+function orderArchiveFilterKey(field, value) {
+  const key = String(value ?? "").trim().toLowerCase().replace(/[\s_]+/g, "_");
+  if (field !== "status") return key;
+  // Display labels differ between bootstrap (.title()) and the detail editor.
+  // Compare the saved status code, never capitalization or a browser-only label.
+  const aliases = {
+    in_corso: "in_produzione", in_lavorazione: "in_produzione",
+    completata: "completato", evaso: "completato", evasa: "completato",
+    stand_by: "sospeso", annullata: "annullato",
+  };
+  return aliases[key] || key;
+}
+
+function orderArchiveFilterValue(field, order) {
+  return orderArchiveFilterKey(field, field === "status" ? order.statusKey || order.status : order[field]);
+}
+
+function orderArchiveFilterOptions(field) {
+  return ["all", ...new Set(appData.orders.map((order) => orderArchiveFilterValue(field, order)).filter(Boolean))];
+}
+
+function orderArchiveFilterLabel(field, value) {
+  if (field === "department") return value === "all" ? "Tutte le categorie" : value;
+  const labels = {
+    all: "tutti", da_avviare: "Da avviare", in_produzione: "In produzione",
+    completato: "Completato", sospeso: "Sospeso", annullato: "Annullato",
+    da_pagare: "Da pagare", pagato: "Pagato", parziale: "Parziale",
+    standard: "Standard", urgente: "Urgente",
+  };
+  const key = orderArchiveFilterKey(field, value);
+  const text = key.replace(/_/g, " ");
+  return labels[key] || text.charAt(0).toUpperCase() + text.slice(1);
+}
+
 function renderOrders() {
   const departments = orderArchiveDepartmentOptions();
   if (!departments.includes(appState.filters.department)) appState.filters.department = "all";
+  const statuses = orderArchiveFilterOptions("status");
+  const payments = orderArchiveFilterOptions("payment");
+  const priorities = orderArchiveFilterOptions("priority");
+  for (const [field, options] of [["status", statuses], ["payment", payments], ["priority", priorities]]) {
+    const key = orderArchiveFilterKey(field, appState.filters[field]);
+    appState.filters[field] = options.includes(key) ? key : "all";
+  }
   const orders = filterOrders();
-  const statuses = ["all", ...new Set(appData.orders.map((order) => order.status))];
-  const payments = ["all", ...new Set(appData.orders.map((order) => order.payment))];
-  const priorities = ["all", ...new Set(appData.orders.map((order) => order.priority))];
 
   function renderFilterSelect(key, options) {
-    const labels = {
-      all: key === "department" ? "Tutte le categorie" : "tutti",
-    };
     return `
       <select class="filter-chip" data-filter="${key}" ${key === "department" ? 'aria-label="Categoria ordine" title="Filtra per categoria dell’ordine, anche senza task assegnate"' : ""}>
         ${options
           .map(
             (option) => `
           <option value="${option}" ${appState.filters[key] === option ? "selected" : ""}>
-            ${labels[option] || option}
+            ${orderArchiveFilterLabel(key, option)}
           </option>
         `
           )

@@ -2,6 +2,8 @@ const assert = require('node:assert/strict'), fs = require('node:fs'), vm = requ
 const source = fs.readFileSync('app.js','utf8');
 const options = source.match(/function orderArchiveDepartmentOptions\(\) \{[\s\S]*?\n\}/)[0];
 const render = source.match(/function renderOrders\(\) \{[\s\S]*?\n\}/)[0];
+const filterHelpers = ['orderArchiveFilterKey','orderArchiveFilterValue','orderArchiveFilterOptions','orderArchiveFilterLabel']
+  .map(name=>source.match(new RegExp('function '+name+'\\([^]*?\\n\\}'))[0]).join('\n');
 const expected = ['all','Da assegnare','Sartoria interna','Sartoria esterna','Commercio'];
 const departments = expected.slice(2).map((name,id)=>({id,name}));
 const contexts = [];
@@ -12,7 +14,7 @@ for(const rows of [
 ]) {
   const c = vm.createContext({appData:{orders:structuredClone(rows),departments},
     appState:{currentView:'orders',search:'',filters:{department:'all',status:'all',payment:'all',priority:'all'}},filterOrders:()=>[]});
-  vm.runInContext(options+'\n'+render,c);
+  vm.runInContext(filterHelpers+'\n'+options+'\n'+render,c);
   assert.deepEqual(Array.from(c.orderArchiveDepartmentOptions()),expected);
   const before=JSON.stringify(c.appData.orders);
   const html=c.renderOrders();
@@ -43,7 +45,7 @@ const rows = [
 for (const browserDepartment of ['Da assegnare','Sartoria interna','Commercio']) {
   const c=vm.createContext({appData:{orders:structuredClone(rows)},appState:{search:'',filters:{department:'Sartoria interna',status:'all',payment:'all',priority:'all'}}});
   c.appData.orders[0].department=browserDepartment;
-  vm.runInContext(category+'\n'+filter,c);
+  vm.runInContext(filterHelpers+'\n'+category+'\n'+filter,c);
   assert.deepEqual(Array.from(c.filterOrders(),x=>x.id),[918,839]);
   c.appState.filters.department='Commercio'; assert.deepEqual(Array.from(c.filterOrders(),x=>x.id),[917]);
   c.appState.filters.department='Sartoria esterna'; assert.deepEqual(Array.from(c.filterOrders(),x=>x.id),[916]);
