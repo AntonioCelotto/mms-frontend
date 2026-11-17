@@ -43,6 +43,7 @@
         const currentMissing = currentId || !row.product_name ? "" : `<option value="" disabled>${esc(row.product_name)} - non collegato</option>`;
         return `<tr>
           <td>
+            ${typeof window.mmsMaterialArticleSelect === "function" ? window.mmsMaterialArticleSelect(row,index) : ""}
             ${source === "cliente" ? `<input class="field-value" data-order-detail-material-index="${index}" data-order-detail-material-field="product_name" value="${esc(row.product_name)}" placeholder="Nome materiale cliente" />` : `<select class="filter-chip" data-order-detail-material-index="${index}" data-order-detail-material-field="inventory_item_id"><option value="">Seleziona dal Magazzino</option>${currentMissing}${items.map((item) => `<option value="${item.id}" ${currentId === item.id ? "selected" : ""}>${esc(item.name)} - ${esc(item.sku)}</option>`).join("")}</select>`}
             ${row.inventory_sku || row.sku ? `<div class="muted" style="margin-top:5px;">Codice MMS: ${esc(row.inventory_sku || row.sku)}</div>` : ""}
           </td>
@@ -50,7 +51,7 @@
           <td><select class="filter-chip" data-order-detail-material-index="${index}" data-order-detail-material-field="source_type"><option value="mms" ${source === "mms" ? "selected" : ""}>MMS</option><option value="cliente" ${source === "cliente" ? "selected" : ""}>Cliente</option></select></td>
           <td><select class="filter-chip" data-order-detail-material-index="${index}" data-order-detail-material-field="delivery_status"><option value="non_consegnato" ${row.delivery_status !== "consegnato" ? "selected" : ""}>Non consegnato</option><option value="consegnato" ${row.delivery_status === "consegnato" ? "selected" : ""}>Consegnato</option></select></td>
           <td><input class="field-value" data-order-detail-material-index="${index}" data-order-detail-material-field="warehouse_status_note" value="${esc(row.warehouse_status_note)}" readonly /></td>
-          ${typeof availabilityCell === "function" ? availabilityCell(row) : `<td>${currentId ? "Collegato" : "Da collegare"}</td>`}
+          ${typeof window.mmsOrderMaterialAvailabilityCell === "function" ? window.mmsOrderMaterialAvailabilityCell(row,index,rows) : `<td>${currentId ? "Collegato" : "Da collegare"}</td>`}
           <td><input class="field-value" data-order-detail-material-index="${index}" data-order-detail-material-field="preorder_note" value="${esc(row.preorder_note)}" /></td>
           <td><button class="mini-btn" data-order-detail-remove-material="${index}" type="button">Rimuovi</button></td>
         </tr>`;

@@ -96,6 +96,8 @@
     const sku = text(material?.inventory_sku || material?.sku);
     return {
       ...material,
+      article_key: text(material?.article_key || material?.articleKey),
+      article_name: text(material?.article_name || material?.articleName),
       product_name: productName,
       material: productName,
       quantity_required: number(material?.quantity_required ?? material?.quantity, 1) || 1,
@@ -116,10 +118,12 @@
   function materialsFromQuotePayload(payload) {
     const rows = [];
     const articles = Array.isArray(payload?.articles) ? payload.articles : [];
-    articles.forEach((article) => {
+    articles.forEach((article, articleIndex) => {
       (Array.isArray(article?.materials) ? article.materials : []).forEach((material) => {
         const row = normalizeOrderMaterial({
           ...material,
+          article_key: String(article.id || article.code || `article-${articleIndex+1}`),
+          article_name: article.name || article.product_name || `Articolo ${articleIndex+1}`,
           product_name: material.product_name || material.material || material.name,
           quantity_required: material.quantity_required || material.quantity || material.qty,
           preorder_note: material.preorder_note || material.note || `Articolo: ${article.name || "n/d"}`,
@@ -274,6 +278,7 @@
       const payload = await response.json().catch(() => ({}));
       if (!response.ok) throw new Error(payload.detail || payload.error || "API materiali non disponibile");
       if (typeof orderFlowLoadMaterials === "function") await orderFlowLoadMaterials(order);
+      if (typeof window.mmsMaterialsRefreshStock === "function") await window.mmsMaterialsRefreshStock().catch(error=>console.warn(error.message));
       return Number(payload.saved || 0);
     } catch (error) {
       apiError = error;
@@ -286,6 +291,7 @@
         body: JSON.stringify({ p_order_id: dbId, p_materials: normalized }),
       });
       if (typeof orderFlowLoadMaterials === "function") await orderFlowLoadMaterials(order);
+      if (typeof window.mmsMaterialsRefreshStock === "function") await window.mmsMaterialsRefreshStock().catch(error=>console.warn(error.message));
       return Number(saved || 0);
     } catch (fallbackError) {
       throw new Error(`${apiError?.message || "API materiali non riuscita"}; fallback database: ${fallbackError.message}`);
@@ -361,20 +367,23 @@
       const signature = (rows) => JSON.stringify((rows || []).map((item) => {
         const row = normalizeOrderMaterial(item);
         return [row.product_name, row.quantity_required, row.inventory_item_id, row.inventory_sku,
-          row.source_type, row.delivery_status, row.warehouse_status_note, row.preorder_note, row.notes];
+          row.source_type, row.delivery_status, row.warehouse_status_note, row.preorder_note, row.notes,
+          row.article_key || row.articleKey || "", row.article_name || row.articleName || ""];
       }).filter((row) => row[0]));
       const materialsChanged = !!order && signature(materials) !== signature(appData.orderMaterials?.[Number(order.id)]);
       const result = baseOrderDetailSave();
       if (materialsChanged) {
-        saveMaterialsReliably(order, materials)
+        return Promise.resolve(result).then(()=>saveMaterialsReliably(order, materials))
           .then((saved) => {
             state.detailLoaded.delete(Number(order.db_id || 0));
             setFlashMessage(`Modifiche ordine salvate: ${saved} elementi collegati al Magazzino`);
             renderApp();
+            return result;
           })
           .catch((error) => {
             setFlashMessage(`Ordine aggiornato, ma materiali non salvati: ${error.message}`);
             renderApp();
+            throw error;
           });
       }
       return result;

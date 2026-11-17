@@ -52,6 +52,7 @@
         if (value && !known.has(value)) select.add(new Option(`${item.name || item.product || "Elemento"} - ${item.sku || item.mms_code || ""}`, value));
       });
     });
+    if (typeof window.mmsRefreshMaterialAvailability === "function") window.mmsRefreshMaterialAvailability();
   }
 
   async function tick() {

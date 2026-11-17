@@ -344,7 +344,9 @@ def build_bootstrap(profile=None):
                 "name": task["task_name"],
                 "phase": task["task_phase"],
                 "team": f"{department_name} - {owner}",
-                "hours": f"{float(task.get('estimated_hours') or 0):.1f} h".replace(".", ","),
+                "hours": ((f"{float(task.get('estimated_hours') or 0):.6f}".rstrip("0").rstrip(".") if task.get("unit_hours") is not None else f"{float(task.get('estimated_hours') or 0):.1f}") + " h").replace(".", ","),
+                "quantity": task.get("quantity") or 1,
+                "unitHours": task.get("unit_hours") if task.get("unit_hours") is not None else task.get("estimated_hours"),
                 "time": task.get("planned_date") or "Da pianificare",
                 "state": (task.get("status") or "").replace("_", " ").title(),
                 "calendarDay": task.get("calendar_day_label") or "Da pianificare",
@@ -394,6 +396,9 @@ def build_bootstrap(profile=None):
         inventory_item = inventory_map.get(material.get("inventory_item_id"))
         order_materials_payload[str(display_order_id)].append(
             {
+                "id": material["id"],
+                "article_key": material.get("article_key") or "",
+                "article_name": material.get("article_name") or "",
                 "material": material["product_name"],
                 "product_name": material["product_name"],
                 "inventory_item_id": material.get("inventory_item_id"),

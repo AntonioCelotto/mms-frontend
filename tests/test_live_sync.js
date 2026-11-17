@@ -5,6 +5,7 @@ const vm = require("node:vm");
 async function main() {
   let markers = { inventory: { id: 1 }, orders: { id: 1 }, tasks: { id: 1 }, quotes: { id: 1 } };
   let redraws = 0;
+  let availabilityRefreshes = 0;
   let poll;
   const options = [{ value: "1" }];
   const picker = { options, appendChild(fragment) { options.push(...fragment.options); } };
@@ -20,7 +21,7 @@ async function main() {
     appState,
     appData: { inventory: [{ id: 1, name: "Vecchio" }], orders: [{ id: 1 }], orderTasks: {} },
     document,
-    window: { mmsAuthProfile: { access_profile: "commerce" }, addEventListener() {} },
+    window: { mmsAuthProfile: { access_profile: "commerce" }, addEventListener() {}, mmsRefreshMaterialAvailability() { availabilityRefreshes += 1; } },
     Option: function (label, value) { this.label = label; this.value = value; },
     setInterval: (callback) => { poll = callback; },
     setTimeout: (callback) => callback(),
@@ -43,6 +44,7 @@ async function main() {
   assert.equal(appState.draftOrder.client, "Bozza di Nicola");
   assert.equal(options.some((option) => option.value === "2"), true);
   assert.equal(redraws, 0, "The form must remain mounted while Nicola is typing");
+  assert.equal(availabilityRefreshes, 1, "Material availability refreshes in place without losing the draft");
 
   document.activeElement = { matches: () => false };
   appState.currentView = "orders";

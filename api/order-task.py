@@ -10,6 +10,10 @@ from urllib.request import Request, urlopen
 
 from _api import clean_text, parse_optional_positive_int, parse_positive_int, read_json_body, require_access, write_json, write_options
 from _supabase import SUPABASE_KEY, SUPABASE_URL, delete_rows, fetch_table, resolve_order, supabase_request
+try:
+    from _task_quantity import quantity_fields
+except ModuleNotFoundError:
+    from api._task_quantity import quantity_fields
 
 
 CORE_PHASES = {"cartamodello", "taglio", "confezione"}
@@ -111,6 +115,10 @@ class handler(BaseHTTPRequestHandler):
         if request_key and not re.fullmatch(r"[A-Za-z0-9_-]{8,200}", request_key):
             return write_json(self, {"error": "Identificativo task non valido"}, HTTPStatus.BAD_REQUEST)
         raw_hours = payload.get("estimated_hours", payload.get("hours"))
+        try:
+            quantity_payload = quantity_fields(payload)
+        except ValueError as error:
+            return write_json(self, {"error": str(error)}, HTTPStatus.BAD_REQUEST)
         if raw_hours not in (None, "") and parse_hours(raw_hours) is None:
             return write_json(self, {"error": "Ore task non valide"}, HTTPStatus.BAD_REQUEST)
 
@@ -156,6 +164,7 @@ class handler(BaseHTTPRequestHandler):
                     "article_name": article_name,
                     "due_date": clean_text(payload.get("due_date") or payload.get("dueDate")) or None,
                     "sequence_order": sequence_for_phase(task_phase),
+                    **quantity_payload,
                 },
                 request_key,
             )

@@ -2,7 +2,7 @@ const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const vm = require('node:vm');
 
-function setup() {
+function setup(quantities = false) {
   const order = { id: 1146, db_id: 1168 };
   const draft = { tasks: [] };
   const rows = new Map(), requests = [], patches = [];
@@ -30,7 +30,7 @@ function setup() {
       return { ok: true, json: async () => rows.get(payload.client_task_key) };
     },
   });
-  for (const f of ['app-order-task-sync-v2.js', 'app-order-core-tasks.js', 'app-order-extra-task-fix.js'])
+  for (const f of [...(quantities ? ['app-task-quantity.js'] : []), 'app-order-task-sync-v2.js', 'app-order-core-tasks.js', 'app-order-extra-task-fix.js'])
     vm.runInContext(fs.readFileSync(f, 'utf8'), c, { filename: f });
   const add = (key, article = 'article-2') => draft.tasks.push({
     id: `local-task-1146-manual-${key}`, name: 'Confezione', phase: 'confezione',
@@ -41,6 +41,16 @@ function setup() {
 }
 
 (async () => {
+  const q = setup(true); q.add('quantity');
+  Object.assign(q.draft.tasks[0], {quantity: 10, unitHours: 7});
+  q.c.taskQuantityApply(q.draft.tasks[0]);
+  await Promise.all([q.c.window.orderTaskPersistPending(), q.c.window.orderTaskPersistPending()]);
+  for (let i = 0; i < 3; i++) { q.c.renderApp(); await q.c.orderDetailEditSave(); }
+  assert.equal(q.requests.length, 1, '10 pieces still create exactly one task');
+  assert.equal(q.requests[0].quantity, 10); assert.equal(q.requests[0].unit_hours, 7);
+  assert.equal(q.requests[0].estimated_hours, 70);
+  assert.equal(q.draft.tasks.length, 1); assert.equal(q.draft.tasks[0].hours, '70');
+  assert.equal(q.draft.tasks[0].unitHours, 7);
   const x = setup(); x.add('one');
   const first = x.c.window.orderTaskPersistPending();
   x.c.renderApp(); // The exact row-object replacement that used to cause 8 -> 16 -> 24.
