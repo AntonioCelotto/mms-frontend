@@ -6,8 +6,9 @@ PREPARED ONLY. Do not merge or migrate production until Antonio confirms all
 operators have saved their work and exited. Base production commit:
 `47c32a3af50fbabcc60c544240d6ada00ad942be`.
 
-This is point 1 only. Article/material linkage and stock requirements, and a
-calendar queue for unassigned tasks, remain separate subsequent changes.
+This document covers point 1. Points 2 and 3 have since been prepared on the same
+draft branch; read `ops/material_articles_unassigned_20261117.md` for the combined
+release gate, second migration and additional tests. Nothing is live yet.
 
 ## Invariants
 

@@ -383,6 +383,9 @@ def build_bootstrap(profile=None):
         inventory_item = inventory_map.get(material.get("inventory_item_id"))
         order_materials_payload[str(display_order_id)].append(
             {
+                "id": material["id"],
+                "article_key": material.get("article_key") or "",
+                "article_name": material.get("article_name") or "",
                 "material": material["product_name"],
                 "product_name": material["product_name"],
                 "inventory_item_id": material.get("inventory_item_id"),

@@ -1,11 +1,13 @@
 from __future__ import annotations
 
 import math
+import re
+from datetime import datetime
 from http import HTTPStatus
 from http.server import BaseHTTPRequestHandler
 
 from _api import clean_text, parse_optional_positive_int, parse_positive_int, read_json_body, require_access, write_json
-from _supabase import patch_rows
+from _supabase import fetch_table, patch_rows
 try:
     from _task_quantity import quantity_fields
 except ModuleNotFoundError:
@@ -68,6 +70,40 @@ class handler(BaseHTTPRequestHandler):
         if has_assignee_update and assigned_user_id is None and external_supplier_name is None:
             return write_json(self, {"error": "Seleziona un dipendente o un nominativo esterno"}, HTTPStatus.BAD_REQUEST)
 
+        queue_assignment = payload.get("only_if_unassigned") is True
+        queue_filters = {"id": f"eq.{task_id}"}
+        if "only_if_unassigned" in payload and not queue_assignment:
+            return write_json(self, {"error": "Modalità assegnazione non valida"}, HTTPStatus.BAD_REQUEST)
+        if queue_assignment:
+            allowed = {"task_id", "only_if_unassigned", "assigned_user_id", "external_supplier_name", "planned_date", "calendar_day_label"}
+            date = clean_text(payload.get("planned_date"))
+            if set(payload) - allowed or not has_assignee_update or not re.fullmatch(r"\d{4}-\d{2}-\d{2}(?: \d{2}:\d{2})?", date):
+                return write_json(self, {"error": "Seleziona operatrice e data valide"}, HTTPStatus.BAD_REQUEST)
+            try:
+                datetime.fromisoformat(date)
+            except ValueError:
+                return write_json(self, {"error": "Data o ora non valida"}, HTTPStatus.BAD_REQUEST)
+            try:
+                current_rows = fetch_table("order_tasks", filters={"id": f"eq.{task_id}"})
+                if not current_rows:
+                    return write_json(self, {"error": "Task non trovata"}, HTTPStatus.NOT_FOUND)
+                current = current_rows[0]
+                if current.get("assigned_user_id") or clean_text(current.get("external_supplier_name")) or normalize_status(current.get("status")) == "completato":
+                    return write_json(self, {"error": "Task già assegnata o completata da un altro utente. Aggiorna l'elenco."}, HTTPStatus.CONFLICT)
+                if assigned_user_id:
+                    people = fetch_table("users", filters={"id": f"eq.{assigned_user_id}", "is_active": "eq.true"})
+                    if not people:
+                        return write_json(self, {"error": "Operatrice non attiva o non disponibile"}, HTTPStatus.BAD_REQUEST)
+            except RuntimeError as error:
+                return write_json(self, {"error": "Verifica assegnazione non disponibile", "detail": str(error)}, HTTPStatus.SERVICE_UNAVAILABLE)
+            # Compare-and-set at the database, not just a prior browser check.
+            queue_filters["assigned_user_id"] = "is.null"
+            queue_filters["external_supplier_name"] = "is.null" if current.get("external_supplier_name") is None else "eq."
+            if current.get("updated_at"):
+                queue_filters["updated_at"] = f"eq.{current['updated_at']}"
+            if current.get("status"):
+                queue_filters["status"] = f"eq.{current['status']}"
+
         try:
             quantity_payload = quantity_fields(payload)
         except ValueError as error:
@@ -108,13 +144,15 @@ class handler(BaseHTTPRequestHandler):
         try:
             rows = patch_rows(
                 "order_tasks",
-                filters={"id": f"eq.{task_id}"},
+                filters=queue_filters,
                 payload=update_payload,
             )
         except RuntimeError as error:
             return write_json(self, {"error": "Assegnazione non riuscita", "detail": str(error)}, HTTPStatus.INTERNAL_SERVER_ERROR)
 
         if not rows:
+            if queue_assignment:
+                return write_json(self, {"error": "Task modificata da un altro utente. Aggiorna l'elenco prima di assegnare."}, HTTPStatus.CONFLICT)
             return write_json(self, {"error": "Task non trovato"}, HTTPStatus.NOT_FOUND)
         return write_json(self, rows[0])
 

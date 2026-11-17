@@ -32,15 +32,19 @@
       preorder_note: text(raw.preorder_note || raw.preorder || raw.note || raw.notes) || `Articolo: ${articleName || "n/d"} - prezzo ${raw.price || "n/d"}`,
       preorder: text(raw.preorder_note || raw.preorder || raw.note || raw.notes) || `Articolo: ${articleName || "n/d"} - prezzo ${raw.price || "n/d"}`,
       notes: text(raw.notes || raw.note),
+      article_key: text(raw.article_key || raw.articleKey),
+      article_name: text(raw.article_name || raw.articleName || articleName),
     };
   }
 
   if (typeof orderFromQuoteDraftMaterials === "function") {
     orderFromQuoteDraftMaterials = function orderFromQuoteDraftMaterialsWithInventory(quote) {
       const materials = [];
-      (quote?.articles || []).forEach((article) => {
+      (quote?.articles || []).forEach((article, articleIndex) => {
         (article.materials || []).forEach((material) => {
-          const normalized = normalizeQuoteMaterial(material, quote?.id, article?.name);
+          const normalized = normalizeQuoteMaterial({...material,
+            article_key:String(article.id || article.code || `article-${articleIndex+1}`),
+            article_name:article.name || article.product_name || `Articolo ${articleIndex+1}`}, quote?.id, article?.name);
           if (normalized) materials.push(normalized);
         });
       });

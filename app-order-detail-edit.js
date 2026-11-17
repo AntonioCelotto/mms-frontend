@@ -323,7 +323,7 @@ function orderDetailEditMarkup() {
           </div>
           <div class="order-detail-edit-scroll">
             <table>
-              <thead><tr><th>Materiale</th><th>Quantita'</th><th>Origine</th><th>Stato</th><th>Magazzino</th><th>Nota</th><th></th></tr></thead>
+              <thead><tr><th>Articolo / Materiale</th><th>Quantità totale necessaria</th><th>Origine</th><th>Stato</th><th>Magazzino</th><th>Disponibilità</th><th>Nota</th><th></th></tr></thead>
               <tbody>${orderDetailEditMaterialRows(draft.materials)}</tbody>
             </table>
           </div>
