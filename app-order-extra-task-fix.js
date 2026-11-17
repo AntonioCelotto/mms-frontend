@@ -20,6 +20,7 @@
   }
 
   async function saveTaskToDatabase(orderId, task) {
+    const quantity = typeof taskQuantityApply === "function" ? taskQuantityApply(task) : null;
     const validDate = (value) => /^\d{4}-\d{2}-\d{2}(?:$|[T ])/.test(String(value || "")) ? value : null;
     const hours = Number(String(task.hours ?? task.estimated_hours ?? "").replace(/\s*h\s*$/i, "").replace(",", "."));
     if (!Number.isFinite(hours) || hours < 0 || String(task.hours ?? task.estimated_hours ?? "").trim() === "") {
@@ -37,6 +38,7 @@
         external_supplier_name: String(task.assignedUserId || "").startsWith("external:") ? decodeURIComponent(task.assignedUserId.slice(9)) : task.externalSupplierName || task.external_supplier_name || null,
         planned_date: validDate(task.time) ? [String(task.time).slice(0, 10), task.plannedTime].filter(Boolean).join(" ") : validDate(task.planned_date),
         estimated_hours: hours,
+        ...(quantity ? {quantity: quantity.quantity, unit_hours: quantity.unitHours} : {}),
         status: task.state || task.status || "Da avviare",
         article_key: task.articleKey || task.article_key || null,
         article_name: task.articleName || task.article_name || null,

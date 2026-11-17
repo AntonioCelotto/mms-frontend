@@ -377,6 +377,13 @@ function orderDetailEditHandleField(target) {
     if (row) {
       const field = target.dataset.orderDetailTaskField;
       row[field] = target.value;
+      if ((field === "quantity" || field === "unitHours") && typeof taskQuantityApply === "function") {
+        let label = "Da definire";
+        try { label = taskQuantityApply(row).totalHours + " h"; } catch { row.hours = ""; }
+        const output = document.querySelector(`[data-task-quantity-total="${Number(target.dataset.orderDetailTaskIndex)}"]`);
+        if (output) output.textContent = label;
+        Promise.resolve().then(() => window.mmsRefreshTaskCapacity?.());
+      }
       // This listener runs in capture phase and stops the later planner
       // listener. Keep the article label on the same row before saving.
       if (field === "articleKey") {

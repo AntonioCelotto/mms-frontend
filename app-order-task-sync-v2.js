@@ -49,6 +49,8 @@ function taskSyncDraftFromTask(task, index, orderId) {
     assignedUserId,
     team: task.team || taskSyncAssigneeLabel(assignedUserId),
     hours: String(task.hours || task.estimated_hours || "").replace(" h", "").replace(",", "."),
+    quantity: task.quantity ?? 1,
+    unitHours: task.unitHours ?? task.unit_hours ?? String(task.hours ?? task.estimated_hours ?? "").replace(" h", "").replace(",", "."),
     time: String(task.time || task.planned_date || "").match(/^\d{4}-\d{2}-\d{2}/)?.[0] || "",
     plannedTime: task.plannedTime || String(task.time || task.planned_date || "").match(/^\d{4}-\d{2}-\d{2}[ T](\d{2}:\d{2})/)?.[1] || "",
     state: task.state || task.status || "Da avviare",
@@ -69,6 +71,8 @@ function taskSyncTaskFromDraft(task, index, orderId) {
     phase: task.phase || "altro",
     team: taskSyncAssigneeLabel(assignedUserId),
     hours: hours ? `${hours.replace(".", ",")} h` : "0,0 h",
+    quantity: task.quantity ?? 1,
+    unitHours: task.unitHours ?? task.unit_hours ?? hours,
     time: task.time || "Da pianificare",
     plannedTime: task.plannedTime || "",
     state: task.state || "Da avviare",
@@ -205,6 +209,7 @@ if (typeof orderDetailEditSave === "function") {
       .filter((task) => Number(task.id) > 0)
       .map((task) => [Number(task.id), task]));
     const draft = typeof orderDetailEditDraftFor === "function" ? orderDetailEditDraftFor(order) : null;
+    if (typeof taskQuantityValidateDraft === "function") taskQuantityValidateDraft(draft);
     const tasks = draft && orderId
       ? draft.tasks.map((task, index) => taskSyncTaskFromDraft(task, index, orderId))
       : [];
@@ -217,7 +222,7 @@ if (typeof orderDetailEditSave === "function") {
       return ({ da_confermare: "in_attesa", stand_by: "in_attesa" })[key] || key;
     };
     const validDate = (value) => /^\d{4}-\d{2}-\d{2}(?:$|[T ])/.test(String(value || "")) ? value : null;
-    const changedFields = (task, previous) => ["name", "phase", "assignedUserId", "time", "plannedTime", "hours", "articleKey", "articleName", "dueDate"]
+    const changedFields = (task, previous) => ["name", "phase", "assignedUserId", "time", "plannedTime", "hours", "quantity", "unitHours", "articleKey", "articleName", "dueDate"]
       .some((field) => String(task[field] || "") !== String(previous[field] || ""));
     const plannedDateTime = (task) => validDate(task.time)
       ? [String(task.time).slice(0, 10), task.plannedTime].filter(Boolean).join(" ")
@@ -242,6 +247,8 @@ if (typeof orderDetailEditSave === "function") {
             task_name: task.name,
             task_phase: task.phase,
             estimated_hours: Number(String(task.hours || "").replace(/\s*h\s*$/i, "").replace(",", ".")),
+            quantity: task.quantity,
+            unit_hours: task.unitHours,
             status: task.state,
             article_key: task.articleKey || null,
             article_name: task.articleName || null,
@@ -257,6 +264,8 @@ if (typeof orderDetailEditSave === "function") {
             planned_date: plannedDateTime(task),
             due_date: validDate(task.dueDate) || validDate(task.time),
             estimated_hours: Number(String(task.hours || "").replace(" h", "").replace(",", ".")) || 0,
+            quantity: task.quantity,
+            unit_hours: task.unitHours,
             article_key: task.articleKey || null,
             article_name: task.articleName || null,
           } : {};

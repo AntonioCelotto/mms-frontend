@@ -36,7 +36,9 @@
           <div><label class="muted">Assegna a</label><select class="filter-chip" data-order-detail-task-index="${index}" data-order-detail-task-field="assignedUserId"><option value="">Da assegnare</option>${people.map((person) => `<option value="${esc(person.value)}" ${String(row.assignedUserId || "") === String(person.value) ? "selected" : ""}>${esc(person.label)}</option>`).join("")}</select></div>
           <div><label class="muted">Data consegna task</label><input class="field-value" type="date" data-order-detail-task-index="${index}" data-order-detail-task-field="dueDate" value="${esc(row.dueDate || row.time || "")}" /></div>
           <div><label class="muted">Ora inizio (facoltativa)</label><input class="field-value" type="time" data-order-detail-task-index="${index}" data-order-detail-task-field="plannedTime" value="${esc(row.plannedTime || "")}" /></div>
-          <div><label class="muted">Ore lavoro</label><input class="field-value" type="number" min="0" step="0.5" data-order-detail-task-index="${index}" data-order-detail-task-field="hours" value="${esc(row.hours)}" /></div>
+          <div><label class="muted">Quantità pezzi</label><input class="field-value" type="number" min="1" step="1" data-order-detail-task-index="${index}" data-order-detail-task-field="quantity" value="${esc(row.quantity ?? 1)}" /></div>
+          <div><label class="muted">Ore per pezzo</label><input class="field-value" type="number" min="0" step="any" data-order-detail-task-index="${index}" data-order-detail-task-field="unitHours" value="${esc(row.unitHours ?? row.unit_hours ?? row.hours ?? '')}" /></div>
+          <div><label class="muted">Ore totali lavorazione</label><output class="field-value" data-task-quantity-total="${index}">${esc(typeof taskQuantityValues === 'function' ? (()=>{try{return taskQuantityValues(row).totalHours+' h';}catch{return 'Da definire';}})() : row.hours)}</output></div>
           <div><label class="muted">Stato</label><select class="filter-chip" data-order-detail-task-index="${index}" data-order-detail-task-field="state">${["Da avviare", "In corso", "Completato", "Da confermare", "Stand by"].map((state) => `<option value="${state}" ${row.state === state ? "selected" : ""}>${state}</option>`).join("")}</select></div>
           <div><button class="mini-btn" data-order-detail-remove-task="${index}" type="button">Rimuovi</button></div>
         </div>`).join("");
@@ -70,6 +72,8 @@
         assignedUserId: "",
         team: "Da assegnare",
         hours: "",
+        quantity: 1,
+        unitHours: "",
         time: "",
         dueDate: "",
         state: "Da avviare",

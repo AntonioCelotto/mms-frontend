@@ -172,6 +172,7 @@
       else row.insertAdjacentHTML("beforeend", html);
     });
   }
+  window.mmsRefreshTaskCapacity = refreshWarnings;
 
   function ensureStyles() {
     if (document.getElementById("task-deadline-capacity-styles")) return;

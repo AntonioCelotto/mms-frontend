@@ -6,6 +6,10 @@ from http.server import BaseHTTPRequestHandler
 
 from _api import clean_text, parse_optional_positive_int, parse_positive_int, read_json_body, require_access, write_json
 from _supabase import patch_rows
+try:
+    from _task_quantity import quantity_fields
+except ModuleNotFoundError:
+    from api._task_quantity import quantity_fields
 
 
 def parse_optional_hours(value):
@@ -64,6 +68,10 @@ class handler(BaseHTTPRequestHandler):
         if has_assignee_update and assigned_user_id is None and external_supplier_name is None:
             return write_json(self, {"error": "Seleziona un dipendente o un nominativo esterno"}, HTTPStatus.BAD_REQUEST)
 
+        try:
+            quantity_payload = quantity_fields(payload)
+        except ValueError as error:
+            return write_json(self, {"error": str(error)}, HTTPStatus.BAD_REQUEST)
         update_payload = {}
         if "planned_date" in payload:
             update_payload["planned_date"] = clean_text(payload.get("planned_date")) or None
@@ -76,6 +84,7 @@ class handler(BaseHTTPRequestHandler):
             update_payload["external_supplier_name"] = external_supplier_name
         if estimated_hours is not None:
             update_payload["estimated_hours"] = estimated_hours
+        update_payload.update(quantity_payload)
         if task_name is not None:
             update_payload["task_name"] = task_name
         if task_phase is not None:
