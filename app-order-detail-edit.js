@@ -195,7 +195,10 @@ function orderDetailEditApplyStoredToOrders() {
     order.payment = orderDetailEditFormatPayment(draft.payments);
     if (!appData.orderMaterials) appData.orderMaterials = {};
     if (!appData.orderTasks) appData.orderTasks = {};
-    appData.orderMaterials[Number(order.id)] = (draft.materials || []).map(orderDetailEditMaterialFromDraft);
+    // Keep server-confirmed material rows separate from the browser draft.
+    if (!(order.db_id || order.internal_id)) {
+      appData.orderMaterials[Number(order.id)] = (draft.materials || []).map(orderDetailEditMaterialFromDraft);
+    }
     appData.orderTasks[Number(order.id)] = (draft.tasks || []).map(orderDetailEditTaskFromDraft);
   });
 }
@@ -431,7 +434,9 @@ function orderDetailEditSave() {
   });
   if (!appData.orderMaterials) appData.orderMaterials = {};
   if (!appData.orderTasks) appData.orderTasks = {};
-  appData.orderMaterials[orderId] = draft.materials.map(orderDetailEditMaterialFromDraft);
+  if (!(order.db_id || order.internal_id)) {
+    appData.orderMaterials[orderId] = draft.materials.map(orderDetailEditMaterialFromDraft);
+  }
   appData.orderTasks[orderId] = draft.tasks.map(orderDetailEditTaskFromDraft);
   orderDetailEditWriteStored(orderId, draft);
   setFlashMessage(`Modifiche ordine #${orderId} salvate nella scheda`);

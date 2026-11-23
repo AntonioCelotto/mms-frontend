@@ -49,6 +49,7 @@
   function normalizeArticle(article, index) {
     const raw = article && typeof article === "object" ? article : {};
     return {
+      key: text(raw.id || raw.code || `article-${index + 1}`),
       name: text(raw.name || raw.article || raw.title || raw.product_name) || `Articolo ${index + 1}`,
       quantity: text(raw.quantity || raw.qty) || "1",
       cost: text(raw.cost || raw.price),
@@ -160,6 +161,46 @@
     }
   }
 
+  function sameMaterial(a, b) {
+    if (a.inventory_item_id && b.inventory_item_id) return text(a.inventory_item_id) === text(b.inventory_item_id);
+    if (a.inventory_sku && b.inventory_sku) return a.inventory_sku === b.inventory_sku;
+    return !!a.name && a.name.toLowerCase() === b.name.toLowerCase();
+  }
+
+  function summaryWithOrderMaterials(summary, order) {
+    if (!summary || !(order?.db_id || order?.internal_id)) return summary;
+    const saved = appData.orderMaterials?.[Number(order.id)];
+    // No loaded collection: keep the original clearly labelled as a quote.
+    // A loaded empty array is different: do not resurrect original rows.
+    if (!Array.isArray(saved)) return summary;
+
+    const articles = (summary.articles || []).map((article, index) => ({
+      ...article, key: article.key || `article-${index + 1}`, materials: [],
+    }));
+    const byKey = new Map(articles.map((article, index) => [article.key, index]));
+    const savedMaterials = saved.filter((row) => text(row?.product_name || row?.material)).map((row) => ({
+      ...normalizeMaterial(row),
+      name: text(row.product_name || row.material),
+      quantity: text(row.quantity_required ?? row.quantity ?? row.qty),
+      articleKey: text(row.article_key || row.articleKey),
+    }));
+    const originalsAcrossOrder = [
+      ...(summary.materials || []), ...(summary.articles || []).flatMap((article) => article.materials || []),
+    ];
+    const unlinked = [];
+    for (const material of savedMaterials) {
+      const index = byKey.get(material.articleKey);
+      const originals = (index === undefined ? originalsAcrossOrder : summary.articles[index].materials) || [];
+      const matches = originals.filter((original) => sameMaterial(original, material));
+      const uniqueMatch = matches.length === 1 && savedMaterials.filter((other) =>
+        (index === undefined || other.articleKey === material.articleKey) && sameMaterial(matches[0], other)).length === 1;
+      const row = { ...material, price: uniqueMatch ? matches[0].price : "" };
+      if (index === undefined) unlinked.push(row);
+      else articles[index].materials.push(row);
+    }
+    return { ...summary, articles, materials: unlinked, showsOrderMaterials: true };
+  }
+
   function renderSummary(summary) {
     const articleRows = (summary?.articles || [])
       .map((article, index) => {
@@ -184,7 +225,7 @@
         `;
       })
       .join("");
-    const materialRows = !articleRows
+    const materialRows = !articleRows || summary?.showsOrderMaterials
       ? (summary?.materials || [])
           .map(
             (material) => `
@@ -197,7 +238,9 @@
           )
           .join("")
       : "";
-    if (!articleRows && !materialRows) return "";
+    if (!articleRows && !materialRows && !summary?.showsOrderMaterials) return "";
+    const rows = articleRows + (articleRows && materialRows && summary?.showsOrderMaterials
+      ? '<tr><td colspan="3"><strong>Materiali non collegati a un articolo</strong></td></tr>' : "") + materialRows;
     const amount = Number(summary?.total);
     const totalLine = summary?.total != null && summary.total !== "" && Number.isFinite(amount)
       ? `<div class="order-quote-total"><strong>Totale preventivo (IVA inclusa)</strong><strong>${escapeHtml(new Intl.NumberFormat("it-IT", { style: "currency", currency: "EUR" }).format(amount))}</strong></div>`
@@ -207,14 +250,16 @@
         <div class="surface-inner">
           <div class="section-title">
             <div>
-              <h3>Articoli e prodotti da preventivo</h3>
-              <p>Riepilogo commerciale riportato dal preventivo ${escapeHtml(summary.quoteId || "")}.</p>
+              <h3>${summary.showsOrderMaterials ? "Articoli e materiali dell’ordine" : "Articoli e prodotti da preventivo"}</h3>
+              <p>${summary.showsOrderMaterials
+                ? `Le quantità dei materiali sono quelle salvate nell’ordine. Articoli, prezzi e totale fanno riferimento al preventivo ${escapeHtml(summary.quoteId || "")}.`
+                : `Riepilogo originale del preventivo ${escapeHtml(summary.quoteId || "")}.`}</p>
             </div>
           </div>
           <div class="order-detail-edit-scroll">
             <table>
-              <thead><tr><th>Voce</th><th>Quantita'</th><th>Prezzo</th></tr></thead>
-              <tbody>${articleRows || materialRows}</tbody>
+              <thead><tr><th>Voce</th><th>Quantita'</th><th>Prezzo da preventivo</th></tr></thead>
+              <tbody>${rows || '<tr><td colspan="3">Nessun materiale salvato</td></tr>'}</tbody>
             </table>
           </div>
           ${totalLine}
@@ -227,7 +272,7 @@
     if (appState.currentView !== "order-detail") return;
     const order = typeof getSelectedOrder === "function" ? getSelectedOrder() : null;
     hydrateDetailDraft(order);
-    const summary = summaryForOrder(order);
+    const summary = summaryWithOrderMaterials(summaryForOrder(order), order);
     const markup = renderSummary(summary);
     if (!markup) return;
     const section = document.querySelector("section.view.active");
